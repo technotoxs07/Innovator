@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -73,17 +74,39 @@ class NotificationService {
   }
 
   Future<void> _createNotificationChannels() async {
-    if (!Platform.isAndroid) return;
+  if (!Platform.isAndroid) return;
 
-    final androidImplementation = _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    
-    if (androidImplementation != null) {
-      await androidImplementation.createNotificationChannel(highImportanceChannel);
-      await androidImplementation.createNotificationChannel(regularChannel);
-      debugPrint('📱 Android notification channels created');
-    }
+  final androidPlugin = _flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+  if (androidPlugin != null) {
+    // FIXED: Chat messages channel with proper configuration
+    await androidPlugin.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'chat_messages', // This ID must match the channel_id in FCM payload
+        'Chat Messages',
+        description: 'Notifications for new chat messages',
+        importance: Importance.high,
+        enableVibration: true,
+        enableLights: true,
+        ledColor: Color.fromRGBO(244, 135, 6, 1),
+        showBadge: true,
+      ),
+    );
+
+    // General notifications channel
+    await androidPlugin.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'general_notifications',
+        'General Notifications',
+        description: 'General app notifications',
+        importance: Importance.defaultImportance,
+      ),
+    );
+
+    developer.log('✅ Android notification channels created successfully');
   }
+}
 
   Future<void> _requestPermissions() async {
     if (Platform.isAndroid) {

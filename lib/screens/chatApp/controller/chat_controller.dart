@@ -15,6 +15,8 @@ class FireChatController extends GetxController {
   final RxList<Map<String, dynamic>> chatList = <Map<String, dynamic>>[].obs;
   final RxList<Map<String, dynamic>> searchResults = <Map<String, dynamic>>[].obs;
   final RxList<Map<String, dynamic>> messages = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> recentUsers = <Map<String, dynamic>>[].obs;
+  final RxMap<String, DateTime> userInteractionTimes = <String, DateTime>{}.obs;
   
   final RxBool isLoadingUsers = false.obs;
   final RxBool isLoadingChats = false.obs;
@@ -57,8 +59,121 @@ class FireChatController extends GetxController {
     _setupReactiveListeners();
     _startGlobalMessageListener();
         _initializeNotificationService(); // Add this
+         _loadRecentUsersFromStorage(); 
 
   }
+
+   void addUserToRecent(Map<String, dynamic> user) {
+    try {
+      final userId = user['userId']?.toString() ?? 
+                    user['_id']?.toString() ?? 
+                    user['id']?.toString() ?? '';
+      
+      if (userId.isEmpty) return;
+      
+      // Remove user if already exists in recent list
+      recentUsers.removeWhere((recentUser) {
+        final recentUserId = recentUser['userId']?.toString() ?? 
+                            recentUser['_id']?.toString() ?? 
+                            recentUser['id']?.toString() ?? '';
+        return recentUserId == userId;
+      });
+      
+      // Add to the beginning of recent users
+      recentUsers.insert(0, user);
+      
+      // Track interaction time
+      userInteractionTimes[userId] = DateTime.now();
+      
+      // Keep only last 10 recent users
+      if (recentUsers.length > 10) {
+        recentUsers.removeRange(10, recentUsers.length);
+      }
+      
+      developer.log('✅ User added to recent: ${user['name']} ($userId)');
+      
+      // Save to local storage or preferences if needed
+      _saveRecentUsersToStorage();
+      
+    } catch (e) {
+      developer.log('❌ Error adding user to recent: $e');
+    }
+  }
+
+  // NEW: Get users for home page (combines recent + other users)
+  List<Map<String, dynamic>> getUsersForHomePage() {
+    try {
+      final homeUsers = <Map<String, dynamic>>[];
+      final addedUserIds = <String>{};
+      
+      // First, add recent users
+      for (final recentUser in recentUsers) {
+        final userId = recentUser['userId']?.toString() ?? 
+                      recentUser['_id']?.toString() ?? 
+                      recentUser['id']?.toString() ?? '';
+        
+        if (userId.isNotEmpty && !addedUserIds.contains(userId)) {
+          // Update with latest data from allUsers if available
+          final latestUserData = allUsers.firstWhere(
+            (user) {
+              final uId = user['userId']?.toString() ?? 
+                         user['_id']?.toString() ?? 
+                         user['id']?.toString() ?? '';
+              return uId == userId;
+            },
+            orElse: () => recentUser,
+          );
+          
+          homeUsers.add(latestUserData);
+          addedUserIds.add(userId);
+        }
+      }
+      
+      // Then add other users to fill up to 5 total
+      for (final user in allUsers) {
+        if (homeUsers.length >= 5) break;
+        
+        final userId = user['userId']?.toString() ?? 
+                      user['_id']?.toString() ?? 
+                      user['id']?.toString() ?? '';
+        
+        if (userId.isNotEmpty && !addedUserIds.contains(userId)) {
+          homeUsers.add(user);
+          addedUserIds.add(userId);
+        }
+      }
+      
+      return homeUsers;
+    } catch (e) {
+      developer.log('❌ Error getting users for home page: $e');
+      return allUsers.take(5).toList();
+    }
+  }
+
+  // NEW: Save recent users to local storage
+  void _saveRecentUsersToStorage() {
+    try {
+      // You can implement this using SharedPreferences or GetStorage
+      // For now, just log
+      developer.log('💾 Saving ${recentUsers.length} recent users to storage');
+    } catch (e) {
+      developer.log('❌ Error saving recent users: $e');
+    }
+  }
+
+  // NEW: Load recent users from local storage
+  void _loadRecentUsersFromStorage() {
+    try {
+      // You can implement this using SharedPreferences or GetStorage
+      // For now, just log
+      developer.log('📂 Loading recent users from storage');
+    } catch (e) {
+      developer.log('❌ Error loading recent users: $e');
+    }
+  }
+
+  // MODIFIED: Enhanced addUserToChat method
+ 
 
    void _initializeNotificationService() async {
     try {
@@ -273,61 +388,63 @@ Future<void> _unsubscribeFromAllTopicsSafely() async {
 
 // Enhanced clear reactive variables with error handling
 void _clearAllReactiveVariables() {
-  try {
-    developer.log('🧹 Clearing all reactive variables...');
-    
-    // Clear user data
     try {
-      currentUser.value = null;
-      currentUserId.value = '';
+      developer.log('🧹 Clearing all reactive variables...');
+      
+      // Clear user data
+      try {
+        currentUser.value = null;
+        currentUserId.value = '';
+      } catch (e) {
+        developer.log('Error clearing user data: $e');
+      }
+      
+      // Clear lists
+      try {
+        allUsers.clear();
+        chatList.clear();
+        searchResults.clear();
+        messages.clear();
+        recentUsers.clear(); // NEW: Clear recent users
+      } catch (e) {
+        developer.log('Error clearing lists: $e');
+      }
+      
+      // Clear maps
+      try {
+        userCache.clear();
+        unreadCounts.clear();
+        badgeCounts.clear();
+        messageStatuses.clear();
+        lastMessageTimes.clear();
+        userInteractionTimes.clear(); // NEW: Clear interaction times
+      } catch (e) {
+        developer.log('Error clearing maps: $e');
+      }
+      
+      // Reset search and states
+      try {
+        searchQuery.value = '';
+        isLoadingUsers.value = false;
+        isLoadingChats.value = false;
+        isSearching.value = false;
+        isLoadingMessages.value = false;
+        isSendingMessage.value = false;
+        isTyping.value = false;
+        selectedBottomIndex.value = 0;
+        currentChatId.value = '';
+        typingIndicator.value = '';
+        showScrollToBottom.value = false;
+        fabScale.value = 1.0;
+      } catch (e) {
+        developer.log('Error resetting states: $e');
+      }
+      
+      developer.log('✅ All reactive variables cleared');
     } catch (e) {
-      developer.log('Error clearing user data: $e');
+      developer.log('❌ Error clearing reactive variables: $e');
     }
-    
-    // Clear lists
-    try {
-      allUsers.clear();
-      chatList.clear();
-      searchResults.clear();
-      messages.clear();
-    } catch (e) {
-      developer.log('Error clearing lists: $e');
-    }
-    
-    // Clear maps
-    try {
-      userCache.clear();
-      unreadCounts.clear();
-      badgeCounts.clear();
-      messageStatuses.clear();
-      lastMessageTimes.clear();
-    } catch (e) {
-      developer.log('Error clearing maps: $e');
-    }
-    
-    // Reset search and states
-    try {
-      searchQuery.value = '';
-      isLoadingUsers.value = false;
-      isLoadingChats.value = false;
-      isSearching.value = false;
-      isLoadingMessages.value = false;
-      isSendingMessage.value = false;
-      isTyping.value = false;
-      selectedBottomIndex.value = 0;
-      currentChatId.value = '';
-      typingIndicator.value = '';
-      showScrollToBottom.value = false;
-      fabScale.value = 1.0;
-    } catch (e) {
-      developer.log('Error resetting states: $e');
-    }
-    
-    developer.log('✅ All reactive variables cleared');
-  } catch (e) {
-    developer.log('❌ Error clearing reactive variables: $e');
   }
-}
 
 // Reset controller state
 void _resetControllerState() {
@@ -958,50 +1075,55 @@ bool isUserInChatList(Map<String, dynamic> user) {
 }
 
 // NEW: Add user to chat list by creating initial chat document
-Future<void> addUserToChat(Map<String, dynamic> user) async {
-  try {
-    final currentUserId = getCurrentUserId();
-    final receiverId = user['userId']?.toString() ?? 
-                      user['_id']?.toString() ?? 
-                      user['id']?.toString() ?? '';
-    
-    if (currentUserId.isEmpty || receiverId.isEmpty) {
-      throw Exception('Invalid user IDs');
+ Future<void> addUserToChat(Map<String, dynamic> user) async {
+    try {
+      final currentUserId = getCurrentUserId();
+      final receiverId = user['userId']?.toString() ?? 
+                        user['_id']?.toString() ?? 
+                        user['id']?.toString() ?? '';
+      
+      if (currentUserId.isEmpty || receiverId.isEmpty) {
+        throw Exception('Invalid user IDs');
+      }
+      
+      // Check if chat already exists
+      if (isUserInChatList(user)) {
+        developer.log('User already in chat list: ${user['name']}');
+        // Still add to recent users even if chat exists
+        addUserToRecent(user);
+        return;
+      }
+      
+      final chatId = generateChatId(currentUserId, receiverId);
+      
+      // Create initial chat document
+      await FirebaseService.createInitialChat(
+        chatId: chatId,
+        currentUserId: currentUserId,
+        receiverId: receiverId,
+        receiverName: user['name']?.toString() ?? 'Unknown User',
+      );
+      
+      // Add to recent users
+      addUserToRecent(user);
+      
+      developer.log('✅ User added to chat and recent: ${user['name']}');
+      
+      // Refresh chat list to show the new chat
+      await loadUserChats();
+      
+    } catch (e) {
+      developer.log('❌ Error adding user to chat: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to add user to chat. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      rethrow;
     }
-    
-    // Check if chat already exists
-    if (isUserInChatList(user)) {
-      developer.log('User already in chat list: ${user['name']}');
-      return;
-    }
-    
-    final chatId = generateChatId(currentUserId, receiverId);
-    
-    // Create initial chat document
-    await FirebaseService.createInitialChat(
-      chatId: chatId,
-      currentUserId: currentUserId,
-      receiverId: receiverId,
-      receiverName: user['name']?.toString() ?? 'Unknown User',
-    );
-    
-    developer.log('✅ User added to chat: ${user['name']}');
-    
-    // Refresh chat list to show the new chat
-    await loadUserChats();
-    
-  } catch (e) {
-    developer.log('❌ Error adding user to chat: $e');
-    Get.snackbar(
-      'Error',
-      'Failed to add user to chat. Please try again.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
-      colorText: Colors.white,
-    );
-    rethrow;
   }
-}
 
 // NEW: Get users not in chat list
 List<Map<String, dynamic>> getUsersNotInChat() {
@@ -1034,40 +1156,44 @@ List<Map<String, dynamic>> getUsersSortedByStatus() {
 
 // NEW: Enhanced navigation to chat with better error handling
 void navigateToChatEnhanced(Map<String, dynamic> user) {
-  try {
-    final userForNavigation = Map<String, dynamic>.from(user);
-    
-    // Ensure all necessary ID fields are present
-    final userId = user['userId']?.toString() ?? 
-                  user['_id']?.toString() ?? 
-                  user['id']?.toString() ?? '';
-    
-    if (userId.isEmpty) {
-      throw Exception('Invalid user ID');
+    try {
+      final userForNavigation = Map<String, dynamic>.from(user);
+      
+      // Ensure all necessary ID fields are present
+      final userId = user['userId']?.toString() ?? 
+                    user['_id']?.toString() ?? 
+                    user['id']?.toString() ?? '';
+      
+      if (userId.isEmpty) {
+        throw Exception('Invalid user ID');
+      }
+      
+      // Standardize ID fields
+      userForNavigation['userId'] = userId;
+      userForNavigation['_id'] = userId;
+      userForNavigation['id'] = userId;
+      
+      // Add to recent users when navigating to chat
+      addUserToRecent(userForNavigation);
+      
+      developer.log('Navigating to chat with user: $userId (${userForNavigation['name']})');
+      
+      Get.toNamed('/chat', arguments: {
+        'receiverUser': userForNavigation,
+        'currentUser': currentUser.value,
+      });
+    } catch (e) {
+      developer.log('❌ Error navigating to chat: $e');
+      Get.snackbar(
+        'Error',
+        'Unable to open chat. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
     }
-    
-    // Standardize ID fields
-    userForNavigation['userId'] = userId;
-    userForNavigation['_id'] = userId;
-    userForNavigation['id'] = userId;
-    
-    developer.log('Navigating to chat with user: $userId (${userForNavigation['name']})');
-    
-    Get.toNamed('/chat', arguments: {
-      'receiverUser': userForNavigation,
-      'currentUser': currentUser.value,
-    });
-  } catch (e) {
-    developer.log('❌ Error navigating to chat: $e');
-    Get.snackbar(
-      'Error',
-      'Unable to open chat. Please try again.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
-      colorText: Colors.white,
-    );
   }
-}
+
 
 // NEW: Get chat statistics
 Map<String, int> getChatStatistics() {
@@ -1353,23 +1479,9 @@ Future<void> searchUsersInAddScreen(String query) async {
     selectedBottomIndex.value = index;
   }
 
+  @override
   void navigateToChat(Map<String, dynamic> user) {
-    final userForNavigation = Map<String, dynamic>.from(user);
-    
-    // Ensure all necessary ID fields are present
-    if (!userForNavigation.containsKey('userId') && userForNavigation.containsKey('id')) {
-      userForNavigation['userId'] = userForNavigation['id'];
-    }
-    if (!userForNavigation.containsKey('_id') && userForNavigation.containsKey('id')) {
-      userForNavigation['_id'] = userForNavigation['id'];
-    }
-    
-    developer.log('Navigating to chat with user: ${userForNavigation['id']} (${userForNavigation['name']})');
-    
-    Get.toNamed('/chat', arguments: {
-      'receiverUser': userForNavigation,
-      'currentUser': currentUser.value,
-    });
+    navigateToChatEnhanced(user);
   }
 
   void setTyping(bool typing) {

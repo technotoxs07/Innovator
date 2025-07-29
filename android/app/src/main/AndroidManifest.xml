@@ -87,10 +87,10 @@
             android:name="flutterEmbedding"
             android:value="2"/>
         
-        <!-- IMPORTANT: Match your notification channel ID -->
+        <!-- FIXED: Match your notification channel ID -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="high_importance_channel"/>
+            android:value="chat_messages"/>
         
         <!-- Default notification icon -->
         <meta-data

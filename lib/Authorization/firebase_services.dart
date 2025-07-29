@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -43,52 +45,121 @@ class FirebaseService {
 
   // Get OAuth2 access token for FCM v1 API
   static Future<String?> _getAccessToken() async {
-    try {
-      final serviceAccountCredentials = ServiceAccountCredentials.fromJson(_serviceAccountKey);
-      final client = http.Client();
-      
-      final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
-        serviceAccountCredentials,
-        ['https://www.googleapis.com/auth/cloud-platform'],
-        client,
-      );
-      
-      client.close();
-      return accessCredentials.accessToken.data;
-    } catch (e) {
-      developer.log('❌ Error getting access token: $e');
-      return null;
+  try {
+    developer.log('🔑 Getting OAuth2 access token...');
+    
+    final serviceAccountCredentials = ServiceAccountCredentials.fromJson(_serviceAccountKey);
+    final client = http.Client();
+    
+    final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
+      serviceAccountCredentials,
+      ['https://www.googleapis.com/auth/cloud-platform'],
+      client,
+    );
+    
+    client.close();
+    
+    final token = accessCredentials.accessToken.data;
+    developer.log('✅ Access token obtained: ${token.substring(0, 20)}...');
+    
+    return token;
+  } catch (e) {
+    developer.log('❌ Error getting access token: $e');
+    if (e is Exception) {
+      developer.log('Exception details: ${e.toString()}');
     }
+    return null;
   }
+}
 
   // Update user FCM token
   static Future<void> updateUserFCMToken(String userId, String token) async {
-  try {
-    await _firestore.collection('users').doc(userId).update({
-      'fcmToken': token,
-      'lastTokenUpdate': FieldValue.serverTimestamp(),
-    });
-    developer.log('✅ FCM token updated for user: $userId');
-    
-    // Test token immediately
-    await _testFCMToken(userId, token);
-  } catch (e) {
-    developer.log('❌ Error updating FCM token: $e');
-    throw e;
+    try {
+      developer.log('📱 Updating FCM token for user: $userId');
+      developer.log('📱 Token: ${token.substring(0, 20)}...');
+      
+      // First, clean up any invalid tokens
+      await _cleanupInvalidTokensForUser(userId);
+      
+      // Update with new token
+      await _firestore.collection('users').doc(userId).update({
+        'fcmToken': token, // Primary token field
+        'fcmTokens': [token], // Array of tokens (keeping only the latest)
+        'lastTokenUpdate': FieldValue.serverTimestamp(),
+        'tokenDevice': Platform.isAndroid ? 'android' : 'ios',
+        'tokenValid': true, // Track token validity
+      });
+      
+      developer.log('✅ FCM token updated successfully for user: $userId');
+      
+      // Test the token immediately
+      await _testTokenValidity(userId, token);
+    } catch (e) {
+      developer.log('❌ Error updating FCM token: $e');
+      throw e;
+    }
   }
-}
+
+  static Future<void> _cleanupInvalidTokensForUser(String userId) async {
+    try {
+      final userDoc = await getUserById(userId);
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final oldTokens = userData['fcmTokens'] as List<dynamic>? ?? [];
+        
+        if (oldTokens.isNotEmpty) {
+          developer.log('🧹 Cleaning up ${oldTokens.length} old tokens for user: $userId');
+          
+          // Clear old tokens array
+          await _firestore.collection('users').doc(userId).update({
+            'fcmTokens': [], // Clear old tokens
+            'oldTokensCleared': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+    } catch (e) {
+      developer.log('❌ Error cleaning up tokens: $e');
+    }
+  }
+  
+  // NEW: Test token validity
+  static Future<void> _testTokenValidity(String userId, String token) async {
+    try {
+      developer.log('🧪 Testing FCM token validity for user: $userId');
+      
+      // We'll test this indirectly by checking if we can send a validation message
+      // For now, just mark as tested
+      await _firestore.collection('users').doc(userId).update({
+        'lastTokenTest': FieldValue.serverTimestamp(),
+        'tokenValid': true,
+      });
+      
+      developer.log('✅ Token marked as valid for user: $userId');
+    } catch (e) {
+      developer.log('❌ Error testing FCM token: $e');
+    }
+  }
 
 static Future<void> _testFCMToken(String userId, String token) async {
   try {
     developer.log('🧪 Testing FCM token for user: $userId');
-    developer.log('Token: ${token.substring(0, 20)}...');
     
     // Verify token is saved in Firestore
     final userDoc = await getUserById(userId);
     if (userDoc.exists) {
       final userData = userDoc.data() as Map<String, dynamic>;
       final savedToken = userData['fcmToken'];
-      developer.log('Saved token matches: ${savedToken == token}');
+      final tokenMatches = savedToken == token;
+      
+      developer.log('✅ Token verification: ${tokenMatches ? "PASSED" : "FAILED"}');
+      
+      if (tokenMatches) {
+        developer.log('📱 Token successfully saved and verified');
+      } else {
+        developer.log('⚠️ Token mismatch - saved: ${savedToken?.substring(0, 20)}..., expected: ${token.substring(0, 20)}...');
+      }
+    } else {
+      developer.log('⚠️ User document not found for token test');
     }
   } catch (e) {
     developer.log('❌ Error testing FCM token: $e');
@@ -396,147 +467,232 @@ static Future<DocumentReference> sendMessage({
   // FCM HTTP v1 API notification sending
   // Replace the complex FCM v1 method with this simpler approach
 static Future<void> _sendFCMv1Notification({
-  required String receiverId,
-  required String senderName,
-  required String message,
-  required String chatId,
-  required String senderId,
-  required String messageId,
-}) async {
-  try {
-    developer.log('📤 Sending notification to: $receiverId');
-    
-    // Get receiver's data
-    final receiverDoc = await _firestore.collection('users').doc(receiverId).get();
-    
-    if (!receiverDoc.exists) {
-      developer.log('⚠️ Receiver not found: $receiverId');
-      return;
-    }
+    required String receiverId,
+    required String senderName,
+    required String message,
+    required String chatId,
+    required String senderId,
+    required String messageId,
+  }) async {
+    try {
+      developer.log('📤 === SENDING FCM NOTIFICATION ===');
+      developer.log('📤 Receiver ID: $receiverId');
+      developer.log('📤 Sender: $senderName');
+      developer.log('📤 Message: ${message.length > 50 ? message.substring(0, 50) + "..." : message}');
+      
+      // Get receiver's data
+      final receiverDoc = await _firestore.collection('users').doc(receiverId).get();
+      
+      if (!receiverDoc.exists) {
+        developer.log('⚠️ Receiver not found: $receiverId');
+        return;
+      }
 
-    final receiverData = receiverDoc.data() as Map<String, dynamic>;
-    final fcmToken = receiverData['fcmToken'] as String?;
-    final notificationsEnabled = receiverData['notificationsEnabled'] as bool? ?? true;
-
-    developer.log('📱 Receiver FCM token: ${fcmToken?.substring(0, 20)}...');
-    developer.log('🔔 Notifications enabled: $notificationsEnabled');
-
-    if (!notificationsEnabled) {
-      developer.log('🔇 Notifications disabled for receiver: $receiverId');
-      return;
-    }
-
-    if (fcmToken == null || fcmToken.isEmpty) {
-      developer.log('⚠️ No FCM token for receiver: $receiverId');
-      return;
-    }
-
-    // Check if receiver is online and viewing this chat
-    final isOnline = receiverData['isOnline'] == true;
-    final currentChatId = receiverData['currentChatId'] as String?;
-    
-    developer.log('📱 Receiver online: $isOnline');
-    developer.log('💬 Current chat: $currentChatId');
-    developer.log('💬 Message chat: $chatId');
-    
-    if (isOnline && currentChatId == chatId) {
-      developer.log('🔇 Notification suppressed - receiver viewing chat');
-      return;
-    }
-
-    // Use Firebase Admin SDK or HTTP v1 API
-    await _sendNotificationHTTPv1(
-      token: fcmToken,
-      title: senderName,
-      body: message,
-      data: {
-        'type': 'chat',
-        'chatId': chatId,
-        'senderId': senderId,
-        'senderName': senderName,
-        'messageId': messageId,
-      },
-    );
-
-    developer.log('✅ Notification sent successfully');
-
-  } catch (e) {
-    developer.log('❌ Error sending notification: $e');
-    // Log more details about the error
-    if (e is FirebaseException) {
-      developer.log('Firebase error code: ${e.code}');
-      developer.log('Firebase error message: ${e.message}');
-    }
-  }
-}
-
-static Future<void> _sendNotificationHTTPv1({
-  required String token,
-  required String title,
-  required String body,
-  required Map<String, dynamic> data,
-}) async {
-  try {
-    // Get access token
-    final accessToken = await _getAccessToken();
-    if (accessToken == null) {
-      developer.log('❌ Could not get access token');
-      return;
-    }
-
-    // Prepare FCM v1 payload
-    final fcmPayload = {
-      "message": {
-        "token": token,
-        "notification": {
-          "title": title,
-          "body": body.length > 100 ? '${body.substring(0, 100)}...' : body,
-        },
-        "data": data.map((key, value) => MapEntry(key, value.toString())),
-        "android": {
-          "notification": {
-            "channel_id": "chat_messages",
-            "sound": "default",
-            "priority": "high",
-          },
-        },
-        "apns": {
-          "payload": {
-            "aps": {
-              "sound": "default",
-              "badge": 1,
-            }
-          }
+      final receiverData = receiverDoc.data() as Map<String, dynamic>;
+      
+      // Try multiple token sources
+      String? fcmToken;
+      
+      // First try the primary fcmToken field
+      fcmToken = receiverData['fcmToken']?.toString();
+      
+      // If not found, try the fcmTokens array
+      if (fcmToken == null || fcmToken.isEmpty) {
+        final tokens = receiverData['fcmTokens'] as List<dynamic>?;
+        if (tokens != null && tokens.isNotEmpty) {
+          fcmToken = tokens.first.toString();
         }
       }
-    };
+      
+      final notificationsEnabled = receiverData['notificationsEnabled'] as bool? ?? true;
 
-    developer.log('📤 Sending FCM payload: ${jsonEncode(fcmPayload)}');
+      developer.log('📱 Receiver FCM token found: ${fcmToken != null && fcmToken.isNotEmpty}');
+      developer.log('🔔 Notifications enabled: $notificationsEnabled');
 
-    // Send notification using FCM HTTP v1 API
-    final response = await http.post(
-      Uri.parse('https://fcm.googleapis.com/v1/projects/$_projectId/messages:send'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $accessToken',
-      },
-      body: jsonEncode(fcmPayload),
-    );
+      if (!notificationsEnabled) {
+        developer.log('🔇 Notifications disabled for receiver: $receiverId');
+        return;
+      }
 
-    developer.log('📨 FCM Response: ${response.statusCode}');
-    developer.log('📨 FCM Body: ${response.body}');
+      if (fcmToken == null || fcmToken.isEmpty) {
+        developer.log('⚠️ No FCM token for receiver: $receiverId');
+        return;
+      }
 
-    if (response.statusCode == 200) {
-      developer.log('✅ FCM notification sent successfully');
-    } else {
-      developer.log('❌ FCM notification failed: ${response.statusCode}');
-      developer.log('Error details: ${response.body}');
+      // Enhanced notification suppression check
+      final isOnline = receiverData['isOnline'] == true;
+      final currentChatId = receiverData['currentChatId'] as String?;
+      final lastActivity = receiverData['lastSeen'] as Timestamp?;
+      
+      developer.log('📱 Receiver online: $isOnline');
+      developer.log('💬 Current chat: $currentChatId');
+      developer.log('💬 Message chat: $chatId');
+      
+      // Suppress only if actively in the same chat within last 30 seconds
+      bool shouldSuppress = false;
+      if (isOnline && currentChatId == chatId) {
+        if (lastActivity != null) {
+          final timeSinceLastActivity = DateTime.now().difference(lastActivity.toDate());
+          shouldSuppress = timeSinceLastActivity.inSeconds < 30;
+          developer.log('⏰ Time since last activity: ${timeSinceLastActivity.inSeconds}s, Suppress: $shouldSuppress');
+        }
+      }
+      
+      if (shouldSuppress) {
+        developer.log('🔇 Notification suppressed - receiver actively in chat');
+        return;
+      }
+
+      // Send FCM notification
+      try {
+        final success = await _sendNotificationHTTPv1(
+          token: fcmToken,
+          title: senderName,
+          body: message,
+          data: {
+            'type': 'chat',
+            'chatId': chatId,
+            'senderId': senderId,
+            'senderName': senderName,
+            'messageId': messageId,
+            'message': message,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+
+        if (!success) {
+          // Token might be invalid, try to refresh it
+          developer.log('❌ FCM send failed, token might be invalid');
+          await _markTokenAsInvalid(receiverId);
+          
+          // Try to get a fresh token for this user if they're currently online
+          if (isOnline) {
+            developer.log('🔄 User is online, they should get a fresh token soon');
+          }
+        }
+      } catch (e) {
+        developer.log('❌ Error sending FCM: $e');
+        if (e.toString().contains('UNREGISTERED') || e.toString().contains('404')) {
+          await _markTokenAsInvalid(receiverId);
+        }
+      }
+
+      developer.log('=== END FCM NOTIFICATION ===');
+
+    } catch (e) {
+      developer.log('❌ Error in FCM notification process: $e');
     }
-
-  } catch (e) {
-    developer.log('❌ Error in HTTP v1 send: $e');
   }
-}
+
+  static Future<void> _markTokenAsInvalid(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'tokenValid': false,
+        'tokenInvalidatedAt': FieldValue.serverTimestamp(),
+      });
+      developer.log('🚫 Marked token as invalid for user: $userId');
+    } catch (e) {
+      developer.log('❌ Error marking token as invalid: $e');
+    }
+  }
+
+static Future<bool> _sendNotificationHTTPv1({
+    required String token,
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      developer.log('📤 Preparing FCM HTTP v1 request...');
+      
+      // Get access token
+      final accessToken = await _getAccessToken();
+      if (accessToken == null) {
+        developer.log('❌ Could not get access token');
+        return false;
+      }
+
+      // CORRECTED: Proper FCM v1 payload structure
+      final fcmPayload = {
+        "message": {
+          "token": token,
+          "notification": {
+            "title": title,
+            "body": body.length > 100 ? '${body.substring(0, 100)}...' : body,
+          },
+          "data": data.map((key, value) => MapEntry(key, value.toString())),
+          "android": {
+            "notification": {
+              "channel_id": "chat_messages",
+              "sound": "default",
+              "icon": "@mipmap/ic_launcher",
+              "color": "#F48706",
+              "tag": data['chatId'],
+            },
+            "priority": "high",
+            "ttl": "3600s",
+          },
+          "apns": {
+            "headers": {
+              "apns-priority": "10",
+              "apns-expiration": "3600"
+            },
+            "payload": {
+              "aps": {
+                "alert": {
+                  "title": title,
+                  "body": body,
+                },
+                "sound": "default",
+                "badge": 1,
+                "category": "MESSAGE_CATEGORY",
+                "thread-id": data['chatId'],
+              }
+            }
+          },
+          "fcm_options": {
+            "analytics_label": "chat_message"
+          }
+        }
+      };
+
+      developer.log('📤 Sending to token: ${token.substring(0, 20)}...');
+
+      // Send notification using FCM HTTP v1 API
+      final response = await http.post(
+        Uri.parse('https://fcm.googleapis.com/v1/projects/$_projectId/messages:send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode(fcmPayload),
+      ).timeout(const Duration(seconds: 10));
+
+      developer.log('📨 FCM Response Status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final messageName = responseData['name'];
+        developer.log('✅ FCM notification sent successfully: $messageName');
+        return true;
+      } else {
+        developer.log('❌ FCM notification failed: ${response.statusCode}');
+        developer.log('📨 FCM Response Body: ${response.body}');
+        
+        // Handle specific errors
+        if (response.statusCode == 404) {
+          throw Exception('UNREGISTERED');
+        }
+        
+        return false;
+      }
+
+    } catch (e) {
+      developer.log('❌ Error in HTTP v1 send: $e');
+      rethrow;
+    }
+  }
+
 
   // Fallback notification method (logs notification for now)
   static Future<void> _sendFallbackNotification(

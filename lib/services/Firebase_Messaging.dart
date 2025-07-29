@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -19,7 +18,7 @@ class FirebaseNotificationService {
       FlutterLocalNotificationsPlugin();
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
-  // Notification channels
+  // Notification channels - MATCH with Android manifest
   static const String _chatChannelId = 'chat_messages';
   static const String _generalChannelId = 'general_notifications';
   static const String _callChannelId = 'call_notifications';
@@ -27,12 +26,15 @@ class FirebaseNotificationService {
   bool _isInitialized = false;
 
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      developer.log('⚠️ Notification service already initialized');
+      return;
+    }
 
     try {
-      developer.log('🔔 Initializing Notification Service...');
+      developer.log('🔔 Initializing Firebase Notification Service...');
 
-      // Request permissions
+      // Request permissions first
       await _requestPermissions();
 
       // Initialize local notifications
@@ -45,134 +47,170 @@ class FirebaseNotificationService {
       _setupMessageHandlers();
 
       _isInitialized = true;
-      developer.log('✅ Notification Service initialized successfully');
+      developer.log('✅ Firebase Notification Service initialized successfully');
     } catch (e) {
       developer.log('❌ Error initializing notification service: $e');
+      rethrow;
     }
   }
 
   Future<void> _requestPermissions() async {
-    // Request Firebase messaging permissions
-    final settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
+    try {
+      developer.log('📱 Requesting notification permissions...');
+      
+      // Request Firebase messaging permissions
+      final settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
 
-    developer.log('📱 FCM Permission status: ${settings.authorizationStatus}');
+      developer.log('📱 FCM Permission status: ${settings.authorizationStatus}');
 
-    // Request local notification permissions for Android 13+
-    if (Platform.isAndroid) {
-      final plugin = _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-      await plugin?.requestNotificationsPermission();
+      // Request local notification permissions for Android 13+
+      if (Platform.isAndroid) {
+        final plugin = _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>();
+        final granted = await plugin?.requestNotificationsPermission();
+        developer.log('📱 Local notification permission: $granted');
+      }
+    } catch (e) {
+      developer.log('❌ Error requesting permissions: $e');
     }
   }
 
   Future<void> _initializeLocalNotifications() async {
-    // Android initialization
-    const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
+    try {
+      developer.log('📱 Initializing local notifications...');
+      
+      // Android initialization
+      const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS initialization
-    const iosInitialization = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-      onDidReceiveLocalNotification: _onDidReceiveLocalNotification,
-    );
+      // iOS initialization
+      const iosInitialization = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+        onDidReceiveLocalNotification: _onDidReceiveLocalNotification,
+      );
 
-    const initializationSettings = InitializationSettings(
-      android: androidInitialization,
-      iOS: iosInitialization,
-    );
+      const initializationSettings = InitializationSettings(
+        android: androidInitialization,
+        iOS: iosInitialization,
+      );
 
-    await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
+      await _flutterLocalNotificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: _onNotificationTapped,
+      );
 
-    // Create notification channels for Android
-    await _createNotificationChannels();
+      // Create notification channels for Android
+      await _createNotificationChannels();
+      
+      developer.log('✅ Local notifications initialized');
+    } catch (e) {
+      developer.log('❌ Error initializing local notifications: $e');
+    }
   }
 
   Future<void> _createNotificationChannels() async {
     if (!Platform.isAndroid) return;
 
-    final androidPlugin = _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    try {
+      final androidPlugin = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-    if (androidPlugin != null) {
-      // Chat messages channel
-      await androidPlugin.createNotificationChannel(
-         AndroidNotificationChannel(
-          _chatChannelId,
-          'Chat Messages',
-          description: 'Notifications for new chat messages',
-          importance: Importance.high,
-          sound: RawResourceAndroidNotificationSound('notification_sound'),
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 500, 250, 500]),
-          enableLights: true,
-          ledColor: Color.fromARGB(255, 244, 135, 6),
-        ),
-      );
+      if (androidPlugin != null) {
+        // Chat messages channel - CRITICAL: This must match FCM payload
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'chat_messages',
+            'Chat Messages',
+            description: 'Notifications for new chat messages',
+            importance: Importance.high,
+            enableVibration: true,
+            enableLights: true,
+            ledColor: Color.fromRGBO(244, 135, 6, 1),
+            showBadge: true,
+            playSound: true,
+          ),
+        );
 
-      // General notifications channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          _generalChannelId,
-          'General Notifications',
-          description: 'General app notifications',
-          importance: Importance.defaultImportance,
-        ),
-      );
+        // General notifications channel
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'general_notifications',
+            'General Notifications',
+            description: 'General app notifications',
+            importance: Importance.defaultImportance,
+            enableVibration: true,
+            showBadge: true,
+          ),
+        );
 
-      // Call notifications channel
-      await androidPlugin.createNotificationChannel(
-         AndroidNotificationChannel(
-          _callChannelId,
-          'Calls',
-          description: 'Incoming call notifications',
-          importance: Importance.max,
-          sound: RawResourceAndroidNotificationSound('call_sound'),
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
-        ),
-      );
+        // Call notifications channel
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'call_notifications',
+            'Call Notifications',
+            description: 'Incoming call notifications',
+            importance: Importance.max,
+            enableVibration: true,
+            enableLights: true,
+            showBadge: true,
+            playSound: true,
+          ),
+        );
+
+        developer.log('✅ Android notification channels created successfully');
+      }
+    } catch (e) {
+      developer.log('❌ Error creating notification channels: $e');
     }
   }
 
   Future<void> _initializeFirebaseMessaging() async {
-    // Get FCM token
-    final token = await _firebaseMessaging.getToken();
-    developer.log('📱 FCM Token: $token');
+    try {
+      developer.log('🔥 Initializing Firebase messaging...');
+      
+      // Get FCM token
+      final token = await _firebaseMessaging.getToken();
+      if (token != null) {
+        developer.log('📱 FCM Token obtained: ${token.substring(0, 20)}...');
+        await _saveTokenToUserData(token);
+      } else {
+        developer.log('⚠️ Failed to get FCM token');
+      }
 
-    // Save token to user data
-    if (token != null) {
-      await _saveTokenToUserData(token);
+      // Listen for token refresh
+      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+        developer.log('🔄 FCM Token refreshed: ${newToken.substring(0, 20)}...');
+        _saveTokenToUserData(newToken);
+      });
+      
+      developer.log('✅ Firebase messaging initialized');
+    } catch (e) {
+      developer.log('❌ Error initializing Firebase messaging: $e');
     }
-
-    // Listen for token refresh
-    _firebaseMessaging.onTokenRefresh.listen((newToken) {
-      developer.log('🔄 FCM Token refreshed: $newToken');
-      _saveTokenToUserData(newToken);
-    });
   }
 
   Future<void> _saveTokenToUserData(String token) async {
     try {
+      // Save to AppData
+      await AppData().saveFcmToken(token);
+      
+      // Save to Firebase if user is logged in
       final userData = AppData().currentUser;
       if (userData != null && userData.isNotEmpty) {
         final userId = userData['_id']?.toString() ?? 
                       userData['uid']?.toString() ?? '';
         
         if (userId.isNotEmpty) {
-          // Update user's FCM token in Firebase
           await FirebaseService.updateUserFCMToken(userId, token);
           developer.log('✅ FCM token saved for user: $userId');
         }
@@ -183,7 +221,9 @@ class FirebaseNotificationService {
   }
 
   void _setupMessageHandlers() {
-    // Foreground messages
+    developer.log('📨 Setting up FCM message handlers...');
+    
+    // Foreground messages - ALWAYS show notification
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       developer.log('📨 Foreground message received: ${message.messageId}');
       handleForegroundMessage(message);
@@ -199,128 +239,189 @@ class FirebaseNotificationService {
     _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         developer.log('🚀 App launched from notification: ${message.messageId}');
-        _handleNotificationTap(message.data);
+        Future.delayed(const Duration(seconds: 1), () {
+          _handleNotificationTap(message.data);
+        });
       }
     });
+    
+    developer.log('✅ FCM message handlers setup completed');
   }
 
-  // Handle foreground messages
+  // ENHANCED: Handle foreground messages with better suppression logic
   Future<void> handleForegroundMessage(RemoteMessage message) async {
     try {
-      developer.log('📱 Processing foreground message...');
+      developer.log('📱 === FOREGROUND MESSAGE HANDLER START ===');
+      developer.log('📱 Message ID: ${message.messageId}');
+      developer.log('📱 Data: ${message.data}');
+      developer.log('📱 Notification: ${message.notification?.toMap()}');
       
       final notification = message.notification;
       final data = message.data;
       
-      if (notification == null) return;
+      // Extract notification details
+      String title = notification?.title ?? data['senderName'] ?? 'New Message';
+      String body = notification?.body ?? data['message'] ?? 'You have a new message';
+      
+      developer.log('📱 Processed - Title: $title, Body: $body');
 
-      // Check if user is currently in the chat screen for this message
-      if (_shouldSuppressNotification(data)) {
-        developer.log('🔇 Notification suppressed - user in active chat');
+      // INTELLIGENT SUPPRESSION: Check if we should suppress this notification
+      final shouldSuppress = _shouldSuppressForegroundNotification(data);
+      developer.log('🔇 Should suppress: $shouldSuppress');
+      
+      if (shouldSuppress) {
+        developer.log('🔇 Foreground notification suppressed - user actively chatting');
+        
+        // OPTIONAL: Still update badge count even if suppressing visual notification
+        await _updateBadgeCount(data);
         return;
       }
 
-      // Show local notification
+      // Show local notification for foreground
       await _showLocalNotification(
-        title: notification.title ?? 'New Message',
-        body: notification.body ?? '',
+        title: title,
+        body: body,
         data: data,
-        channelId: _getChannelId(data['type']),
+        channelId: _chatChannelId,
       );
 
       // Update badge count
       await _updateBadgeCount(data);
+
+      developer.log('✅ Foreground notification processed successfully');
+      developer.log('=== END FOREGROUND MESSAGE HANDLER ===');
 
     } catch (e) {
       developer.log('❌ Error handling foreground message: $e');
     }
   }
 
-  bool _shouldSuppressNotification(Map<String, dynamic> data) {
-  try {
-    // Check if GetX is initialized and controller exists
-    if (!Get.isRegistered<FireChatController>()) {
-      return false;
-    }
-    
-    final chatController = Get.find<FireChatController>();
-    final currentChatId = chatController.currentChatId.value;
-    final messageChatId = data['chatId']?.toString() ?? '';
-    
-    // Also check if app is in foreground and user is actively viewing the chat
-    final isAppVisible = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
-    
-    return isAppVisible && 
-           currentChatId.isNotEmpty && 
-           currentChatId == messageChatId;
-  } catch (e) {
-    developer.log('Error checking notification suppression: $e');
-    return false;
-  }
-}
 
-  String _getChannelId(String? type) {
-    switch (type) {
-      case 'chat':
-      case 'message':
-        return _chatChannelId;
-      case 'call':
-        return _callChannelId;
-      default:
-        return _generalChannelId;
+
+  // IMPROVED: More refined suppression logic
+  bool _shouldSuppressForegroundNotification(Map<String, dynamic> data) {
+    try {
+      final chatId = data['chatId']?.toString() ?? '';
+      final senderId = data['senderId']?.toString() ?? '';
+      
+      // Don't suppress if no chat context
+      if (chatId.isEmpty) return false;
+      
+      // Check if we have a chat controller
+      if (!Get.isRegistered<FireChatController>()) {
+        developer.log('🔇 No chat controller registered, showing notification');
+        return false;
+      }
+      
+      final chatController = Get.find<FireChatController>();
+      
+      // STRATEGY 1: Check if user is in the same chat
+      final currentChatId = chatController.currentChatId.value;
+      final isInSameChat = currentChatId == chatId;
+      
+      developer.log('💬 Current chat: $currentChatId');
+      developer.log('💬 Message chat: $chatId');
+      developer.log('💬 Is in same chat: $isInSameChat');
+      
+      // STRATEGY 2: Check if user is actively typing or recently active
+      final isTyping = chatController.isTyping.value;
+      final lastActivityTime = chatController.lastMessageTimes[chatId];
+      
+      bool isRecentlyActive = false;
+      if (lastActivityTime != null) {
+        final timeSinceLastActivity = DateTime.now().difference(lastActivityTime);
+        isRecentlyActive = timeSinceLastActivity.inSeconds < 30; // 30 seconds threshold
+      }
+      
+      developer.log('⌨️ User is typing: $isTyping');
+      developer.log('🕒 Recently active in chat: $isRecentlyActive');
+      
+      // STRATEGY 3: Check current route
+      final currentRoute = Get.currentRoute;
+      final isInChatScreen = currentRoute.contains('/chat');
+      
+      developer.log('📍 Current route: $currentRoute');
+      developer.log('📍 Is in chat screen: $isInChatScreen');
+      
+      // SUPPRESSION DECISION:
+      // Suppress if user is in the same chat AND (typing OR recently active OR in chat screen)
+      final shouldSuppress = isInSameChat && (isTyping || isRecentlyActive || isInChatScreen);
+      
+      developer.log('🤔 Suppression decision: $shouldSuppress');
+      developer.log('   Reasons: inSameChat=$isInSameChat, typing=$isTyping, recentlyActive=$isRecentlyActive, inChatScreen=$isInChatScreen');
+      
+      return shouldSuppress;
+      
+    } catch (e) {
+      developer.log('❌ Error checking notification suppression: $e');
+      return false; // Show notification on error
     }
   }
 
   Future<void> _showLocalNotification({
-    required String title,
-    required String body,
-    required Map<String, dynamic> data,
-    required String channelId,
-  }) async {
-    try {
-      final androidDetails = AndroidNotificationDetails(
-        channelId,
-        _getChannelName(channelId),
-        channelDescription: _getChannelDescription(channelId),
-        importance: Importance.high,
-        priority: Priority.high,
-        showWhen: true,
-        icon: '@mipmap/ic_launcher',
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-        styleInformation: BigTextStyleInformation(
-          body,
-          htmlFormatBigText: true,
-          contentTitle: title,
-          htmlFormatContentTitle: true,
-        ),
-        actions: _getNotificationActions(data),
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-        sound: 'notification_sound.wav',
-      );
-
-      final notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      await _flutterLocalNotificationsPlugin.show(
-        _generateNotificationId(data),
-        title,
+  required String title,
+  required String body,
+  required Map<String, dynamic> data,
+  required String channelId,
+}) async {
+  try {
+    developer.log('📱 Showing local notification: $title');
+    
+    // FIXED: Corrected AndroidNotificationDetails structure
+    final androidDetails = AndroidNotificationDetails(
+      channelId,
+      _getChannelName(channelId),
+      channelDescription: _getChannelDescription(channelId),
+      importance: Importance.high,
+      priority: Priority.high, // This is correct for local notifications
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      styleInformation: BigTextStyleInformation(
         body,
-        notificationDetails,
-        payload: jsonEncode(data),
-      );
+        htmlFormatBigText: true,
+        contentTitle: title,
+        htmlFormatContentTitle: true,
+      ),
+      actions: _getNotificationActions(data),
+      // FIXED: Corrected local notification properties
+      autoCancel: true,
+      ongoing: false,
+      visibility: NotificationVisibility.public, // This is correct for local notifications
+      ticker: '$title: $body',
+      enableVibration: true,
+      enableLights: true,
+      ledColor: const Color.fromRGBO(244, 135, 6, 1),
+      // REMOVED: Invalid properties that were causing confusion
+    );
 
-      developer.log('✅ Local notification shown: $title');
-    } catch (e) {
-      developer.log('❌ Error showing local notification: $e');
-    }
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default.wav',
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    final notificationId = _generateNotificationId(data);
+
+    await _flutterLocalNotificationsPlugin.show(
+      notificationId,
+      title,
+      body,
+      notificationDetails,
+      payload: jsonEncode(data),
+    );
+
+    developer.log('✅ Local notification shown with ID: $notificationId');
+  } catch (e) {
+    developer.log('❌ Error showing local notification: $e');
   }
+}
 
   List<AndroidNotificationAction> _getNotificationActions(Map<String, dynamic> data) {
     if (data['type'] == 'chat' || data['type'] == 'message') {
@@ -344,10 +445,9 @@ class FirebaseNotificationService {
   }
 
   int _generateNotificationId(Map<String, dynamic> data) {
-    // Generate unique ID based on chat ID or use timestamp
     final chatId = data['chatId']?.toString() ?? '';
     if (chatId.isNotEmpty) {
-      return chatId.hashCode;
+      return chatId.hashCode.abs();
     }
     return DateTime.now().millisecondsSinceEpoch.remainder(100000);
   }
@@ -376,6 +476,8 @@ class FirebaseNotificationService {
 
   Future<void> _updateBadgeCount(Map<String, dynamic> data) async {
     try {
+      if (!Get.isRegistered<FireChatController>()) return;
+      
       final chatController = Get.find<FireChatController>();
       final chatId = data['chatId']?.toString() ?? '';
       
@@ -387,6 +489,8 @@ class FirebaseNotificationService {
           chatController.badgeCounts[chatId] = 0.obs;
         }
         chatController.badgeCounts[chatId]!.value = currentCount + 1;
+        
+        developer.log('📊 Badge count updated for chat $chatId: ${currentCount + 1}');
       }
     } catch (e) {
       developer.log('❌ Error updating badge count: $e');
@@ -399,7 +503,6 @@ class FirebaseNotificationService {
       developer.log('👆 Handling notification tap: $data');
       
       final type = data['type']?.toString() ?? '';
-      final screen = data['screen']?.toString() ?? '';
       
       switch (type) {
         case 'chat':
@@ -410,9 +513,8 @@ class FirebaseNotificationService {
           _handleCallNotification(data);
           break;
         default:
-          if (screen.isNotEmpty) {
-            Get.toNamed(screen, arguments: data);
-          }
+          // Navigate to home
+          Get.toNamed('/home');
           break;
       }
     } catch (e) {
@@ -422,21 +524,29 @@ class FirebaseNotificationService {
 
   void _navigateToChat(Map<String, dynamic> data) {
     try {
-      final receiverUserId = data['senderId']?.toString() ?? '';
+      final senderId = data['senderId']?.toString() ?? '';
+      final senderName = data['senderName']?.toString() ?? 'Unknown';
       final chatId = data['chatId']?.toString() ?? '';
       
-      if (receiverUserId.isNotEmpty) {
+      if (senderId.isNotEmpty) {
         // Navigate to chat screen
         Get.toNamed('/chat', arguments: {
-          'receiverUserId': receiverUserId,
+          'receiverUser': {
+            'id': senderId,
+            'userId': senderId,
+            '_id': senderId,
+            'name': senderName,
+          },
           'chatId': chatId,
           'fromNotification': true,
         });
         
         // Mark messages as read
-        final chatController = Get.find<FireChatController>();
-        if (chatId.isNotEmpty) {
-          chatController.markMessagesAsRead(chatId);
+        if (Get.isRegistered<FireChatController>()) {
+          final chatController = Get.find<FireChatController>();
+          if (chatId.isNotEmpty) {
+            chatController.markMessagesAsRead(chatId);
+          }
         }
       }
     } catch (e) {
@@ -445,7 +555,6 @@ class FirebaseNotificationService {
   }
 
   void _handleCallNotification(Map<String, dynamic> data) {
-    // Handle call notification - navigate to call screen
     developer.log('📞 Handling call notification: $data');
     // Implement call handling logic
   }
@@ -498,6 +607,11 @@ class FirebaseNotificationService {
     if (replyText == null || replyText.trim().isEmpty) return;
     
     try {
+      if (!Get.isRegistered<FireChatController>()) {
+        developer.log('⚠️ Chat controller not available for quick reply');
+        return;
+      }
+      
       final chatController = Get.find<FireChatController>();
       final receiverId = data['senderId']?.toString() ?? '';
       
@@ -513,6 +627,8 @@ class FirebaseNotificationService {
           'Your reply has been sent',
           snackPosition: SnackPosition.TOP,
           duration: const Duration(seconds: 2),
+          backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+          colorText: Colors.white,
         );
       }
     } catch (e) {
@@ -522,6 +638,11 @@ class FirebaseNotificationService {
 
   void _handleMarkAsRead(Map<String, dynamic> data) {
     try {
+      if (!Get.isRegistered<FireChatController>()) {
+        developer.log('⚠️ Chat controller not available for mark as read');
+        return;
+      }
+      
       final chatController = Get.find<FireChatController>();
       final chatId = data['chatId']?.toString() ?? '';
       
@@ -533,6 +654,15 @@ class FirebaseNotificationService {
         
         // Cancel notification
         _flutterLocalNotificationsPlugin.cancel(_generateNotificationId(data));
+        
+        Get.snackbar(
+          'Marked as Read',
+          'Messages marked as read',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
       developer.log('❌ Error marking as read: $e');
@@ -541,7 +671,12 @@ class FirebaseNotificationService {
 
   // Public methods
   Future<String?> getFCMToken() async {
-    return await _firebaseMessaging.getToken();
+    try {
+      return await _firebaseMessaging.getToken();
+    } catch (e) {
+      developer.log('❌ Error getting FCM token: $e');
+      return null;
+    }
   }
 
   Future<void> subscribeToTopic(String topic) async {
@@ -563,11 +698,21 @@ class FirebaseNotificationService {
   }
 
   Future<void> clearAllNotifications() async {
-    await _flutterLocalNotificationsPlugin.cancelAll();
+    try {
+      await _flutterLocalNotificationsPlugin.cancelAll();
+      developer.log('✅ All notifications cleared');
+    } catch (e) {
+      developer.log('❌ Error clearing notifications: $e');
+    }
   }
 
   Future<void> clearNotification(int id) async {
-    await _flutterLocalNotificationsPlugin.cancel(id);
+    try {
+      await _flutterLocalNotificationsPlugin.cancel(id);
+      developer.log('✅ Notification $id cleared');
+    } catch (e) {
+      developer.log('❌ Error clearing notification $id: $e');
+    }
   }
 
   // Show custom notification
@@ -576,12 +721,22 @@ class FirebaseNotificationService {
     required String body,
     Map<String, dynamic>? data,
     String? channelId,
+    int? id,
   }) async {
     await _showLocalNotification(
       title: title,
       body: body,
       data: data ?? {},
       channelId: channelId ?? _generalChannelId,
+    );
+  }
+
+  // Test notification method
+  Future<void> showTestNotification() async {
+    await showNotification(
+      title: 'Test Notification',
+      body: 'This is a test notification to verify the setup',
+      data: {'type': 'test'},
     );
   }
 }

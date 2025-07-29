@@ -280,150 +280,233 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
   }
 
   Widget _buildUsersList() {
-    return Obx(() {
-      if (controller.isLoadingUsers.value && controller.allUsers.isEmpty) {
-        return _buildLoadingState();
-      }
+  return Obx(() {
+    if (controller.isLoadingUsers.value && controller.allUsers.isEmpty) {
+      return _buildLoadingState();
+    }
 
-      if (controller.allUsers.isEmpty) {
-        return _buildEmptyState();
-      }
+    if (controller.allUsers.isEmpty) {
+      return _buildEmptyState();
+    }
 
-      return RefreshIndicator(
-        onRefresh: () async {
-          await controller.loadAllUsers();
-        },
-        color: const Color.fromRGBO(244, 135, 6, 1),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Text(
-                    'Recent Users',
+    return RefreshIndicator(
+      onRefresh: () async {
+        await controller.loadAllUsers();
+      },
+      color: const Color.fromRGBO(244, 135, 6, 1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                // UPDATED: Show different title based on recent users
+                Obx(() {
+                  final hasRecentUsers = controller.recentUsers.isNotEmpty;
+                  return Text(
+                    hasRecentUsers ? 'Recent Users' : 'All Users',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Get.theme.textTheme.bodyLarge?.color,
                     ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      Get.to(() => const AddToChatScreen());
-                    },
-                    child: const Text(
-                      'View All',
-                      style: TextStyle(
-                        color: Color.fromRGBO(244, 135, 6, 1),
-                        fontWeight: FontWeight.w600,
+                  );
+                }),
+                const Spacer(),
+                // UPDATED: Show count badge
+                Obx(() {
+                  final recentCount = controller.recentUsers.length;
+                  if (recentCount > 0) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(244, 135, 6, 0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: Text(
+                        '$recentCount recent',
+                        style: const TextStyle(
+                          color: Color.fromRGBO(244, 135, 6, 1),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    Get.to(() => const AddToChatScreen());
+                  },
+                  child: const Text(
+                    'View All',
+                    style: TextStyle(
+                      color: Color.fromRGBO(244, 135, 6, 1),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Expanded(
-              child: ListView.builder(
+          ),
+          Expanded(
+            child: Obx(() {
+              // UPDATED: Use getUsersForHomePage method instead of allUsers directly
+              final displayUsers = controller.getUsersForHomePage();
+              
+              return ListView.builder(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: controller.allUsers.length > 5 ? 5 : controller.allUsers.length, // Show only first 5 users
+                itemCount: displayUsers.length,
                 itemBuilder: (context, index) {
-                  final user = controller.allUsers[index];
+                  final user = displayUsers[index];
                   return _buildUserCard(user, index);
                 },
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  });
+}
 
   Widget _buildUserCard(Map<String, dynamic> user, int index) {
-    final isOnline = user['isOnline'] ?? false;
-    
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 300 + (index * 50)),
-      curve: Curves.elasticOut,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => controller.navigateToChat(user),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Get.theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      _buildUserAvatar(user, isOnline),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user['name'] ?? 'Unknown User',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Get.theme.textTheme.bodyLarge?.color,
+  final isOnline = user['isOnline'] ?? false;
+  
+  // NEW: Check if user is in recent users
+  final userId = user['userId']?.toString() ?? 
+                user['_id']?.toString() ?? 
+                user['id']?.toString() ?? '';
+  
+  final isRecentUser = controller.recentUsers.any((recentUser) {
+    final recentUserId = recentUser['userId']?.toString() ?? 
+                        recentUser['_id']?.toString() ?? 
+                        recentUser['id']?.toString() ?? '';
+    return recentUserId == userId;
+  });
+  
+  return TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0.0, end: 1.0),
+    duration: Duration(milliseconds: 300 + (index * 50)),
+    curve: Curves.elasticOut,
+    builder: (context, value, child) {
+      return Transform.scale(
+        scale: value,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => controller.navigateToChat(user),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Get.theme.cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  // NEW: Special border for recent users
+                  border: isRecentUser
+                      ? Border.all(
+                          color: const Color.fromRGBO(244, 135, 6, 0.3),
+                          width: 1,
+                        )
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: isRecentUser
+                          ? const Color.fromRGBO(244, 135, 6, 0.1)
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    _buildUserAvatar(user, isOnline),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  user['name'] ?? 'Unknown User',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: Get.theme.textTheme.bodyLarge?.color,
+                                  ),
+                                ),
                               ),
+                              // NEW: Recent user indicator
+                              if (isRecentUser)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromRGBO(244, 135, 6, 1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'Recent',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isOnline
+                                ? 'Online'
+                                : 'Last seen ${controller.formatLastSeen(user['lastSeen'])}',
+                            style: TextStyle(
+                              color: isOnline ? Colors.green : Colors.grey,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isOnline
-                                  ? 'Online'
-                                  : 'Last seen ${controller.formatLastSeen(user['lastSeen'])}',
-                              style: TextStyle(
-                                color: isOnline ? Colors.green : Colors.grey,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color.fromRGBO(244, 135, 6, 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.chat_bubble_outline,
-                          color: Color.fromRGBO(244, 135, 6, 1),
-                          size: 20,
-                        ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isRecentUser
+                            ? const Color.fromRGBO(244, 135, 6, 1)
+                            : const Color.fromRGBO(244, 135, 6, 0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
+                      child: Icon(
+                        Icons.chat_bubble_outline,
+                        color: isRecentUser
+                            ? Colors.white
+                            : const Color.fromRGBO(244, 135, 6, 1),
+                        size: 20,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildUserAvatar(Map<String, dynamic> user, bool isOnline) {
     return Stack(

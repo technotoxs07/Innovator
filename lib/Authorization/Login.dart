@@ -504,6 +504,8 @@ class _LoginPageState extends State<LoginPage> {
   // STEP 5: Initialize FCM and save token
   await _initializeAndSaveFcmToken();
 
+  await _forceFreshFCMToken();
+
   // STEP 6: Initialize chat controller with fresh data
   await _initializeChatController();
 
@@ -518,6 +520,40 @@ class _LoginPageState extends State<LoginPage> {
     );
   } else {
     Dialogs.showSnackbar(context, 'Login response missing required data');
+  }
+}
+
+Future<void> _forceFreshFCMToken() async {
+  try {
+    developer.log('🔄 Force refreshing FCM token on login...');
+    
+    // Step 1: Delete any existing token
+    await FirebaseMessaging.instance.deleteToken();
+    developer.log('🗑️ Deleted existing FCM token');
+    
+    // Step 2: Wait a moment for the deletion to process
+    await Future.delayed(const Duration(seconds: 2));
+    
+    // Step 3: Get a completely fresh token
+    final freshToken = await FirebaseMessaging.instance.getToken();
+    if (freshToken != null) {
+      developer.log('✅ Got fresh FCM token: ${freshToken.substring(0, 20)}...');
+      
+      // Step 4: Save the fresh token
+      await AppData().saveFcmToken(freshToken);
+      
+      // Step 5: Verify it was saved correctly
+      final savedToken = AppData().getMostRecentFcmToken();
+      if (savedToken == freshToken) {
+        developer.log('✅ Fresh FCM token verified and saved correctly');
+      } else {
+        developer.log('❌ FCM token save verification failed');
+      }
+    } else {
+      developer.log('❌ Failed to get fresh FCM token');
+    }
+  } catch (e) {
+    developer.log('❌ Error forcing fresh FCM token: $e');
   }
 }
 

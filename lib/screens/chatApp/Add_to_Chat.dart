@@ -435,44 +435,19 @@ class AddToChatScreen extends GetView<FireChatController> {
   }
 
   Widget _buildActionButton(Map<String, dynamic> user, bool isInChatList) {
-    if (isInChatList) {
-      return Container(
-        decoration: BoxDecoration(
-          color: const Color.fromRGBO(244, 135, 6, 1),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: const Color.fromRGBO(244, 135, 6, 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _openExistingChat(user),
-            borderRadius: BorderRadius.circular(25),
-            child: const Padding(
-              padding: EdgeInsets.all(12),
-              child: Icon(
-                Icons.chat,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
+  if (isInChatList) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.green,
+        gradient: LinearGradient(
+          colors: [
+            const Color.fromRGBO(244, 135, 6, 1),
+            const Color.fromRGBO(255, 152, 0, 1),
+          ],
+        ),
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.3),
+            color: const Color.fromRGBO(244, 135, 6, 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -481,19 +456,82 @@ class AddToChatScreen extends GetView<FireChatController> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _addToChat(user),
+          onTap: () => _openExistingChat(user),
           borderRadius: BorderRadius.circular(25),
-          child: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 20,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.chat,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  'Chat',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+     return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Colors.green,
+          Colors.green.shade600,
+        ],
+      ),
+      borderRadius: BorderRadius.circular(25),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.green.withOpacity(0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _addToChat(user),
+        borderRadius: BorderRadius.circular(25),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 16,
+              ),
+              SizedBox(width: 4),
+              Text(
+                'Add',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
   }
 
   Widget _buildLoadingState() {
@@ -667,44 +705,69 @@ class AddToChatScreen extends GetView<FireChatController> {
     );
   }
 
-  void _startConversation(Map<String, dynamic> user) {
-    final userName = user['name']?.toString() ?? 'Unknown User';
+  void _startConversation(Map<String, dynamic> user) async {
+  final userName = user['name']?.toString() ?? 'Unknown User';
+  
+  try {
+    // Add user to chat (this will now also add to recent users)
+    await controller.addUserToChat(user);
     
     // Show success feedback
-    Get.snackbar(
-      'Added to Chat',
-      '$userName has been added to your chat list',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 8,
-      icon: const Icon(
-        Icons.check_circle,
-        color: Colors.white,
-      ),
-    );
+    // Get.snackbar(
+    //   'Added to Chat',
+    //   '$userName has been added to your chat list and recent users',
+    //   snackPosition: SnackPosition.BOTTOM,
+    //   backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+    //   colorText: Colors.white,
+    //   duration: const Duration(seconds: 2),
+    //   margin: const EdgeInsets.all(16),
+    //   borderRadius: 8,
+    //   icon: const Icon(
+    //     Icons.check_circle,
+    //     color: Colors.white,
+    //   ),
+    // );
 
     // Navigate to chat with the user
     controller.navigateToChat(user);
-  }
-
-  void _openExistingChat(Map<String, dynamic> user) {
-    final userName = user['name']?.toString() ?? 'Unknown User';
     
+  } catch (e) {
+    // Show error if something goes wrong
     Get.snackbar(
-      'Opening Chat',
-      'Opening conversation with $userName',
+      'Error',
+      'Failed to add $userName to chat. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+      backgroundColor: Colors.red.withOpacity(0.8),
       colorText: Colors.white,
-      duration: const Duration(seconds: 1),
+      duration: const Duration(seconds: 3),
       margin: const EdgeInsets.all(16),
       borderRadius: 8,
+      icon: const Icon(
+        Icons.error,
+        color: Colors.white,
+      ),
     );
-
-    // Navigate to existing chat
-    controller.navigateToChat(user);
   }
+}
+
+  void _openExistingChat(Map<String, dynamic> user) {
+  final userName = user['name']?.toString() ?? 'Unknown User';
+  
+  // Add to recent users even when opening existing chat
+  controller.addUserToRecent(user);
+  
+  Get.snackbar(
+    'Opening Chat',
+    'Opening conversation with $userName',
+    snackPosition: SnackPosition.BOTTOM,
+    backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+    colorText: Colors.white,
+    duration: const Duration(seconds: 1),
+    margin: const EdgeInsets.all(16),
+    borderRadius: 8,
+  );
+
+  // Navigate to existing chat
+  controller.navigateToChat(user);
+}
 }

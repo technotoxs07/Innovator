@@ -169,59 +169,216 @@ class AppData {
   }
   
   // New method to save or update FCM token
-  Future<void> saveFcmToken(String fcmToken) async {
+ Future<void> saveFcmToken(String fcmToken) async {
     if (_currentUser == null) {
       developer.log('Cannot save FCM token - current user is null');
+      return;
+    }
+    
+    // Validate token format
+    if (!_isValidFCMToken(fcmToken)) {
+      developer.log('❌ Invalid FCM token format: ${fcmToken.substring(0, 20)}...');
       return;
     }
     
     // Initialize fcmTokens if it doesn't exist
     _currentUser!['fcmTokens'] ??= [];
     
-    // Avoid duplicates
-    if (!_currentUser!['fcmTokens'].contains(fcmToken)) {
-      _currentUser!['fcmTokens'].add(fcmToken);
-      developer.log('FCM token added: $fcmToken');
+    // Clean old tokens and avoid duplicates
+    final currentTokens = List<String>.from(_currentUser!['fcmTokens'] ?? []);
+    
+    // Remove the new token if it already exists
+    currentTokens.removeWhere((token) => token == fcmToken);
+    
+    // Add the new token at the beginning (most recent first)
+    currentTokens.insert(0, fcmToken);
+    
+    // Keep only the last 2 tokens to prevent bloat
+    if (currentTokens.length > 2) {
+      currentTokens.removeRange(2, currentTokens.length);
+    }
+    
+    _currentUser!['fcmTokens'] = currentTokens;
+    developer.log('✅ FCM token added: $fcmToken');
+    developer.log('📱 Total tokens: ${currentTokens.length}');
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = jsonEncode(_currentUser);
+      await prefs.setString(_currentUserKey, userJson);
+      developer.log('✅ FCM token saved successfully in SharedPreferences');
       
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final userJson = jsonEncode(_currentUser);
-        await prefs.setString(_currentUserKey, userJson);
-        developer.log('FCM token saved successfully in SharedPreferences');
-        
-        // Optionally, update the backend
-        await _updateFcmTokenOnBackend(fcmToken);
-      } catch (e) {
-        developer.log('Error saving FCM token to SharedPreferences: $e');
+      // REMOVED: No longer calling backend
+      // await _updateFcmTokenOnBackend(fcmToken);
+      
+      // ADDED: Update Firestore directly
+      await _updateFirestoreFcmToken(fcmToken);
+    } catch (e) {
+      developer.log('❌ Error saving FCM token to SharedPreferences: $e');
+    }
+  }
+
+  bool _isValidFCMToken(String token) {
+    // Basic FCM token validation
+    if (token.isEmpty || token.length < 100) return false;
+    
+    // FCM tokens typically contain these patterns
+    if (token.contains(':') && token.length > 140) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  // NEW: Update Firestore directly with FCM token
+  Future<void> _updateFirestoreFcmToken(String fcmToken) async {
+    try {
+      final userId = currentUserId;
+      if (userId == null || userId.isEmpty) {
+        developer.log('❌ Cannot update Firestore FCM token - no user ID');
+        return;
       }
-    } else {
-      developer.log('FCM token already exists: $fcmToken');
+
+      developer.log('📤 Updating FCM token in Firestore for user: $userId');
+      
+      // Update Firestore using FirebaseService
+      await FirebaseService.updateUserFCMToken(userId, fcmToken);
+      developer.log('✅ FCM token updated in Firestore successfully');
+      
+    } catch (e) {
+      developer.log('❌ Error updating FCM token in Firestore: $e');
     }
   }
   
-  // Helper method to update FCM token on the backend
-  Future<void> _updateFcmTokenOnBackend(String fcmToken) async {
+
+  String? getMostRecentFcmToken() {
+    final tokens = _currentUser?['fcmTokens'] as List<dynamic>?;
+    if (tokens == null || tokens.isEmpty) return null;
+    
+    for (final token in tokens) {
+      final tokenStr = token.toString();
+      if (_isValidFCMToken(tokenStr)) {
+        return tokenStr;
+      }
+    }
+    return null;
+  }
+
+  Future<void> refreshFcmToken() async {
     try {
-      final url = Uri.parse('http://182.93.94.210:3066/api/v1/update-fcm-token');
-      final body = jsonEncode({
-        'userId': currentUserId,
-        'fcmToken': fcmToken,
-      });
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_authToken',
-      };
+      developer.log('🔄 Refreshing FCM token...');
       
-      final response = await http.post(url, headers: headers, body: body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        developer.log('FCM token updated on backend');
+      // Delete the current token to force refresh
+      await FirebaseMessaging.instance.deleteToken();
+      await Future.delayed(const Duration(seconds: 1));
+      
+      // Get a new token
+      final newToken = await FirebaseMessaging.instance.getToken();
+      if (newToken != null) {
+        await saveFcmToken(newToken);
+        developer.log('✅ FCM token refreshed successfully');
       } else {
-        developer.log('Failed to update FCM token on backend: ${response.statusCode}');
+        developer.log('❌ Failed to get new FCM token');
       }
     } catch (e) {
-      developer.log('Error updating FCM token on backend: $e');
+      developer.log('❌ Error refreshing FCM token: $e');
     }
   }
+Future<void> initializeFcmAfterLogin() async {
+  try {
+    developer.log('🔥 Initializing FCM after login...');
+    
+    // Get the current user
+    if (_currentUser == null) {
+      developer.log('❌ Cannot initialize FCM - no current user');
+      return;
+    }
+    
+    // Request permissions
+    final settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    
+    developer.log('🔥 FCM Permission status: ${settings.authorizationStatus}');
+    
+    // The token should already be fresh from login, but verify
+    final currentToken = getMostRecentFcmToken();
+    if (currentToken != null) {
+      developer.log('🔥 Using existing fresh token: ${currentToken.substring(0, 20)}...');
+      
+      // Subscribe to user topic
+      if (currentUserId != null) {
+        await FirebaseMessaging.instance.subscribeToTopic('user_$currentUserId');
+        developer.log('🔥 Subscribed to topic: user_$currentUserId');
+      }
+    } else {
+      developer.log('⚠️ No fresh token found, getting new one...');
+      final newToken = await FirebaseMessaging.instance.getToken();
+      if (newToken != null) {
+        await saveFcmToken(newToken);
+      }
+    }
+    
+    // Listen for token refresh
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      developer.log('🔄 FCM Token refreshed during session: ${newToken.substring(0, 20)}...');
+      await saveFcmToken(newToken);
+      
+      if (currentUserId != null) {
+        await FirebaseMessaging.instance.subscribeToTopic('user_$currentUserId');
+      }
+    });
+    
+    // Setup message handlers
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      developer.log('🔥 Received foreground message: ${message.messageId}');
+      NotificationService().handleForegroundMessage(message);
+    });
+    
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      developer.log('🔥 App opened from notification: ${message.messageId}');
+      NotificationService().handleForegroundMessage(message);
+    });
+    
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      developer.log('🔥 App launched from notification: ${initialMessage.messageId}');
+      NotificationService().handleForegroundMessage(initialMessage);
+    }
+    
+    developer.log('✅ FCM initialized successfully after login');
+  } catch (e) {
+    developer.log('❌ Error initializing FCM after login: $e');
+  }
+}
+
+
+  // Helper method to update FCM token on the backend
+  // Future<void> _updateFcmTokenOnBackend(String fcmToken) async {
+  //   try {
+  //     final url = Uri.parse('http://182.93.94.210:3066/api/v1/update-fcm-token');
+  //     final body = jsonEncode({
+  //       'userId': currentUserId,
+  //       'fcmToken': fcmToken,
+  //     });
+  //     final headers = {
+  //       'Content-Type': 'application/json',
+  //       'Authorization': 'Bearer $_authToken',
+  //     };
+      
+  //     final response = await http.post(url, headers: headers, body: body);
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       developer.log('FCM token updated on backend');
+  //     } else {
+  //       developer.log('Failed to update FCM token on backend: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     developer.log('Error updating FCM token on backend: $e');
+  //   }
+  // }
 
   Future<void> initializeFcm() async {
     try {

@@ -42,9 +42,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       );
     }
     
-    // CRITICAL: Don't reinitialize GetX controllers in background
-    // Just handle the notification display
-    
+    // Handle the notification display
     await _handleBackgroundNotification(message);
     
     developer.log('✅ Background notification processed: ${message.messageId}');
@@ -58,12 +56,36 @@ Future<void> _handleBackgroundNotification(RemoteMessage message) async {
     final notification = message.notification;
     final data = message.data;
     
-    if (notification == null) return;
+    developer.log('📱 Background notification data: $data');
+    developer.log('📱 Background notification payload: ${notification?.toMap()}');
     
-    // Create a minimal notification service instance
+    // Create notification service instance
     final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     
-    // Initialize minimal local notifications
+    // Initialize local notifications with proper channel
+    await _initializeBackgroundNotifications(flutterLocalNotificationsPlugin);
+    
+    // Extract notification details
+    String title = notification?.title ?? data['senderName'] ?? 'New Message';
+    String body = notification?.body ?? data['message'] ?? 'You have a new message';
+    
+    // Show local notification
+    await _showBackgroundLocalNotification(
+      flutterLocalNotificationsPlugin,
+      title,
+      body,
+      data,
+    );
+    
+    developer.log('✅ Background local notification shown');
+    
+  } catch (e) {
+    developer.log('❌ Error in background notification handler: $e');
+  }
+}
+
+Future<void> _initializeBackgroundNotifications(FlutterLocalNotificationsPlugin plugin) async {
+  try {
     const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInitialization = DarwinInitializationSettings();
     const initializationSettings = InitializationSettings(
@@ -71,18 +93,52 @@ Future<void> _handleBackgroundNotification(RemoteMessage message) async {
       iOS: iosInitialization,
     );
     
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await plugin.initialize(initializationSettings);
     
-    // Show notification
-    await _showBackgroundLocalNotification(
-      flutterLocalNotificationsPlugin,
-      notification.title ?? 'New Message',
-      notification.body ?? '',
-      data,
-    );
+    // Create notification channel for Android
+    final androidPlugin = plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
     
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'chat_messages',
+          'Chat Messages',
+          description: 'Notifications for new chat messages',
+          importance: Importance.high,
+          enableVibration: true,
+          enableLights: true,
+          ledColor: Color.fromRGBO(244, 135, 6, 1),
+          showBadge: true,
+        ),
+      );
+    }
+    
+    developer.log('✅ Background notifications initialized');
   } catch (e) {
-    developer.log('❌ Error in background notification handler: $e');
+    developer.log('❌ Error initializing background notifications: $e');
+  }
+}
+
+Future<void> _ensureFreshFCMToken() async {
+  try {
+    developer.log('🔄 Ensuring fresh FCM token...');
+    
+    final currentUser = AppData().currentUser;
+    if (currentUser != null) {
+      // Delete any existing token to force refresh
+      await FirebaseMessaging.instance.deleteToken();
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Get fresh token
+      final newToken = await FirebaseMessaging.instance.getToken();
+      if (newToken != null) {
+        await AppData().saveFcmToken(newToken);
+        developer.log('✅ Fresh FCM token obtained and saved');
+      }
+    }
+  } catch (e) {
+    developer.log('❌ Error ensuring fresh FCM token: $e');
   }
 }
 
@@ -93,7 +149,8 @@ Future<void> _showBackgroundLocalNotification(
   Map<String, dynamic> data,
 ) async {
   try {
-    final androidDetails = AndroidNotificationDetails(
+    // FIXED: Simplified background notification structure
+    const androidDetails = AndroidNotificationDetails(
       'chat_messages',
       'Chat Messages',
       channelDescription: 'Notifications for new chat messages',
@@ -102,17 +159,35 @@ Future<void> _showBackgroundLocalNotification(
       showWhen: true,
       icon: '@mipmap/ic_launcher',
       styleInformation: BigTextStyleInformation(
-        body,
+        '', // Will be filled with body
         htmlFormatBigText: true,
-        contentTitle: title,
-        htmlFormatContentTitle: true,
       ),
+      // FIXED: Simplified actions for background
+      actions: [
+        AndroidNotificationAction(
+          'reply',
+          'Reply',
+          inputs: [
+            AndroidNotificationActionInput(
+              label: 'Type a message...',
+            ),
+          ],
+        ),
+        AndroidNotificationAction(
+          'mark_read',
+          'Mark as Read',
+        ),
+      ],
+      autoCancel: true,
+      visibility: NotificationVisibility.public,
+      ticker: 'New message received',
     );
 
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'default.wav',
     );
 
     final notificationDetails = NotificationDetails(
@@ -120,17 +195,29 @@ Future<void> _showBackgroundLocalNotification(
       iOS: iosDetails,
     );
 
+    final notificationId = _generateNotificationId(data);
+    
     await plugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      notificationId,
       title,
       body,
       notificationDetails,
       payload: jsonEncode(data),
     );
     
+    developer.log('✅ Background local notification displayed with ID: $notificationId');
   } catch (e) {
     developer.log('❌ Error showing background local notification: $e');
   }
+}
+
+int _generateNotificationId(Map<String, dynamic> data) {
+  // Generate unique ID based on chat ID or use timestamp
+  final chatId = data['chatId']?.toString() ?? '';
+  if (chatId.isNotEmpty) {
+    return chatId.hashCode.abs();
+  }
+  return DateTime.now().millisecondsSinceEpoch.remainder(100000);
 }
 
 Future<void> _initializeApp() async {
@@ -157,7 +244,9 @@ Future<void> _initializeApp() async {
     
     // Initialize other services
     await AppData().initialize();
-    await AppData().initializeFcm();
+   // await _forceFreshFCMToken(); // After successful login
+await AppData().initializeFcmAfterLogin(); 
+    //await AppData().initializeFcm();
     await DrawerProfileCache.initialize();
     await CacheManager.initialize();
     developer.log('✅ App services initialized');
