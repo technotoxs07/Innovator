@@ -78,7 +78,7 @@ class _CartScreenState extends State<CartScreen>
               content: const Text('Item removed from cart'),
               backgroundColor: _primaryColor,
               behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
+              duration: Duration(milliseconds: 800),
             ),
           );
         } else {
@@ -113,6 +113,7 @@ class _CartScreenState extends State<CartScreen>
         content: const Text('Item removed from cart'),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
+        duration: Duration(milliseconds: 800),
         action: SnackBarAction(
           label: 'UNDO',
           textColor: Colors.white,

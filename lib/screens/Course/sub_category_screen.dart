@@ -556,87 +556,91 @@ class _SubcategoryScreenState extends State<SubcategoryScreen>
   }
 
   Widget _buildCourseCard(Course course) {
-    return GestureDetector(
-      onTap: () => _navigateToCourseDetail(course),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Course thumbnail
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  color: Colors.grey[200],
-                ),
-                child: course.thumbnail.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                        child: Image.network(
-                          ApiService.getFullMediaUrl(course.thumbnail),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: const Color.fromRGBO(244, 135, 6, 0.1),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.play_circle_outline,
-                                  color: Color.fromRGBO(244, 135, 6, 1),
-                                  size: 40,
-                                ),
+  return GestureDetector(
+    onTap: () => _navigateToCourseDetail(course),
+    child: Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Course thumbnail
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                color: Colors.grey[200],
+              ),
+              child: course.thumbnail.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.network(
+                        ApiService.getFullMediaUrl(course.thumbnail),
+                        fit: BoxFit.fill,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: const Color.fromRGBO(244, 135, 6, 0.1),
+                            child: const Center(
+                              child: Icon(
+                                Icons.play_circle_outline,
+                                color: Color.fromRGBO(244, 135, 6, 1),
+                                size: 40,
                               ),
-                            );
-                          },
-                        ),
-                      )
-                    : Container(
-                        decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                          color: Color.fromRGBO(244, 135, 6, 0.1),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.play_circle_outline,
-                            color: Color.fromRGBO(244, 135, 6, 1),
-                            size: 40,
-                          ),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Container(
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        color: Color.fromRGBO(244, 135, 6, 0.1),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.play_circle_outline,
+                          color: Color.fromRGBO(244, 135, 6, 1),
+                          size: 40,
                         ),
                       ),
-              ),
+                    ),
             ),
-            // Course details
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+          ),
+          // Course details - Fixed overflow issue
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(8), // Reduced padding from 12 to 8
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min, // Added this
+                children: [
+                  Flexible( // Wrapped title in Flexible
+                    child: Text(
                       course.title,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13, // Reduced from 14 to 13
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                  ),
+                  const SizedBox(height: 2), // Reduced from 4 to 2
+                  Flexible( // Wrapped in Flexible
+                    child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -681,29 +685,35 @@ class _SubcategoryScreenState extends State<SubcategoryScreen>
                           ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                  ),
+                  const SizedBox(height: 2), // Reduced from 4 to 2
+                  Flexible( // Wrapped in Flexible
+                    child: Row(
                       children: [
                         Icon(Icons.schedule, size: 12, color: Colors.grey[500]),
                         const SizedBox(width: 4),
-                        Text(
-                          '${course.contentStatistics?.totalLessons ?? 0} lessons',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[500],
+                        Expanded( // Added Expanded to prevent overflow
+                          child: Text(
+                            '${course.contentStatistics?.totalLessons ?? 0} lessons',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[500],
+                            ),
+                            overflow: TextOverflow.ellipsis, // Added overflow handling
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   IconData _getIconData(String iconName) {
     switch (iconName.toLowerCase()) {

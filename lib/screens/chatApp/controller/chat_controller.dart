@@ -478,13 +478,13 @@ class FireChatController extends GetxController {
       developer.log('✅ Loaded ${finalUsers.length} mutual followers');
     } catch (e) {
       developer.log('❌ Error loading users with follow filter: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to load users. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-      );
+      // Get.snackbar(
+      //   'Error',
+      //   'Failed to load users. Please try again.',
+      //   snackPosition: SnackPosition.BOTTOM,
+      //   backgroundColor: Colors.red.withOpacity(0.8),
+      //   colorText: Colors.white,
+      // );
     } finally {
       isLoadingUsers.value = false;
     }
@@ -1653,7 +1653,7 @@ class FireChatController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.orange.withOpacity(0.8),
           colorText: Colors.white,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(milliseconds: 800),
         );
         return;
       }
@@ -1801,13 +1801,13 @@ class FireChatController extends GetxController {
       
     } catch (e) {
       developer.log('❌ Error in smart loading: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to load users. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-      );
+      // Get.snackbar(
+      //   'Error',
+      //   'Failed to load users. Please try again.',
+      //   snackPosition: SnackPosition.BOTTOM,
+      //   backgroundColor: Colors.red.withOpacity(0.8),
+      //   colorText: Colors.white,
+      // );
     } finally {
       isLoadingUsers.value = false;
       isLoadingFollowStatus.value = false;

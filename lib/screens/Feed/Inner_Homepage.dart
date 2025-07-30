@@ -3809,7 +3809,7 @@ class _LinkifyText extends StatelessWidget {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Could not launch $url')),
+                      SnackBar(content: Text('Could not Open link')),
                     );
                   }
                 },

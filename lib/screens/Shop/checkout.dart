@@ -22,6 +22,8 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  late TabController _qrTabController;
+
   File? _paymentScreenshot;
   final ImagePicker _picker = ImagePicker();
   bool _isProcessing = false;
@@ -44,11 +46,15 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+      _qrTabController = TabController(length: 2, vsync: this); // Add this line
+
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+      _qrTabController.dispose(); // Add this line
+
     super.dispose();
   }
 
@@ -375,155 +381,342 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   }
 
   Widget _buildQRPaymentTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // QR Code Card
-          Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: _cardColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 2),
+  return SingleChildScrollView(
+    padding: EdgeInsets.all(16),
+    child: Column(
+      children: [
+        // QR Payment Method Tabs
+        Container(
+          decoration: BoxDecoration(
+            color: _cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Tab Bar for QR Methods
+              Container(
+                margin: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'Scan QR Code to Pay',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: _textColor,
-                  ),
-                ),
-                SizedBox(height: 20),
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
+                child: TabBar(
+                  controller: _qrTabController,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _primaryColor.withOpacity(0.2),
-                      width: 2,
-                    ),
-                  ),
-                  child: Image.asset(
-                    'assets/images/qr_code.jpeg', // Add your QR code image to assets/images/
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: _primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.qr_code,
-                              size: 60,
-                              color: _primaryColor.withOpacity(0.5),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'QR Code',
-                              style: TextStyle(
-                                color: _primaryColor.withOpacity(0.7),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 20),
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _primaryColor.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'OR Pay using these details:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: _textColor,
-                        ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
                       ),
-                      SizedBox(height: 12),
-                      _buildPaymentDetailRow('Merchant:', _merchantName),
-                      _buildPaymentDetailRow('UPI ID:', _merchantUPI),
-                      _buildPaymentDetailRow('Phone:', _merchantPhone),
-                      _buildPaymentDetailRow('Amount:', 'NPR ${widget.totalAmount.toStringAsFixed(2)}'),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 24),
-          // Instructions
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.blue.shade200,
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.info, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Payment Instructions',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
+                  labelColor: _textColor,
+                  unselectedLabelColor: _textColor.withOpacity(0.6),
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  unselectedLabelStyle: TextStyle(
+                    fontWeight: FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.account_balance_wallet, size: 18),
+                          SizedBox(width: 8),
+                          Text('eSewa'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.payment, size: 18),
+                          SizedBox(width: 8),
+                          Text('Laxmi Bank'),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
-                Text(
-                  '1. Scan the QR code using your mobile banking app\n'
-                  '2. Enter the exact amount: NPR ${widget.totalAmount.toStringAsFixed(2)}\n'
-                  '3. Complete the payment\n'
-                  '4. Take a screenshot of the payment confirmation\n'
-                  '5. Upload the screenshot in the next tab',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.blue.shade600,
-                    height: 1.5,
-                  ),
+              ),
+              // Tab Content with proper height constraint
+              SizedBox(
+                height: 300, // Fixed height for TabBarView
+                child: TabBarView(
+                  controller: _qrTabController,
+                  children: [
+                    _buildEsewaQRTab(),
+                    _buildKhaltiQRTab(),
+                  ],
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        // Payment Details
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _primaryColor.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Manual Payment Details:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _textColor,
+                  fontSize: 16,
+                ),
+              ),
+              SizedBox(height: 12),
+              _buildPaymentDetailRow('Merchant:', _merchantName),
+              _buildPaymentDetailRow('UPI ID:', _merchantUPI),
+              _buildPaymentDetailRow('Phone:', _merchantPhone),
+              _buildPaymentDetailRow('Amount:', 'NPR ${widget.totalAmount.toStringAsFixed(2)}'),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        // Instructions
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.blue.shade200,
+              width: 1,
             ),
           ),
-        ],
-      ),
-    );
-  }
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Payment Instructions',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Text(
+                '1. Choose your preferred payment method (eSewa or Khalti)\n'
+                '2. Scan the QR code using your mobile app\n'
+                '3. Enter the exact amount: NPR ${widget.totalAmount.toStringAsFixed(2)}\n'
+                '4. Complete the payment\n'
+                '5. Take a screenshot of the payment confirmation\n'
+                '6. Upload the screenshot in the "Upload Proof" tab',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.blue.shade600,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+Widget _buildEsewaQRTab() {
+  return SingleChildScrollView(
+    padding: EdgeInsets.all(16),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'eSewa Payment',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.green,
+          ),
+        ),
+        SizedBox(height: 16),
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.green.withOpacity(0.3),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Image.asset(
+                'assets/images/qr_code.jpeg',
+                width: 140,
+                height: 140,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.qr_code,
+                          size: 35,
+                          color: Colors.green.withOpacity(0.5),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'eSewa QR Code',
+                          style: TextStyle(
+                            color: Colors.green.withOpacity(0.7),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              SizedBox(height: 10),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Text(
+                  'Scan with eSewa App',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+// Khalti QR Tab Content
+Widget _buildKhaltiQRTab() {
+  return SingleChildScrollView(
+    padding: EdgeInsets.all(16),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Laxmi Payment',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.purple,
+          ),
+        ),
+        SizedBox(height: 16),
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.purple.withOpacity(0.3),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Image.asset(
+                'assets/images/khalti_qr.png',
+                width: 140,
+                height: 140,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.qr_code,
+                          size: 35,
+                          color: Colors.purple.withOpacity(0.5),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Khalti QR Code',
+                          style: TextStyle(
+                            color: Colors.purple.withOpacity(0.7),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              SizedBox(height: 10),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Text(
+                  'Scan with Khalti App',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.purple.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildPaymentDetailRow(String label, String value) {
     return Padding(
