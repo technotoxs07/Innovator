@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:innovator/screens/chatApp/EnhancedUserAvtar.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:lottie/lottie.dart';
 
@@ -435,59 +436,12 @@ class OptimizedSearchUsersPage extends GetView<FireChatController> {
   }
 
   Widget _buildUserAvatar(Map<String, dynamic> user, bool isOnline) {
-    return Stack(
-      children: [
-        Hero(
-          tag: 'search_avatar_${user['id']}',
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isOnline ? Colors.green : Colors.grey.shade300,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: CircleAvatar(
-              radius: 30,
-              backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-              backgroundImage: user['photoURL'] != null && user['photoURL'].isNotEmpty
-                  ? NetworkImage(user['photoURL'])
-                  : null,
-              child: user['photoURL'] == null || user['photoURL'].isEmpty
-                  ? Text(
-                      user['name']?.substring(0, 1).toUpperCase() ?? 'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 2,
-          right: 2,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: isOnline ? Colors.green : Colors.grey,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  return EnhancedUserAvatar(
+    user: user,
+    radius: 30,
+    isOnline: isOnline,
+    showOnlineIndicator: true,
+    heroTag: 'search_avatar_${user['id']}',
+  );
+}
 }

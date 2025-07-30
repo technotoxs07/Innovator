@@ -222,7 +222,7 @@ class FeedContent {
     if (url.startsWith('http')) {
       return url;
     }
-    return 'http://182.93.94.210:3066${url.startsWith('/') ? url : '/$url'}';
+    return 'http://182.93.94.210:3067${url.startsWith('/') ? url : '/$url'}';
   }
 
   factory FeedContent.fromJson(Map<String, dynamic> json) {
@@ -1272,7 +1272,7 @@ class FeedApiResponse {
 
 // UPDATED: FeedApiService methods to handle the response correctly
 class FeedApiService {
-  static const String baseUrl = 'http://182.93.94.210:3066';
+  static const String baseUrl = 'http://182.93.94.210:3067';
 
   // Main method with cursor validation
   static Future<ContentData> fetchContents({
@@ -1595,7 +1595,7 @@ class _FeedItemState extends State<FeedItem>
 
   late AnimationController _controller;
   final ContentLikeService likeService = ContentLikeService(
-    baseUrl: 'http://182.93.94.210:3066',
+    baseUrl: 'http://182.93.94.210:3067',
   );
   late String formattedTimeAgo;
   bool _showComments = false;
@@ -1663,7 +1663,7 @@ class _FeedItemState extends State<FeedItem>
       final response = await http
           .post(
             Uri.parse(
-              'http://182.93.94.210:3066/api/v1/content/view/${widget.content.id}',
+              'http://182.93.94.210:3067/api/v1/content/view/${widget.content.id}',
             ),
             headers: {
               'Content-Type': 'application/json',
@@ -2225,7 +2225,7 @@ class _FeedItemState extends State<FeedItem>
     }
 
     return CachedNetworkImage(
-      imageUrl: 'http://182.93.94.210:3066${widget.content.author.picture}',
+      imageUrl: 'http://182.93.94.210:3067${widget.content.author.picture}',
       imageBuilder:
           (context, imageProvider) =>
               CircleAvatar(backgroundImage: imageProvider),
@@ -2671,7 +2671,7 @@ class _FeedItemState extends State<FeedItem>
       );
 
       final response = await http.post(
-        Uri.parse('http://182.93.94.210:3066/api/v1/new-content'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/new-content'),
         headers: {
           'Content-Type': 'application/json',
           'authorization': 'Bearer $authToken',
@@ -2926,7 +2926,7 @@ class _FeedItemState extends State<FeedItem>
 
       final response = await http
           .post(
-            Uri.parse('http://182.93.94.210:3066/api/v1/report'),
+            Uri.parse('http://182.93.94.210:3067/api/v1/report'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -3181,7 +3181,7 @@ class _FeedItemState extends State<FeedItem>
 
       final response = await http
           .post(
-            Uri.parse('http://182.93.94.210:3066/api/v1/block-user'),
+            Uri.parse('http://182.93.94.210:3067/api/v1/block-user'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',

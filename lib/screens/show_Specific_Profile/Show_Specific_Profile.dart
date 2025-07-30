@@ -466,7 +466,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                                   backgroundImage: profileData['picture'] != null &&
                                           profileData['picture'].isNotEmpty
                                       ? CachedNetworkImageProvider(
-                                          'http://182.93.94.210:3066${profileData['picture']}',
+                                          'http://182.93.94.210:3067${profileData['picture']}',
                                         )
                                       : null,
                                   child: profileData['picture'] == null ||
@@ -619,7 +619,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
   Future<Map<String, dynamic>> _fetchUserProfile() async {
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/stalk-profile/${widget.userId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/stalk-profile/${widget.userId}'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -721,8 +721,8 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
       }
 
       final url = _lastId == null
-          ? 'http://182.93.94.210:3066/api/v1/getUserContent/${widget.userId}?page=0'
-          : 'http://182.93.94.210:3066/api/v1/getUserContent/${widget.userId}?page=${(_contents.length / 10).ceil()}';
+          ? 'http://182.93.94.210:3067/api/v1/getUserContent/${widget.userId}?page=0'
+          : 'http://182.93.94.210:3067/api/v1/getUserContent/${widget.userId}?page=${(_contents.length / 10).ceil()}';
 
       final response = await http
           .get(

@@ -249,114 +249,90 @@ class FirebaseNotificationService {
   }
 
   // ENHANCED: Handle foreground messages with better suppression logic
-  Future<void> handleForegroundMessage(RemoteMessage message) async {
+ Future<void> handleForegroundMessage(RemoteMessage message) async {
+  try {
+    developer.log('📱 ========= FOREGROUND MESSAGE DEBUG START =========');
+    developer.log('📱 Message ID: ${message.messageId}');
+    developer.log('📱 From: ${message.from}');
+    developer.log('📱 Data: ${message.data}');
+    developer.log('📱 Notification: ${message.notification?.toMap()}');
+    developer.log('📱 Time: ${DateTime.now()}');
+    
+    // CRITICAL: Check if we even reach this point
+    developer.log('📱 ✅ FOREGROUND HANDLER CALLED - THIS IS GOOD!');
+    
+    final notification = message.notification;
+    final data = message.data;
+    
+    // Extract notification details
+    String title = notification?.title ?? data['senderName'] ?? 'New Message';
+    String body = notification?.body ?? data['message'] ?? 'You have a new message';
+    
+    developer.log('📱 Processed - Title: $title, Body: $body');
+
+    // STEP 2: CHECK SUPPRESSION DECISION
+    developer.log('📱 ========= SUPPRESSION CHECK START =========');
+    
+    // TEMPORARILY DISABLE SUPPRESSION FOR TESTING
+    final shouldSuppress = false; // FORCE NO SUPPRESSION
+    // final shouldSuppress = _shouldSuppressForegroundNotification(data); // Your original logic
+    
+    developer.log('📱 Suppression result: $shouldSuppress');
+    developer.log('📱 ========= SUPPRESSION CHECK END =========');
+    
+    if (shouldSuppress) {
+      developer.log('📱 🔇 NOTIFICATION SUPPRESSED - THIS IS WHY YOU DON\'T SEE IT');
+      developer.log('📱 ========= FOREGROUND MESSAGE DEBUG END (SUPPRESSED) =========');
+      
+      // Still update badge count
+      await _updateBadgeCount(data);
+      return;
+    }
+
+    // STEP 3: ATTEMPT TO SHOW NOTIFICATION
+    developer.log('📱 ========= SHOWING NOTIFICATION START =========');
+    developer.log('📱 Channel ID: $_chatChannelId');
+    developer.log('📱 Title: $title');
+    developer.log('📱 Body: $body');
+    
     try {
-      developer.log('📱 === FOREGROUND MESSAGE HANDLER START ===');
-      developer.log('📱 Message ID: ${message.messageId}');
-      developer.log('📱 Data: ${message.data}');
-      developer.log('📱 Notification: ${message.notification?.toMap()}');
-      
-      final notification = message.notification;
-      final data = message.data;
-      
-      // Extract notification details
-      String title = notification?.title ?? data['senderName'] ?? 'New Message';
-      String body = notification?.body ?? data['message'] ?? 'You have a new message';
-      
-      developer.log('📱 Processed - Title: $title, Body: $body');
-
-      // INTELLIGENT SUPPRESSION: Check if we should suppress this notification
-      final shouldSuppress = _shouldSuppressForegroundNotification(data);
-      developer.log('🔇 Should suppress: $shouldSuppress');
-      
-      if (shouldSuppress) {
-        developer.log('🔇 Foreground notification suppressed - user actively chatting');
-        
-        // OPTIONAL: Still update badge count even if suppressing visual notification
-        await _updateBadgeCount(data);
-        return;
-      }
-
-      // Show local notification for foreground
       await _showLocalNotification(
         title: title,
         body: body,
         data: data,
         channelId: _chatChannelId,
       );
-
-      // Update badge count
-      await _updateBadgeCount(data);
-
-      developer.log('✅ Foreground notification processed successfully');
-      developer.log('=== END FOREGROUND MESSAGE HANDLER ===');
-
+      developer.log('📱 ✅ _showLocalNotification called successfully');
     } catch (e) {
-      developer.log('❌ Error handling foreground message: $e');
+      developer.log('📱 ❌ Error calling _showLocalNotification: $e');
     }
+
+    // STEP 4: UPDATE BADGE COUNT
+    try {
+      await _updateBadgeCount(data);
+      developer.log('📱 ✅ Badge count updated');
+    } catch (e) {
+      developer.log('📱 ❌ Error updating badge count: $e');
+    }
+
+    developer.log('📱 ========= SHOWING NOTIFICATION END =========');
+    developer.log('📱 ✅ Foreground notification process completed');
+    developer.log('📱 ========= FOREGROUND MESSAGE DEBUG END (SUCCESS) =========');
+
+  } catch (e) {
+    developer.log('📱 ❌ CRITICAL ERROR in handleForegroundMessage: $e');
+    developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
   }
+}
 
 
 
   // IMPROVED: More refined suppression logic
   bool _shouldSuppressForegroundNotification(Map<String, dynamic> data) {
-    try {
-      final chatId = data['chatId']?.toString() ?? '';
-      final senderId = data['senderId']?.toString() ?? '';
-      
-      // Don't suppress if no chat context
-      if (chatId.isEmpty) return false;
-      
-      // Check if we have a chat controller
-      if (!Get.isRegistered<FireChatController>()) {
-        developer.log('🔇 No chat controller registered, showing notification');
-        return false;
-      }
-      
-      final chatController = Get.find<FireChatController>();
-      
-      // STRATEGY 1: Check if user is in the same chat
-      final currentChatId = chatController.currentChatId.value;
-      final isInSameChat = currentChatId == chatId;
-      
-      developer.log('💬 Current chat: $currentChatId');
-      developer.log('💬 Message chat: $chatId');
-      developer.log('💬 Is in same chat: $isInSameChat');
-      
-      // STRATEGY 2: Check if user is actively typing or recently active
-      final isTyping = chatController.isTyping.value;
-      final lastActivityTime = chatController.lastMessageTimes[chatId];
-      
-      bool isRecentlyActive = false;
-      if (lastActivityTime != null) {
-        final timeSinceLastActivity = DateTime.now().difference(lastActivityTime);
-        isRecentlyActive = timeSinceLastActivity.inSeconds < 30; // 30 seconds threshold
-      }
-      
-      developer.log('⌨️ User is typing: $isTyping');
-      developer.log('🕒 Recently active in chat: $isRecentlyActive');
-      
-      // STRATEGY 3: Check current route
-      final currentRoute = Get.currentRoute;
-      final isInChatScreen = currentRoute.contains('/chat');
-      
-      developer.log('📍 Current route: $currentRoute');
-      developer.log('📍 Is in chat screen: $isInChatScreen');
-      
-      // SUPPRESSION DECISION:
-      // Suppress if user is in the same chat AND (typing OR recently active OR in chat screen)
-      final shouldSuppress = isInSameChat && (isTyping || isRecentlyActive || isInChatScreen);
-      
-      developer.log('🤔 Suppression decision: $shouldSuppress');
-      developer.log('   Reasons: inSameChat=$isInSameChat, typing=$isTyping, recentlyActive=$isRecentlyActive, inChatScreen=$isInChatScreen');
-      
-      return shouldSuppress;
-      
-    } catch (e) {
-      developer.log('❌ Error checking notification suppression: $e');
-      return false; // Show notification on error
-    }
-  }
+  developer.log('🔔 TESTING: SUPPRESSION DISABLED - ALWAYS SHOWING NOTIFICATIONS');
+  return false; // Never suppress - always show
+}
+
 
   Future<void> _showLocalNotification({
   required String title,
@@ -365,15 +341,19 @@ class FirebaseNotificationService {
   required String channelId,
 }) async {
   try {
-    developer.log('📱 Showing local notification: $title');
+    developer.log('📱 ========= _showLocalNotification DEBUG START =========');
+    developer.log('📱 Plugin initialized: ${_flutterLocalNotificationsPlugin != null}');
+    developer.log('📱 Title: $title');
+    developer.log('📱 Body: $body');
+    developer.log('📱 Channel ID: $channelId');
+    developer.log('📱 Data: $data');
     
-    // FIXED: Corrected AndroidNotificationDetails structure
     final androidDetails = AndroidNotificationDetails(
       channelId,
       _getChannelName(channelId),
       channelDescription: _getChannelDescription(channelId),
       importance: Importance.high,
-      priority: Priority.high, // This is correct for local notifications
+      priority: Priority.high,
       showWhen: true,
       icon: '@mipmap/ic_launcher',
       largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
@@ -384,16 +364,16 @@ class FirebaseNotificationService {
         htmlFormatContentTitle: true,
       ),
       actions: _getNotificationActions(data),
-      // FIXED: Corrected local notification properties
       autoCancel: true,
       ongoing: false,
-      visibility: NotificationVisibility.public, // This is correct for local notifications
+      visibility: NotificationVisibility.public,
       ticker: '$title: $body',
       enableVibration: true,
       enableLights: true,
       ledColor: const Color.fromRGBO(244, 135, 6, 1),
-      // REMOVED: Invalid properties that were causing confusion
     );
+
+    developer.log('📱 Android details created successfully');
 
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
@@ -402,13 +382,18 @@ class FirebaseNotificationService {
       sound: 'default.wav',
     );
 
+    developer.log('📱 iOS details created successfully');
+
     final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
     final notificationId = _generateNotificationId(data);
+    developer.log('📱 Generated notification ID: $notificationId');
 
+    developer.log('📱 ⏳ Calling FlutterLocalNotificationsPlugin.show()...');
+    
     await _flutterLocalNotificationsPlugin.show(
       notificationId,
       title,
@@ -417,9 +402,15 @@ class FirebaseNotificationService {
       payload: jsonEncode(data),
     );
 
-    developer.log('✅ Local notification shown with ID: $notificationId');
+    developer.log('📱 ✅ FlutterLocalNotificationsPlugin.show() completed successfully');
+    developer.log('📱 ✅ Local notification should now be visible!');
+    developer.log('📱 ========= _showLocalNotification DEBUG END (SUCCESS) =========');
+
   } catch (e) {
-    developer.log('❌ Error showing local notification: $e');
+    developer.log('📱 ❌ CRITICAL ERROR in _showLocalNotification: $e');
+    developer.log('📱 ❌ Error type: ${e.runtimeType}');
+    developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
+    developer.log('📱 ========= _showLocalNotification DEBUG END (ERROR) =========');
   }
 }
 

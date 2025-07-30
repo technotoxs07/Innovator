@@ -49,7 +49,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
   late Animation<Color?> _highlightAnimation;
 
   final ContentLikeService likeService = ContentLikeService(
-    baseUrl: 'http://182.93.94.210:3066',
+    baseUrl: 'http://182.93.94.210:3067',
   );
 
   @override
@@ -106,7 +106,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/content/${widget.contentId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/content/${widget.contentId}'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

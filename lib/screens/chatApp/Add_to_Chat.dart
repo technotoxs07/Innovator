@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:innovator/screens/chatApp/EnhancedUserAvtar.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:developer' as developer;
@@ -364,75 +365,14 @@ class AddToChatScreen extends GetView<FireChatController> {
   }
 
   Widget _buildUserAvatar(Map<String, dynamic> user, bool isOnline) {
-    final userName = user['name']?.toString() ?? 'Unknown User';
-    final userPhoto = user['photoURL']?.toString();
-
-    return Stack(
-      children: [
-        Hero(
-          tag: 'add_chat_avatar_${user['id'] ?? user['userId'] ?? 'unknown'}',
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isOnline ? Colors.green : Colors.grey.shade300,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isOnline 
-                      ? Colors.green.withOpacity(0.3)
-                      : Colors.black.withOpacity(0.1),
-                  blurRadius: isOnline ? 10 : 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: CircleAvatar(
-              radius: 30,
-              backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-              backgroundImage: userPhoto != null && userPhoto.isNotEmpty
-                  ? NetworkImage(userPhoto)
-                  : null,
-              child: userPhoto == null || userPhoto.isEmpty
-                  ? Text(
-                      userName.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 2,
-          right: 2,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: isOnline ? Colors.green : Colors.grey,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: isOnline
-                  ? [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.6),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  return EnhancedUserAvatar(
+    user: user,
+    radius: 30,
+    isOnline: isOnline,
+    showOnlineIndicator: true,
+    heroTag: 'add_chat_avatar_${user['id'] ?? user['userId'] ?? 'unknown'}',
+  );
+}
 
   Widget _buildActionButton(Map<String, dynamic> user, bool isInChatList) {
   if (isInChatList) {

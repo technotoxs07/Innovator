@@ -265,7 +265,7 @@ class _CustomDrawerState extends State<CustomDrawer>
       }
 
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/user-profile'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/user-profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
@@ -283,7 +283,7 @@ class _CustomDrawerState extends State<CustomDrawer>
           );
 
           if (userData['picture'] != null) {
-            const baseUrl = 'http://182.93.94.210:3066';
+            const baseUrl = 'http://182.93.94.210:3067';
             await precacheImage(
               CachedNetworkImageProvider('$baseUrl${userData['picture']}'),
               context,
@@ -337,7 +337,7 @@ class _CustomDrawerState extends State<CustomDrawer>
   Future<void> _loadNotifications() async {
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/notifications'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/notifications'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${AppData().authToken}',
@@ -646,7 +646,7 @@ class _CustomDrawerState extends State<CustomDrawer>
     final userData = AppData().currentUser ?? _userData;
     final String name = userData?['name'] ?? 'User';
     final String email = userData?['email'] ?? '';
-    const String baseUrl = 'http://182.93.94.210:3066';
+    const String baseUrl = 'http://182.93.94.210:3067';
 
     return DefaultTextStyle(
       style: const TextStyle(

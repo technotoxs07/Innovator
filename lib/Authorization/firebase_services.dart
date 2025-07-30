@@ -7,6 +7,8 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'dart:developer' as developer;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:innovator/App_data/App_data.dart';
+import 'package:innovator/screens/chatApp/FollowStatusManager.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -692,7 +694,143 @@ static Future<bool> _sendNotificationHTTPv1({
       rethrow;
     }
   }
+static Future<Map<String, dynamic>?> checkUserFollowStatus(String email) async {
+  try {
+    developer.log('🔍 Checking follow status for: $email');
+    
+    final url = Uri.parse('http://182.93.94.210:3067/api/v1/check?email=$email');
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${AppData().authToken}',
+    };
 
+    final response = await http.get(url, headers: headers)
+        .timeout(const Duration(seconds: 10));
+
+    developer.log('📨 Follow status response: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      
+      if (responseData['status'] == 200 && responseData['data'] != null) {
+        final userData = responseData['data']['user'];
+        final isFollowing = responseData['data']['isFollowing'] as bool;
+        final isFollowedBy = responseData['data']['isFollowedBy'] as bool;
+        
+        developer.log('✅ User: ${userData['name']}, Following: $isFollowing, FollowedBy: $isFollowedBy');
+        
+        return {
+          'user': userData,
+          'isFollowing': isFollowing,
+          'isFollowedBy': isFollowedBy,
+          'isMutualFollow': isFollowing && isFollowedBy,
+        };
+      }
+    }
+    
+    developer.log('❌ Failed to get follow status for: $email');
+    return null;
+  } catch (e) {
+    developer.log('❌ Error checking follow status: $e');
+    return null;
+  }
+}
+  // NEW: Get filtered users with mutual follow status
+  static Future<List<Map<String, dynamic>>> getFilteredUsersWithFollowStatus() async {
+  try {
+    developer.log('🔍 Getting filtered users with follow status...');
+    
+    // Get all users from Firestore
+    final usersSnapshot = await _firestore.collection('users').get();
+    final filteredUsers = <Map<String, dynamic>>[];
+    
+    // Use FollowStatusManager for efficient caching
+    final followStatusManager = FollowStatusManager.instance;
+    
+    for (var doc in usersSnapshot.docs) {
+      final userData = Map<String, dynamic>.from(doc.data());
+      userData['id'] = doc.id;
+      userData['userId'] = doc.id;
+      userData['_id'] = doc.id;
+      
+      final userEmail = userData['email']?.toString();
+      
+      if (userEmail != null && userEmail.isNotEmpty) {
+        // Check follow status from cache first
+        final followStatus = followStatusManager.getCachedFollowStatus(userEmail);
+        
+        if (followStatus != null && followStatus['isMutualFollow'] == true) {
+          // Merge Firestore data with API data
+          final apiUserData = followStatus['user'] as Map<String, dynamic>;
+          
+          // Create enhanced user data
+          final enhancedUserData = {
+            ...userData, // Firestore data (includes chat-related fields)
+            'name': apiUserData['name'], // Use API name
+            'picture': apiUserData['picture'], // Use API picture
+            'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}', // Full picture URL
+            'isFollowing': followStatus['isFollowing'],
+            'isFollowedBy': followStatus['isFollowedBy'],
+            'isMutualFollow': true,
+          };
+          
+          filteredUsers.add(enhancedUserData);
+        }
+      }
+    }
+    
+    developer.log('✅ Found ${filteredUsers.length} mutual followers');
+    return filteredUsers;
+  } catch (e) {
+    developer.log('❌ Error getting filtered users: $e');
+    return [];
+  }
+}
+
+  // NEW: Enhanced getAllUsers that filters by follow status
+  static Stream<QuerySnapshot> getAllUsersWithFollowFilter() {
+    return _firestore
+        .collection('users')
+        .orderBy('name')
+        .snapshots();
+  }
+
+  // NEW: Get user with enhanced profile data
+  static Future<Map<String, dynamic>?> getEnhancedUserProfile(String userId) async {
+  try {
+    // Get user from Firestore
+    final userDoc = await getUserById(userId);
+    if (!userDoc.exists) return null;
+    
+    final userData = userDoc.data() as Map<String, dynamic>;
+    final userEmail = userData['email']?.toString();
+    
+    if (userEmail != null) {
+      // Get follow status from cache
+      final followStatusManager = FollowStatusManager.instance;
+      final followStatus = followStatusManager.getCachedFollowStatus(userEmail);
+      
+      if (followStatus != null) {
+        final apiUserData = followStatus['user'] as Map<String, dynamic>;
+        
+        return {
+          ...userData,
+          'name': apiUserData['name'],
+          'picture': apiUserData['picture'],
+          'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}',
+          'isFollowing': followStatus['isFollowing'],
+          'isFollowedBy': followStatus['isFollowedBy'],
+          'isMutualFollow': followStatus['isMutualFollow'],
+        };
+      }
+    }
+    
+    return userData;
+  } catch (e) {
+    developer.log('❌ Error getting enhanced user profile: $e');
+    return null;
+  }
+}
 
   // Fallback notification method (logs notification for now)
   static Future<void> _sendFallbackNotification(

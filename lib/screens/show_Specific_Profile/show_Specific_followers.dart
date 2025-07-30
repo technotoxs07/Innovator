@@ -51,7 +51,7 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
 
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/followers/${widget.userId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/followers/${widget.userId}'),
         headers: {
           'authorization': 'Bearer ${appData.authToken}',
           'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
 
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/following/${widget.userId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/following/${widget.userId}'),
         headers: {
           'authorization': 'Bearer ${appData.authToken}',
           'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
           radius: 25,
           backgroundColor: Colors.grey[300],
           backgroundImage: user['picture'] != null && user['picture'].toString().isNotEmpty
-              ? NetworkImage('http://182.93.94.210:3066${user['picture']}')
+              ? NetworkImage('http://182.93.94.210:3067${user['picture']}')
               : null,
           child: user['picture'] == null || user['picture'].toString().isEmpty
               ? Text(
@@ -516,7 +516,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
 
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/followers/${widget.userId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/followers/${widget.userId}'),
         headers: {
           'authorization': 'Bearer ${appData.authToken}',
           'Content-Type': 'application/json',
@@ -552,7 +552,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
 
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/following/${widget.userId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/following/${widget.userId}'),
         headers: {
           'authorization': 'Bearer ${appData.authToken}',
           'Content-Type': 'application/json',
@@ -664,7 +664,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
           radius: 22,
           backgroundColor: Colors.grey[300],
           backgroundImage: user['picture'] != null && user['picture'].toString().isNotEmpty
-              ? NetworkImage('http://182.93.94.210:3066${user['picture']}')
+              ? NetworkImage('http://182.93.94.210:3067${user['picture']}')
               : null,
           child: user['picture'] == null || user['picture'].toString().isEmpty
               ? Text(

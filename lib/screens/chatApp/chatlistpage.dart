@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:innovator/screens/chatApp/EnhancedUserAvtar.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:lottie/lottie.dart';
 
@@ -344,74 +345,14 @@ class OptimizedChatListPage extends GetView<FireChatController> {
   }
 
   Widget _buildChatAvatar(Map<String, dynamic> user, bool isOnline) {
-    return Stack(
-      children: [
-        Hero(
-          tag: 'chat_avatar_${user['id']}',
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isOnline ? Colors.green : Colors.grey.shade300,
-                width: 2,
-              ),
-              // NEW: Glow effect for online users
-              boxShadow: isOnline
-                  ? [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-              backgroundImage: user['photoURL'] != null && user['photoURL'].toString().isNotEmpty
-                  ? NetworkImage(user['photoURL'].toString())
-                  : null,
-              child: user['photoURL'] == null || user['photoURL'].toString().isEmpty
-                  ? Text(
-                      user['name']?.toString().substring(0, 1).toUpperCase() ?? 'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 2,
-          right: 2,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: isOnline ? Colors.green : Colors.grey,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              // NEW: Pulse animation for online status
-              boxShadow: isOnline
-                  ? [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.6),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  return EnhancedUserAvatar(
+    user: user,
+    radius: 28,
+    isOnline: isOnline,
+    showOnlineIndicator: true,
+    heroTag: 'chat_avatar_${user['id']}',
+  );
+}
 
   Widget _buildLoadingState() {
     return Center(

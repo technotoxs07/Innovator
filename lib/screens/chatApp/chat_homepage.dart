@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
+import 'package:innovator/screens/Follow/Follow_status_Manager.dart';
 import 'package:innovator/screens/chatApp/Add_to_Chat.dart';
+import 'package:innovator/screens/chatApp/EnhancedUserAvtar.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:developer' as developer;
@@ -11,6 +13,9 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handlePageVisible();
+    });
     return Scaffold(
       backgroundColor: Get.theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(),
@@ -22,6 +27,22 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
         ],
       ),
     );
+  }
+
+  void _handlePageVisible() {
+    try {
+      developer.log('👁️ Chat home page visible');
+      
+      // Only load users if the list is empty or if specifically requested
+      if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
+        developer.log('📱 Users list is empty, loading...');
+        controller.loadAllUsers();
+      } else {
+        developer.log('✅ Users already loaded: ${controller.allUsers.length}');
+      }
+    } catch (e) {
+      developer.log('❌ Error handling page visible: $e');
+    }
   }
 
   PreferredSizeWidget _buildAppBar() {
@@ -279,101 +300,323 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     );
   }
 
-  Widget _buildUsersList() {
-  return Obx(() {
-    if (controller.isLoadingUsers.value && controller.allUsers.isEmpty) {
-      return _buildLoadingState();
-    }
+ Widget _buildUsersList() {
+    return Obx(() {
+      // ENHANCED: Better loading state management
+      if (controller.isLoadingFollowStatus.value && controller.allUsers.isEmpty) {
+        return _buildFollowStatusLoadingState();
+      }
+      
+      if (controller.isLoadingUsers.value && controller.allUsers.isEmpty) {
+        return _buildLoadingState();
+      }
 
-    if (controller.allUsers.isEmpty) {
-      return _buildEmptyState();
-    }
+      if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
+        return _buildEmptyState();
+      }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await controller.loadAllUsers();
-      },
-      color: const Color.fromRGBO(244, 135, 6, 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                // UPDATED: Show different title based on recent users
-                Obx(() {
-                  final hasRecentUsers = controller.recentUsers.isNotEmpty;
-                  return Text(
-                    hasRecentUsers ? 'Recent Users' : 'All Users',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Get.theme.textTheme.bodyLarge?.color,
-                    ),
-                  );
-                }),
-                const Spacer(),
-                // UPDATED: Show count badge
-                Obx(() {
-                  final recentCount = controller.recentUsers.length;
-                  if (recentCount > 0) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color.fromRGBO(244, 135, 6, 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$recentCount recent',
-                        style: const TextStyle(
-                          color: Color.fromRGBO(244, 135, 6, 1),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                }),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () {
-                    Get.to(() => const AddToChatScreen());
-                  },
-                  child: const Text(
-                    'View All',
-                    style: TextStyle(
-                      color: Color.fromRGBO(244, 135, 6, 1),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Obx(() {
-              // UPDATED: Use getUsersForHomePage method instead of allUsers directly
-              final displayUsers = controller.getUsersForHomePage();
-              
-              return ListView.builder(
+      return RefreshIndicator(
+        onRefresh: () async {
+          // ENHANCED: Force refresh when user pulls down
+          await controller.refreshUsersAndCache();
+        },
+        color: const Color.fromRGBO(244, 135, 6, 1),
+        child: Column(
+          children: [
+            _buildAddToChatStatusBar(),
+            Expanded(
+              child: ListView.builder(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: displayUsers.length,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: controller.allUsers.length,
                 itemBuilder: (context, index) {
-                  final user = displayUsers[index];
+                  final user = controller.allUsers[index];
                   return _buildUserCard(user, index);
                 },
-              );
-            }),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+
+
+// NEW: Status bar for Add to Chat screen
+Widget _buildAddToChatStatusBar() {
+  return Obx(() {
+    final totalUsers = controller.allUsers.length;
+    final onlineUsers = controller.allUsers.where((user) => user['isOnline'] == true).length;
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildMiniStatCard('Total', '$totalUsers', Icons.people, Colors.blue),
+          const SizedBox(width: 16),
+          _buildMiniStatCard('Online', '$onlineUsers', Icons.circle, Colors.green),
+          const SizedBox(width: 16),
+          _buildMiniStatCard('Mutual', '$totalUsers', Icons.people_outline, const Color.fromRGBO(244, 135, 6, 1)),
         ],
       ),
     );
   });
 }
 
+
+Widget _buildMiniStatCard(String label, String value, IconData icon, Color color) {
+  return Expanded(
+    child: Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+Widget _buildFollowStatusLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: const Color.fromRGBO(244, 135, 6, 1),
+                  backgroundColor: const Color.fromRGBO(244, 135, 6, 0.2),
+                ),
+              ),
+              Icon(
+                Icons.people_outline,
+                size: 40,
+                color: const Color.fromRGBO(244, 135, 6, 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Obx(() => Text(
+            controller.loadingStatusText.value.isNotEmpty 
+                ? controller.loadingStatusText.value 
+                : 'Loading mutual followers...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          )),
+          const SizedBox(height: 8),
+          Text(
+            'Please wait while we filter your contacts',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// NEW: Status bar showing cache and mutual followers info
+// Widget _buildStatusBar() {
+//   return Obx(() {
+//     final followStatusManager = FollowStatusManager.instance;
+//     final stats = followStatusManager.getCacheStats();
+//     final mutualCount = controller.allUsers.length;
+    
+//     if (mutualCount == 0 && !controller.isLoadingUsers.value) {
+//       return const SizedBox.shrink();
+//     }
+    
+//     return Container(
+//       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+//       decoration: BoxDecoration(
+//         color: const Color.fromRGBO(244, 135, 6, 0.1),
+//         borderRadius: BorderRadius.circular(20),
+//         border: Border.all(
+//           color: const Color.fromRGBO(244, 135, 6, 0.3),
+//           width: 1,
+//         ),
+//       ),
+//       child: Row(
+//         children: [
+//           Icon(
+//             Icons.people,
+//             size: 16,
+//             color: const Color.fromRGBO(244, 135, 6, 1),
+//           ),
+//           const SizedBox(width: 8),
+//           Expanded(
+//             child: Text(
+//               '$mutualCount mutual followers',
+//               style: const TextStyle(
+//                 color: Color.fromRGBO(244, 135, 6, 1),
+//                 fontSize: 12,
+//                 fontWeight: FontWeight.w600,
+//               ),
+//             ),
+//           ),
+//           if (stats['totalCached'] > 0)
+//             Container(
+//               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+//               decoration: BoxDecoration(
+//                 color: Colors.green.withOpacity(0.2),
+//                 borderRadius: BorderRadius.circular(8),
+//               ),
+//               child: Text(
+//                 '${stats['totalCached']} cached',
+//                 style: const TextStyle(
+//                   color: Colors.green,
+//                   fontSize: 10,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//             ),
+//         ],
+//       ),
+//     );
+//   });
+// }
+
+Widget _buildSearchLoadingState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: const Color.fromRGBO(244, 135, 6, 1),
+              ),
+            ),
+            Icon(
+              Icons.search,
+              size: 24,
+              color: const Color.fromRGBO(244, 135, 6, 1),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Searching mutual followers...',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// NEW: Initial search state with tips
+Widget _buildInitialSearchState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color.fromRGBO(244, 135, 6, 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.search,
+            size: 64,
+            color: Color.fromRGBO(244, 135, 6, 1),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Find mutual followers',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Search among users you mutually follow',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey.shade500,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.info_outline,
+                color: Colors.blue,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Only mutual followers can chat',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildUserCard(Map<String, dynamic> user, int index) {
   final isOnline = user['isOnline'] ?? false;
   
@@ -509,54 +752,14 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
 }
 
   Widget _buildUserAvatar(Map<String, dynamic> user, bool isOnline) {
-    return Stack(
-      children: [
-        Hero(
-          tag: 'user_avatar_${user['id']}',
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isOnline ? Colors.green : Colors.grey.shade300,
-                width: 2,
-              ),
-            ),
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-              backgroundImage: user['photoURL'] != null && user['photoURL'].isNotEmpty
-                  ? NetworkImage(user['photoURL'])
-                  : null,
-              child: user['photoURL'] == null || user['photoURL'].isEmpty
-                  ? Text(
-                      user['name']?.substring(0, 1).toUpperCase() ?? 'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 2,
-          right: 2,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: isOnline ? Colors.green : Colors.grey,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  return EnhancedUserAvatar(
+    user: user,
+    radius: 28,
+    isOnline: isOnline,
+    showOnlineIndicator: true,
+    heroTag: 'user_avatar_${user['id']}',
+  );
+}
 
   Widget _buildLoadingState() {
     return Center(
@@ -599,7 +802,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
           ),
           const SizedBox(height: 24),
           Text(
-            'No users found',
+            'No mutual followers yet',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -608,31 +811,50 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Pull down to refresh or add users to chat',
+            'Start following people to see them here',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade500,
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => Get.to(() => const AddToChatScreen()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => controller.refreshUsersAndCache(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
               ),
-              elevation: 4,
-            ),
-            icon: const Icon(Icons.person_add),
-            label: const Text('Add Users'),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => Get.to(() => const AddToChatScreen()),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color.fromRGBO(244, 135, 6, 1),
+                  side: const BorderSide(color: Color.fromRGBO(244, 135, 6, 1)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+                icon: const Icon(Icons.person_search),
+                label: const Text('Find Users'),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
 
   void _showLogoutDialog() {
     Get.dialog(

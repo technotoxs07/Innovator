@@ -15,6 +15,7 @@ import 'package:innovator/screens/Shop/Shop_Page.dart';
 import 'package:innovator/screens/Splash_Screen/splash_screen.dart';
 import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/screens/chatApp/Add_to_Chat.dart';
+import 'package:innovator/screens/chatApp/FollowStatusManager.dart';
 import 'package:innovator/screens/chatApp/SearchchatUser.dart';
 import 'package:innovator/screens/chatApp/chat_homepage.dart';
 import 'package:innovator/screens/chatApp/chatlistpage.dart';
@@ -253,7 +254,8 @@ await AppData().initializeFcmAfterLogin();
     
     // Setup notification listeners
     _setupNotificationListeners();
-    
+      Get.put(FollowStatusManager(), permanent: true);
+
     developer.log('🎉 App initialization completed successfully');
   } catch (e) {
     developer.log('❌ App initialization failed: $e');

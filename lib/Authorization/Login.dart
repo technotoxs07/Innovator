@@ -651,7 +651,7 @@ Future<void> _initializeChatController() async {
     
     // Trigger initial data load
     await Future.delayed(const Duration(milliseconds: 1000));
-    await chatController.loadAllUsers();
+    await chatController.loadAllUsersWithSmartCaching();
     await chatController.loadUserChats();
     
     developer.log('✅ Chat controller initialized successfully');

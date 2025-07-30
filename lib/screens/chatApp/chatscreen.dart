@@ -68,7 +68,9 @@ class OptimizedChatScreen extends GetView<FireChatController> {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        onPressed: () => Get.back(),
+        onPressed: () {
+          _handleBackNavigation();
+        }
       ),
       title: InkWell(
         onTap: () => _showUserProfile(),
@@ -200,6 +202,27 @@ class OptimizedChatScreen extends GetView<FireChatController> {
         ),
       ],
     );
+  }
+
+  void _handleBackNavigation() {
+    try {
+      developer.log('🔙 Handling back navigation from chat screen');
+      
+      // Clear current chat to stop real-time updates
+      controller.clearCurrentChat();
+      
+      // Add receiver to recent users
+      controller.addUserToRecent(receiverUser);
+      
+      // Navigate back
+      Get.back();
+      
+      developer.log('✅ Back navigation completed');
+    } catch (e) {
+      developer.log('❌ Error in back navigation: $e');
+      // Fallback: just go back
+      Get.back();
+    }
   }
 
   Widget _buildMessagesList(ScrollController scrollController) {

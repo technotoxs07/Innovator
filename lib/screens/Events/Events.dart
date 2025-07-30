@@ -236,7 +236,7 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
       final authToken = AppData().authToken;
       
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/events'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/events'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
@@ -259,7 +259,7 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
               country: _extractCountryFromLocation(eventData['location']['city'] ?? ''),
               date: DateTime.tryParse(eventData['startDate'] ?? '') ?? 
                     DateTime.now().add(Duration(days: 30)),
-              url: eventData['url'] ?? 'http://182.93.94.210:3066', // Default URL if not provided
+              url: eventData['url'] ?? 'http://182.93.94.210:3067', // Default URL if not provided
               category: _categorizeEvent(eventData['category'] ?? ''),
               price: eventData['price']['isFree'] ? 'Free' : 
                     '\$${eventData['price']['amount']} ${eventData['price']['currency']}',
@@ -1206,7 +1206,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
     try {
       final authToken = AppData().authToken;
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/events/${widget.eventId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/events/${widget.eventId}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
