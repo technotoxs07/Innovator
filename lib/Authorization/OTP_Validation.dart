@@ -150,7 +150,7 @@ class _OtpValidationScreenState extends State<OtpValidationScreen>
     try {
       developer.log('🔐 Verifying OTP for email: ${widget.email}');
       
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/verify-email');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/verify-email');
       final body = jsonEncode({
         'email': widget.email,
         'otp': _otpCode,
@@ -220,7 +220,7 @@ class _OtpValidationScreenState extends State<OtpValidationScreen>
     try {
       developer.log('📧 Resending OTP to: ${widget.email}');
       
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/resend-verification-otp');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/resend-verification-otp');
       final body = jsonEncode({
         'email': widget.email,
       });

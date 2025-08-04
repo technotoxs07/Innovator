@@ -27,7 +27,7 @@ class _Forgot_PWDState extends State<Forgot_PWD> {
 
     try {
       // API endpoint
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/send-otp');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/send-otp');
       
       // Request body
       final body = jsonEncode({

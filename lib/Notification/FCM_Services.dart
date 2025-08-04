@@ -98,7 +98,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       final token = AppData().authToken;
       if (token == null) throw Exception('No authentication token found');
 
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/notifications');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/notifications');
       final response = await http.get(
         url,
         headers: {'Authorization': 'Bearer $token'},
@@ -133,7 +133,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       if (token == null) throw Exception('No authentication token found');
 
       final url = Uri.parse(
-          'http://182.93.94.210:3067/api/v1/notifications?cursor=$nextCursor');
+          'http://182.93.94.210:3066/api/v1/notifications?cursor=$nextCursor');
       final response = await http.get(
         url,
         headers: {'Authorization': 'Bearer $token'},
@@ -165,7 +165,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       if (token == null) throw Exception('No authentication token found');
 
       final response = await http.post(
-        Uri.parse('http://182.93.94.210:3067/api/v1/notifications/mark-read'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/notifications/mark-read'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -194,7 +194,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       if (token == null) throw Exception('No authentication token found');
 
       final response = await http.post(
-        Uri.parse('http://182.93.94.210:3067/api/v1/notifications/mark-all-read'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/notifications/mark-all-read'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -224,7 +224,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       if (token == null) throw Exception('No authentication token found');
 
       final response = await http.delete(
-        Uri.parse('http://182.93.94.210:3067/api/v1/notifications/$notificationId'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/notifications/$notificationId'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -253,7 +253,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       if (token == null) throw Exception('No authentication token found');
 
       final response = await http.delete(
-        Uri.parse('http://182.93.94.210:3067/api/v1/notifications'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/notifications'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -1189,7 +1189,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       if (token == null) throw Exception('No authentication token found');
 
       final response = await http.post(
-        Uri.parse('http://182.93.94.210:3067/api/v1/notifications/${notification.id}/click'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/notifications/${notification.id}/click'),
         headers: {'Authorization': 'Bearer $token'},
       );
 

@@ -362,7 +362,7 @@ Future<void> initializeFcmAfterLogin() async {
   // Helper method to update FCM token on the backend
   // Future<void> _updateFcmTokenOnBackend(String fcmToken) async {
   //   try {
-  //     final url = Uri.parse('http://182.93.94.210:3067/api/v1/update-fcm-token');
+  //     final url = Uri.parse('http://182.93.94.210:3066/api/v1/update-fcm-token');
   //     final body = jsonEncode({
   //       'userId': currentUserId,
   //       'fcmToken': fcmToken,
@@ -525,7 +525,7 @@ Future<void> logout() async {
 Future<void> _clearFcmTokenFromBackend() async {
   try {
     if (_authToken != null && _currentUser != null) {
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/clear-fcm-token');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/clear-fcm-token');
       final body = jsonEncode({
         'userId': _currentUser!['_id'],
       });
@@ -572,7 +572,7 @@ Future<void> _clearAllSharedPreferences() async {
 
   Future<List<dynamic>> fetchNotifications() async {
   try {
-    final url = Uri.parse('http://182.93.94.210:3067/api/v1/notifications');
+    final url = Uri.parse('http://182.93.94.210:3066/api/v1/notifications');
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $_authToken',
@@ -621,7 +621,7 @@ Future<BlockedUsersResponse> fetchBlockedUsers({
       'limit': limit.toString(),
     };
 
-    final uri = Uri.parse('http://182.93.94.210:3067/api/v1/blocked-users')
+    final uri = Uri.parse('http://182.93.94.210:3066/api/v1/blocked-users')
         .replace(queryParameters: queryParams);
 
     final headers = {

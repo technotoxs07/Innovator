@@ -394,7 +394,7 @@ class _CartScreenState extends State<CartScreen>
                 borderRadius: BorderRadius.circular(8),
                 child: SafeImage(
                   images: item.images,
-                  baseUrl: 'http://182.93.94.210:3067',
+                  baseUrl: 'http://182.93.94.210:3066',
                   placeholderIcon: Icons.image,
                   placeholderColor: _primaryColor.withOpacity(0.2),
                   iconSize: 40,

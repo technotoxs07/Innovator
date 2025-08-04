@@ -27,6 +27,7 @@ import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/screens/chatrrom/sound/soundplayer.dart';
 import 'package:innovator/screens/comment/JWT_Helper.dart';
 import 'package:innovator/screens/comment/comment_section.dart';
+import 'package:innovator/widget/Custom_refresh_Indicator.dart';
 import 'package:innovator/widget/CustomizeFAB.dart';
 import 'dart:io';
 import 'package:lottie/lottie.dart';
@@ -39,6 +40,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 // VideoPlaybackManager class
+
+class LoadingConfig {
+  static const String loadingGifPath = 'animation/IdeaBulb.gif'; // Update this path to your GIF file
+}
+// ronir ronnndfnfkj sjhbhd ronit shrivastav ronit shrivasta   roniuf ronjf 
 class VideoPlaybackManager {
   static final VideoPlaybackManager _instance =
       VideoPlaybackManager._internal();
@@ -72,6 +78,10 @@ class VideoPlaybackManager {
   }
 }
 
+
+
+
+// Replace the RefreshIndicator in your build metho
 // Enhanced CacheManager class
 class CacheManager {
   static const String _cacheKey = 'feed_cache';
@@ -222,7 +232,7 @@ class FeedContent {
     if (url.startsWith('http')) {
       return url;
     }
-    return 'http://182.93.94.210:3067${url.startsWith('/') ? url : '/$url'}';
+    return 'http://182.93.94.210:3066${url.startsWith('/') ? url : '/$url'}';
   }
 
   factory FeedContent.fromJson(Map<String, dynamic> json) {
@@ -433,6 +443,8 @@ class CursorHelper {
     return null;
   }
 }
+
+
 
 class Inner_HomePage extends StatefulWidget {
   const Inner_HomePage({Key? key}) : super(key: key);
@@ -959,10 +971,9 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: RefreshIndicator(
+      body: CustomRefreshIndicator(
         onRefresh: _refresh,
-        color: Colors.blue,
-        backgroundColor: Colors.white,
+        gifPath: 'animation/IdeaBulb.gif', // Update with your GIF path
         child: _buildContent(),
       ),
       floatingActionButton: _buildFloatingActionButton(),
@@ -982,23 +993,31 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   }
 
   Widget _buildInitialLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(strokeWidth: 2),
-          SizedBox(height: 16),
-          Text(
-            'Loading your feed...',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Replace CircularProgressIndicator with GIF
+        Container(
+          width: 80,
+          height: 80,
+          child: Image.asset(
+            'animation/IdeaBulb.gif',
+            fit: BoxFit.contain,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        SizedBox(height: 16),
+        Text(
+          'Loading your feed...',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   // Enhanced error state with retry options
   Widget _buildErrorState() {
@@ -1061,45 +1080,69 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
   // ENHANCED: Debug information in the infinite scroll list
   Widget _buildInfiniteScrollList() {
-    return Column(
-      children: [
-        // Debug info (remove in production)
-        // if (kDebugMode) ...[
-        //   Container(
-        //     padding: EdgeInsets.all(8),
-        //     color: Colors.yellow.withOpacity(0.1),
-        //     child: Text(
-        //       'Debug: ${_allContents.length} items, hasMore: $_hasMoreContent, cursor: $_nextCursor, offset: $_currentOffset, useCursor: $_useCursorPagination',
-        //       style: TextStyle(fontSize: 10),
-        //     ),
-        //   ),
-        // ],
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            physics: AlwaysScrollableScrollPhysics(),
-            cacheExtent: 1000.0,
-            itemCount: _allContents.length + (_isLoading ? 1 : 0) + (_shouldShowEndMessage() ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index < _allContents.length) {
-                return _buildContentItem(_allContents[index]);
-              }
+  return Stack(
+    children: [
+      Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              physics: AlwaysScrollableScrollPhysics(),
+              cacheExtent: 1000.0,
+              itemCount: _allContents.length + (_isLoading ? 1 : 0) + (_shouldShowEndMessage() ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index < _allContents.length) {
+                  return _buildContentItem(_allContents[index]);
+                }
 
-              // if (index == _allContents.length && _isLoading) {
-              //   return _buildLoadingIndicator();
-              // }
+                if (index == _allContents.length && _isLoading) {
+                  return _buildLoadingIndicator();
+                }
 
-              if (index == _allContents.length && _shouldShowEndMessage()) {
-                return _buildEndMessage();
-              }
+                if (index == _allContents.length && _shouldShowEndMessage()) {
+                  return _buildEndMessage();
+                }
 
-              return SizedBox.shrink();
-            },
+                return SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
+      ),
+      // Custom refresh indicator overlay
+      if (_isLoading && _allContents.isEmpty)
+        Positioned.fill(
+          child: Container(
+            color: Colors.white.withOpacity(0.8),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    child: Image.asset(
+                      'animation/IdeaBulb.gif',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Refreshing feed...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ],
-    );
-  }
+    ],
+  );
+}
 
   Widget _buildContentItem(FeedContent content) {
     return RepaintBoundary(
@@ -1127,53 +1170,61 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
   // ENHANCED: Better loading indicator that shows current state
   Widget _buildLoadingIndicator() {
-    return Container(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        children: [
-          CircularProgressIndicator(strokeWidth: 2),
-          SizedBox(height: 12),
+  return Container(
+    padding: EdgeInsets.all(20),
+    child: Column(
+      children: [
+        // Replace CircularProgressIndicator with GIF
+        Container(
+          width: 40,
+          height: 40,
+          child: Image.asset(
+            'animation/IdeaBulb.gif',
+            fit: BoxFit.contain,
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          'Loading more content...',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14,
+          ),
+        ),
+        if (_allContents.isNotEmpty) ...[
+          SizedBox(height: 4),
           Text(
-            'Loading more content...',
+            'Loaded ${_allContents.length} items',
             style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
+              color: Colors.grey[400],
+              fontSize: 12,
             ),
           ),
-          if (_allContents.isNotEmpty) ...[
-            SizedBox(height: 4),
-            Text(
-              'Loaded ${_allContents.length} items',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 12,
-              ),
-            ),
-            // Show hasMore status for debugging
-            if (_hasMoreContent) ...[
-              SizedBox(height: 2),
-              Text(
-                'More content available',
-                style: TextStyle(
-                  color: Colors.green[400],
-                  fontSize: 10,
-                ),
-              ),
-            ],
-            // Show pagination method
+          // Show hasMore status for debugging
+          if (_hasMoreContent) ...[
             SizedBox(height: 2),
             Text(
-              _useCursorPagination ? 'Using cursor pagination' : 'Using offset pagination',
+              'More content available',
               style: TextStyle(
-                color: Colors.blue[400],
+                color: Colors.green[400],
                 fontSize: 10,
               ),
             ),
           ],
+          // Show pagination method
+          SizedBox(height: 2),
+          Text(
+            _useCursorPagination ? 'Using cursor pagination' : 'Using offset pagination',
+            style: TextStyle(
+              color: Colors.blue[400],
+              fontSize: 10,
+            ),
+          ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   Widget _buildEndMessage() {
     return Container(
@@ -1272,7 +1323,7 @@ class FeedApiResponse {
 
 // UPDATED: FeedApiService methods to handle the response correctly
 class FeedApiService {
-  static const String baseUrl = 'http://182.93.94.210:3067';
+  static const String baseUrl = 'http://182.93.94.210:3066';
 
   // Main method with cursor validation
   static Future<ContentData> fetchContents({
@@ -1595,7 +1646,7 @@ class _FeedItemState extends State<FeedItem>
 
   late AnimationController _controller;
   final ContentLikeService likeService = ContentLikeService(
-    baseUrl: 'http://182.93.94.210:3067',
+    baseUrl: 'http://182.93.94.210:3066',
   );
   late String formattedTimeAgo;
   bool _showComments = false;
@@ -1663,7 +1714,7 @@ class _FeedItemState extends State<FeedItem>
       final response = await http
           .post(
             Uri.parse(
-              'http://182.93.94.210:3067/api/v1/content/view/${widget.content.id}',
+              'http://182.93.94.210:3066/api/v1/content/view/${widget.content.id}',
             ),
             headers: {
               'Content-Type': 'application/json',
@@ -2189,60 +2240,59 @@ class _FeedItemState extends State<FeedItem>
   }
 
   Widget _buildAuthorAvatar() {
-    final userController = Get.find<UserController>();
+  final userController = Get.find<UserController>();
 
-    if (_isAuthorCurrentUser()) {
-      return Obx(() {
-        final picturePath = userController.getFullProfilePicturePath();
-        final version = userController.profilePictureVersion.value;
+  if (_isAuthorCurrentUser()) {
+    return Obx(() {
+      final picturePath = userController.getFullProfilePicturePath();
+      final version = userController.profilePictureVersion.value;
 
-        return CircleAvatar(
-          key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
-          backgroundImage:
-              picturePath != null
-                  ? NetworkImage('$picturePath?v=$version')
-                  : null,
-          child:
-              picturePath == null || picturePath.isEmpty
-                  ? Text(
-                    widget.content.author.name.isNotEmpty
-                        ? widget.content.author.name[0].toUpperCase()
-                        : '?',
-                  )
-                  : null,
-        );
-      });
-    }
-
-    if (widget.content.author.picture.isEmpty) {
       return CircleAvatar(
-        child: Text(
-          widget.content.author.name.isNotEmpty
-              ? widget.content.author.name[0].toUpperCase()
-              : '?',
-        ),
+        key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
+        backgroundImage: picturePath != null ? NetworkImage('$picturePath?v=$version') : null,
+        child: picturePath == null || picturePath.isEmpty
+            ? Text(
+                widget.content.author.name.isNotEmpty
+                    ? widget.content.author.name[0].toUpperCase()
+                    : '?',
+              )
+            : null,
       );
-    }
+    });
+  }
 
-    return CachedNetworkImage(
-      imageUrl: 'http://182.93.94.210:3067${widget.content.author.picture}',
-      imageBuilder:
-          (context, imageProvider) =>
-              CircleAvatar(backgroundImage: imageProvider),
-      placeholder:
-          (context, url) => const CircleAvatar(
-            child: CircularProgressIndicator(strokeWidth: 2.0),
-          ),
-      errorWidget:
-          (context, url, error) => CircleAvatar(
-            child: Text(
-              widget.content.author.name.isNotEmpty
-                  ? widget.content.author.name[0].toUpperCase()
-                  : '?',
-            ),
-          ),
+  if (widget.content.author.picture.isEmpty) {
+    return CircleAvatar(
+      child: Text(
+        widget.content.author.name.isNotEmpty
+            ? widget.content.author.name[0].toUpperCase()
+            : '?',
+      ),
     );
   }
+
+  return CachedNetworkImage(
+    imageUrl: 'http://182.93.94.210:3066${widget.content.author.picture}',
+    imageBuilder: (context, imageProvider) => CircleAvatar(backgroundImage: imageProvider),
+    placeholder: (context, url) => CircleAvatar(
+      child: Container(
+        width: 20,
+        height: 20,
+        child: Image.asset(
+          'animation/IdeaBulb.gif',
+          fit: BoxFit.contain,
+        ),
+      ),
+    ),
+    errorWidget: (context, url, error) => CircleAvatar(
+      child: Text(
+        widget.content.author.name.isNotEmpty
+            ? widget.content.author.name[0].toUpperCase()
+            : '?',
+      ),
+    ),
+  );
+}
 
   Widget _buildMediaPreview() {
     final hasOptimizedVideo = widget.content.optimizedFiles.any(
@@ -2671,7 +2721,7 @@ class _FeedItemState extends State<FeedItem>
       );
 
       final response = await http.post(
-        Uri.parse('http://182.93.94.210:3067/api/v1/new-content'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/new-content'),
         headers: {
           'Content-Type': 'application/json',
           'authorization': 'Bearer $authToken',
@@ -2889,27 +2939,33 @@ class _FeedItemState extends State<FeedItem>
     try {
       // Show loading dialog
       showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => Center(
-              child: Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Submitting report...'),
-                  ],
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                child: Image.asset(
+                  'animation/IdeaBulb.gif',
+                  fit: BoxFit.contain,
                 ),
               ),
-            ),
-      );
+              SizedBox(height: 16),
+              Text('Submitting report...'),
+            ],
+          ),
+        ),
+      ),
+    );
 
       final String? authToken = AppData().authToken;
       if (authToken == null || authToken.isEmpty) {
@@ -2926,7 +2982,7 @@ class _FeedItemState extends State<FeedItem>
 
       final response = await http
           .post(
-            Uri.parse('http://182.93.94.210:3067/api/v1/report'),
+            Uri.parse('http://182.93.94.210:3066/api/v1/report'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -3135,27 +3191,33 @@ class _FeedItemState extends State<FeedItem>
     try {
       // Show loading dialog
       showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => Center(
-              child: Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Blocking user...'),
-                  ],
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                child: Image.asset(
+                 'animation/IdeaBulb.gif',
+                  fit: BoxFit.contain,
                 ),
               ),
-            ),
-      );
+              SizedBox(height: 16),
+              Text('Blocking user...'),
+            ],
+          ),
+        ),
+      ),
+    );
 
       final String? authToken = AppData().authToken;
       if (authToken == null || authToken.isEmpty) {
@@ -3181,7 +3243,7 @@ class _FeedItemState extends State<FeedItem>
 
       final response = await http
           .post(
-            Uri.parse('http://182.93.94.210:3067/api/v1/block-user'),
+            Uri.parse('http://182.93.94.210:3066/api/v1/block-user'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -3621,25 +3683,41 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   }
 
   Widget _buildLoadingOrThumbnail() {
-    if (widget.thumbnailUrl != null) {
-      return CachedNetworkImage(
-        imageUrl: widget.thumbnailUrl!,
-        fit: BoxFit.cover,
-        placeholder:
-            (context, url) =>
-                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        errorWidget:
-            (context, url, error) => Container(
-              color: Colors.grey,
-              child: const Center(
-                child: Icon(Icons.videocam_off, color: Colors.white),
-              ),
-            ),
-      );
-    } else {
-      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-    }
+  if (widget.thumbnailUrl != null) {
+    return CachedNetworkImage(
+      imageUrl: widget.thumbnailUrl!,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Center(
+        child: Container(
+          width: 40,
+          height: 40,
+          child: Image.asset(
+            'animation/IdeaBulb.gif',
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
+      errorWidget: (context, url, error) => Container(
+        color: Colors.grey,
+        child: const Center(
+          child: Icon(Icons.videocam_off, color: Colors.white),
+        ),
+      ),
+    );
+  } else {
+    return Center(
+      child: Container(
+        width: 40,
+        height: 40,
+        child: Image.asset(
+          'animation/IdeaBulb.gif',
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
   }
+}
+
 
   Widget _buildVideoPlayer() {
     return LayoutBuilder(
@@ -3733,22 +3811,23 @@ class _OptimizedNetworkImage extends StatelessWidget {
       fit: BoxFit.cover,
       height: height,
       width: double.infinity,
-      placeholder:
-          (context, url) => Container(
-            color: Colors.grey[300],
-            child: const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2.0),
-              ),
+      placeholder: (context, url) => Container(
+        color: Colors.grey[300],
+        child: Center(
+          child: Container(
+            width: 30,
+            height: 30,
+            child: Image.asset(
+              'animation/IdeaBulb.gif',
+              fit: BoxFit.contain,
             ),
           ),
-      errorWidget:
-          (context, url, error) => Container(
-            color: Colors.grey[300],
-            child: const Center(child: Icon(Icons.error, color: Colors.white)),
-          ),
+        ),
+      ),
+      errorWidget: (context, url, error) => Container(
+        color: Colors.grey[300],
+        child: const Center(child: Icon(Icons.error, color: Colors.white)),
+      ),
       memCacheWidth: (MediaQuery.of(context).size.width * 2).toInt(),
       memCacheHeight: (MediaQuery.of(context).size.height * 2).toInt(),
     );
@@ -3848,3 +3927,4 @@ extension DateTimeExtension on DateTime {
     }
   }
 }//
+

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -32,7 +33,7 @@ class FirebaseNotificationService {
     }
 
     try {
-      developer.log('🔔 Initializing Firebase Notification Service...');
+      developer.log('🔔 === INITIALIZING NOTIFICATION SERVICE ===');
 
       // Request permissions first
       await _requestPermissions();
@@ -47,12 +48,17 @@ class FirebaseNotificationService {
       _setupMessageHandlers();
 
       _isInitialized = true;
-      developer.log('✅ Firebase Notification Service initialized successfully');
+      developer.log('✅ === NOTIFICATION SERVICE INITIALIZED SUCCESSFULLY ===');
+      
+      // Test notification immediately after initialization
+      //await _testNotificationSystem();
     } catch (e) {
       developer.log('❌ Error initializing notification service: $e');
       rethrow;
     }
   }
+
+  
 
   Future<void> _requestPermissions() async {
     try {
@@ -64,7 +70,7 @@ class FirebaseNotificationService {
         announcement: false,
         badge: true,
         carPlay: false,
-        criticalAlert: false,
+        criticalAlert: false,// 
         provisional: false,
         sound: true,
       );
@@ -78,24 +84,33 @@ class FirebaseNotificationService {
                 AndroidFlutterLocalNotificationsPlugin>();
         final granted = await plugin?.requestNotificationsPermission();
         developer.log('📱 Local notification permission: $granted');
+        
+        // ADDITIONAL: Request exact alarm permission for Android 12+
+        final exactAlarmPermission = await plugin?.requestExactAlarmsPermission();
+        developer.log('📱 Exact alarm permission: $exactAlarmPermission');
       }
     } catch (e) {
       developer.log('❌ Error requesting permissions: $e');
     }
   }
 
+
   Future<void> _initializeLocalNotifications() async {
     try {
       developer.log('📱 Initializing local notifications...');
-      
-      // Android initialization
-      const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
+      // Android initialization with custom settings
+      const androidInitialization = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+        // Add these for better visibility
+      );
 
-      // iOS initialization
+      // iOS initialization with enhanced settings
       const iosInitialization = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
+        requestCriticalPermission: false,
+        requestProvisionalPermission: false,
         onDidReceiveLocalNotification: _onDidReceiveLocalNotification,
       );
 
@@ -104,17 +119,20 @@ class FirebaseNotificationService {
         iOS: iosInitialization,
       );
 
-      await _flutterLocalNotificationsPlugin.initialize(
+      final initialized = await _flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
+      developer.log('📱 Local notifications initialized: $initialized');
+
       // Create notification channels for Android
       await _createNotificationChannels();
       
-      developer.log('✅ Local notifications initialized');
+      developer.log('✅ Local notifications setup completed');
     } catch (e) {
       developer.log('❌ Error initializing local notifications: $e');
+      rethrow;
     }
   }
 
@@ -126,18 +144,21 @@ class FirebaseNotificationService {
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
       if (androidPlugin != null) {
-        // Chat messages channel - CRITICAL: This must match FCM payload
+        developer.log('📱 Creating Android notification channels...');
+        
+        // Chat messages channel - HIGH PRIORITY
         await androidPlugin.createNotificationChannel(
           const AndroidNotificationChannel(
             'chat_messages',
             'Chat Messages',
             description: 'Notifications for new chat messages',
-            importance: Importance.high,
+            importance: Importance.max, // Changed to max
             enableVibration: true,
             enableLights: true,
             ledColor: Color.fromRGBO(244, 135, 6, 1),
             showBadge: true,
             playSound: true,
+            sound: RawResourceAndroidNotificationSound('notification_sound'),
           ),
         );
 
@@ -147,13 +168,14 @@ class FirebaseNotificationService {
             'general_notifications',
             'General Notifications',
             description: 'General app notifications',
-            importance: Importance.defaultImportance,
+            importance: Importance.high, // Increased importance
             enableVibration: true,
             showBadge: true,
+            playSound: true,
           ),
         );
 
-        // Call notifications channel
+        // Call notifications channel - HIGHEST PRIORITY
         await androidPlugin.createNotificationChannel(
           const AndroidNotificationChannel(
             'call_notifications',
@@ -167,7 +189,7 @@ class FirebaseNotificationService {
           ),
         );
 
-        developer.log('✅ Android notification channels created successfully');
+        developer.log('✅ All Android notification channels created successfully');
       }
     } catch (e) {
       developer.log('❌ Error creating notification channels: $e');
@@ -223,9 +245,15 @@ class FirebaseNotificationService {
   void _setupMessageHandlers() {
     developer.log('📨 Setting up FCM message handlers...');
     
-    // Foreground messages - ALWAYS show notification
+    // CRITICAL: Foreground messages handler
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      developer.log('📨 Foreground message received: ${message.messageId}');
+      developer.log('📨 === FOREGROUND MESSAGE RECEIVED ===');
+      developer.log('Message ID: ${message.messageId}');
+      developer.log('From: ${message.from}');
+      developer.log('Data: ${message.data}');
+      developer.log('Notification: ${message.notification?.toMap()}');
+      
+      // ALWAYS handle foreground messages
       handleForegroundMessage(message);
     });
 
@@ -248,171 +276,233 @@ class FirebaseNotificationService {
     developer.log('✅ FCM message handlers setup completed');
   }
 
-  // ENHANCED: Handle foreground messages with better suppression logic
- Future<void> handleForegroundMessage(RemoteMessage message) async {
-  try {
-    developer.log('📱 ========= FOREGROUND MESSAGE DEBUG START =========');
-    developer.log('📱 Message ID: ${message.messageId}');
-    developer.log('📱 From: ${message.from}');
-    developer.log('📱 Data: ${message.data}');
-    developer.log('📱 Notification: ${message.notification?.toMap()}');
-    developer.log('📱 Time: ${DateTime.now()}');
-    
-    // CRITICAL: Check if we even reach this point
-    developer.log('📱 ✅ FOREGROUND HANDLER CALLED - THIS IS GOOD!');
-    
-    final notification = message.notification;
-    final data = message.data;
-    
-    // Extract notification details
-    String title = notification?.title ?? data['senderName'] ?? 'New Message';
-    String body = notification?.body ?? data['message'] ?? 'You have a new message';
-    
-    developer.log('📱 Processed - Title: $title, Body: $body');
-
-    // STEP 2: CHECK SUPPRESSION DECISION
-    developer.log('📱 ========= SUPPRESSION CHECK START =========');
-    
-    // TEMPORARILY DISABLE SUPPRESSION FOR TESTING
-    final shouldSuppress = false; // FORCE NO SUPPRESSION
-    // final shouldSuppress = _shouldSuppressForegroundNotification(data); // Your original logic
-    
-    developer.log('📱 Suppression result: $shouldSuppress');
-    developer.log('📱 ========= SUPPRESSION CHECK END =========');
-    
-    if (shouldSuppress) {
-      developer.log('📱 🔇 NOTIFICATION SUPPRESSED - THIS IS WHY YOU DON\'T SEE IT');
-      developer.log('📱 ========= FOREGROUND MESSAGE DEBUG END (SUPPRESSED) =========');
+  // ENHANCED: Handle foreground messages - SIMPLIFIED AND ALWAYS SHOW
+  Future<void> handleForegroundMessage(RemoteMessage message) async {
+    try {
+      developer.log('📱 ========= FOREGROUND MESSAGE HANDLER START =========');
+      developer.log('📱 Message ID: ${message.messageId}');
+      developer.log('📱 Time: ${DateTime.now()}');
       
-      // Still update badge count
-      await _updateBadgeCount(data);
-      return;
-    }
+      final notification = message.notification;
+      final data = message.data;
+      
+      // Extract notification details
+      String title = notification?.title ?? data['senderName'] ?? 'New Message';
+      String body = notification?.body ?? data['message'] ?? 'You have a new message';
+      
+      developer.log('📱 Processed - Title: $title, Body: $body');
 
-    // STEP 3: ATTEMPT TO SHOW NOTIFICATION
-    developer.log('📱 ========= SHOWING NOTIFICATION START =========');
-    developer.log('📱 Channel ID: $_chatChannelId');
-    developer.log('📱 Title: $title');
-    developer.log('📱 Body: $body');
-    
-    try {
-      await _showLocalNotification(
-        title: title,
-        body: body,
-        data: data,
-        channelId: _chatChannelId,
-      );
-      developer.log('📱 ✅ _showLocalNotification called successfully');
+      // STEP 1: ALWAYS SHOW NOTIFICATION (NO SUPPRESSION FOR TESTING)
+      developer.log('📱 ========= SHOWING NOTIFICATION (NO SUPPRESSION) =========');
+      
+      try {
+        await _showLocalNotification(
+          title: title,
+          body: body,
+          data: data,
+          channelId: _chatChannelId,
+        );
+        developer.log('📱 ✅ Local notification displayed successfully');
+      } catch (e) {
+        developer.log('📱 ❌ Error showing local notification: $e');
+        developer.log('📱 ❌ Error type: ${e.runtimeType}');
+        developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
+      }
+
+      // STEP 2: Update badge count
+      try {
+        await _updateBadgeCount(data);
+        developer.log('📱 ✅ Badge count updated');
+      } catch (e) {
+        developer.log('📱 ❌ Error updating badge count: $e');
+      }
+
+      // STEP 3: Show additional visual feedback
+      _showInAppNotification(title, body);
+
+      developer.log('📱 ✅ Foreground notification process completed successfully');
+      developer.log('📱 ========= FOREGROUND MESSAGE HANDLER END =========');
+
     } catch (e) {
-      developer.log('📱 ❌ Error calling _showLocalNotification: $e');
+      developer.log('📱 ❌ CRITICAL ERROR in handleForegroundMessage: $e');
+      developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
     }
-
-    // STEP 4: UPDATE BADGE COUNT
-    try {
-      await _updateBadgeCount(data);
-      developer.log('📱 ✅ Badge count updated');
-    } catch (e) {
-      developer.log('📱 ❌ Error updating badge count: $e');
-    }
-
-    developer.log('📱 ========= SHOWING NOTIFICATION END =========');
-    developer.log('📱 ✅ Foreground notification process completed');
-    developer.log('📱 ========= FOREGROUND MESSAGE DEBUG END (SUCCESS) =========');
-
-  } catch (e) {
-    developer.log('📱 ❌ CRITICAL ERROR in handleForegroundMessage: $e');
-    developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
   }
-}
 
-
-
-  // IMPROVED: More refined suppression logic
-  bool _shouldSuppressForegroundNotification(Map<String, dynamic> data) {
-  developer.log('🔔 TESTING: SUPPRESSION DISABLED - ALWAYS SHOWING NOTIFICATIONS');
-  return false; // Never suppress - always show
-}
-
+  // NEW: Show additional in-app visual feedback
+  void _showInAppNotification(String title, String body) {
+    try {
+      // Show GetX snackbar for immediate visual feedback
+      Get.snackbar(
+        title,
+        body,
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: const Color.fromRGBO(244, 135, 6, 0.9),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(
+          Icons.message,
+          color: Colors.white,
+        ),
+        shouldIconPulse: true,
+        barBlur: 10,
+        isDismissible: true,
+        mainButton: TextButton(
+          onPressed: () {
+            Get.back();
+          },
+          child: const Text(
+            'View',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+      
+      developer.log('📱 ✅ In-app notification shown');
+    } catch (e) {
+      developer.log('📱 ❌ Error showing in-app notification: $e');
+    }
+  }
 
   Future<void> _showLocalNotification({
-  required String title,
-  required String body,
-  required Map<String, dynamic> data,
-  required String channelId,
-}) async {
-  try {
-    developer.log('📱 ========= _showLocalNotification DEBUG START =========');
-    developer.log('📱 Plugin initialized: ${_flutterLocalNotificationsPlugin != null}');
-    developer.log('📱 Title: $title');
-    developer.log('📱 Body: $body');
-    developer.log('📱 Channel ID: $channelId');
-    developer.log('📱 Data: $data');
-    
-    final androidDetails = AndroidNotificationDetails(
-      channelId,
-      _getChannelName(channelId),
-      channelDescription: _getChannelDescription(channelId),
-      importance: Importance.high,
-      priority: Priority.high,
-      showWhen: true,
-      icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      styleInformation: BigTextStyleInformation(
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+    required String channelId,
+  }) async {
+    try {
+      developer.log('📱 ========= _showLocalNotification START =========');
+      developer.log('📱 Title: $title');
+      developer.log('📱 Body: $body');
+      developer.log('📱 Channel ID: $channelId');
+      developer.log('📱 Data: $data');
+      
+      // ENHANCED Android notification details
+      final androidDetails = AndroidNotificationDetails(
+        channelId,
+        _getChannelName(channelId),
+        channelDescription: _getChannelDescription(channelId),
+        importance: Importance.max, // Maximum importance
+        priority: Priority.max, // Maximum priority
+        showWhen: true,
+        when: DateTime.now().millisecondsSinceEpoch,
+        icon: '@mipmap/ic_launcher',
+        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+        styleInformation: BigTextStyleInformation(
+          body,
+          htmlFormatBigText: true,
+          contentTitle: title,
+          htmlFormatContentTitle: true,
+          summaryText: 'New message',
+        ),
+        actions: _getNotificationActions(data),
+        autoCancel: true,
+        ongoing: false,
+        visibility: NotificationVisibility.public,
+        ticker: '$title: $body',
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]), // Custom vibration
+        enableLights: true,
+        ledColor: const Color.fromRGBO(244, 135, 6, 1),
+        ledOnMs: 1000,
+        ledOffMs: 500,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound('notification_sound'),
+        category: AndroidNotificationCategory.message,
+        fullScreenIntent: false, // Set to true for urgent notifications
+        timeoutAfter: null, // Don't timeout
+        groupKey: 'chat_messages',
+        setAsGroupSummary: false,
+      );
+
+      developer.log('📱 Android details created successfully');
+
+      // Enhanced iOS notification details
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: 'default.wav',
+        badgeNumber: 1,
+        threadIdentifier: 'chat_thread',
+        categoryIdentifier: 'MESSAGE_CATEGORY',
+        interruptionLevel: InterruptionLevel.active,
+      );
+
+      developer.log('📱 iOS details created successfully');
+
+      final notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      final notificationId = _generateNotificationId(data);
+      developer.log('📱 Generated notification ID: $notificationId');
+
+      developer.log('📱 ⏳ Calling FlutterLocalNotificationsPlugin.show()...');
+      
+      // Show the notification
+      await _flutterLocalNotificationsPlugin.show(
+        notificationId,
+        title,
         body,
-        htmlFormatBigText: true,
-        contentTitle: title,
-        htmlFormatContentTitle: true,
-      ),
-      actions: _getNotificationActions(data),
-      autoCancel: true,
-      ongoing: false,
-      visibility: NotificationVisibility.public,
-      ticker: '$title: $body',
-      enableVibration: true,
-      enableLights: true,
-      ledColor: const Color.fromRGBO(244, 135, 6, 1),
-    );
+        notificationDetails,
+        payload: jsonEncode(data),
+      );
 
-    developer.log('📱 Android details created successfully');
+      developer.log('📱 ✅ FlutterLocalNotificationsPlugin.show() completed');
+      
+      // Additional verification - check if notification was actually scheduled
+      final pendingNotifications = await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
+      developer.log('📱 📊 Pending notifications count: ${pendingNotifications.length}');
+      
+      // Show immediate feedback
+      developer.log('📱 ✅ === LOCAL NOTIFICATION SHOULD BE VISIBLE NOW ===');
+      developer.log('📱 ========= _showLocalNotification END (SUCCESS) =========');
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      sound: 'default.wav',
-    );
-
-    developer.log('📱 iOS details created successfully');
-
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    final notificationId = _generateNotificationId(data);
-    developer.log('📱 Generated notification ID: $notificationId');
-
-    developer.log('📱 ⏳ Calling FlutterLocalNotificationsPlugin.show()...');
-    
-    await _flutterLocalNotificationsPlugin.show(
-      notificationId,
-      title,
-      body,
-      notificationDetails,
-      payload: jsonEncode(data),
-    );
-
-    developer.log('📱 ✅ FlutterLocalNotificationsPlugin.show() completed successfully');
-    developer.log('📱 ✅ Local notification should now be visible!');
-    developer.log('📱 ========= _showLocalNotification DEBUG END (SUCCESS) =========');
-
-  } catch (e) {
-    developer.log('📱 ❌ CRITICAL ERROR in _showLocalNotification: $e');
-    developer.log('📱 ❌ Error type: ${e.runtimeType}');
-    developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
-    developer.log('📱 ========= _showLocalNotification DEBUG END (ERROR) =========');
+    } catch (e) {
+      developer.log('📱 ❌ CRITICAL ERROR in _showLocalNotification: $e');
+      developer.log('📱 ❌ Error type: ${e.runtimeType}');
+      developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
+      
+      // Try alternative notification method
+      await _showFallbackNotification(title, body);
+    }
   }
-}
+
+  // NEW: Fallback notification method using different approach
+  Future<void> _showFallbackNotification(String title, String body) async {
+    try {
+      developer.log('📱 🔄 Attempting fallback notification...');
+      
+      const androidDetails = AndroidNotificationDetails(
+        'fallback_channel',
+        'Fallback Notifications',
+        channelDescription: 'Fallback notifications when primary channel fails',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        autoCancel: true,
+        playSound: true,
+        enableVibration: true,
+      );
+
+      const notificationDetails = NotificationDetails(android: androidDetails);
+      
+      await _flutterLocalNotificationsPlugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        body,
+        notificationDetails,
+      );
+      
+      developer.log('📱 ✅ Fallback notification sent');
+    } catch (e) {
+      developer.log('📱 ❌ Fallback notification also failed: $e');
+    }
+  }
 
   List<AndroidNotificationAction> _getNotificationActions(Map<String, dynamic> data) {
     if (data['type'] == 'chat' || data['type'] == 'message') {
@@ -724,10 +814,41 @@ class FirebaseNotificationService {
 
   // Test notification method
   Future<void> showTestNotification() async {
+    developer.log('🧪 Showing test notification...');
     await showNotification(
       title: 'Test Notification',
-      body: 'This is a test notification to verify the setup',
+      body: 'This is a test notification to verify the foreground setup',
       data: {'type': 'test'},
     );
+  }
+
+  // NEW: Debug method to check notification status
+  Future<void> debugNotificationStatus() async {
+    try {
+      developer.log('📱 === NOTIFICATION DEBUG STATUS ===');
+      
+      // Check if initialized
+      developer.log('📱 Service initialized: $_isInitialized');
+      
+      // Check pending notifications
+      final pending = await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
+      developer.log('📱 Pending notifications: ${pending.length}');
+      
+      // Check active notifications (Android only)
+      if (Platform.isAndroid) {
+        final activeNotifications = await _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+            ?.getActiveNotifications();
+        developer.log('📱 Active notifications: ${activeNotifications?.length ?? 0}');
+      }
+      
+      // Check FCM token
+      final token = await getFCMToken();
+      developer.log('📱 FCM token available: ${token != null}');
+      
+      developer.log('📱 === END NOTIFICATION DEBUG STATUS ===');
+    } catch (e) {
+      developer.log('❌ Error in debug status: $e');
+    }
   }
 }

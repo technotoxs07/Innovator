@@ -660,7 +660,7 @@ Widget _buildKhaltiQRTab() {
           child: Column(
             children: [
               Image.asset(
-                'assets/images/khalti_qr.png',
+                'assets/images/laxmi_sunrise.jpeg',
                 width: 140,
                 height: 140,
                 fit: BoxFit.contain,
@@ -682,7 +682,7 @@ Widget _buildKhaltiQRTab() {
                         ),
                         SizedBox(height: 6),
                         Text(
-                          'Khalti QR Code',
+                          'Laxmi QR Code',
                           style: TextStyle(
                             color: Colors.purple.withOpacity(0.7),
                             fontWeight: FontWeight.w500,

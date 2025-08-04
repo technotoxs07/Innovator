@@ -171,7 +171,7 @@ class EnhancedUserAvatar extends StatelessWidget {
       if (picture.startsWith('http')) {
         return picture;
       } else {
-        return 'http://182.93.94.210:3067$picture';
+        return 'http://182.93.94.210:3066$picture';
       }
     }
     

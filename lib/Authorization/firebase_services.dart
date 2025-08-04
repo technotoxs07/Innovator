@@ -698,7 +698,7 @@ static Future<Map<String, dynamic>?> checkUserFollowStatus(String email) async {
   try {
     developer.log('🔍 Checking follow status for: $email');
     
-    final url = Uri.parse('http://182.93.94.210:3067/api/v1/check?email=$email');
+    final url = Uri.parse('http://182.93.94.210:3066/api/v1/check?email=$email');
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ${AppData().authToken}',
@@ -768,7 +768,7 @@ static Future<Map<String, dynamic>?> checkUserFollowStatus(String email) async {
             ...userData, // Firestore data (includes chat-related fields)
             'name': apiUserData['name'], // Use API name
             'picture': apiUserData['picture'], // Use API picture
-            'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}', // Full picture URL
+            'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}', // Full picture URL
             'isFollowing': followStatus['isFollowing'],
             'isFollowedBy': followStatus['isFollowedBy'],
             'isMutualFollow': true,
@@ -817,7 +817,7 @@ static Future<Map<String, dynamic>?> checkUserFollowStatus(String email) async {
           ...userData,
           'name': apiUserData['name'],
           'picture': apiUserData['picture'],
-          'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}',
+          'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}',
           'isFollowing': followStatus['isFollowing'],
           'isFollowedBy': followStatus['isFollowedBy'],
           'isMutualFollow': followStatus['isMutualFollow'],

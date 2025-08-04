@@ -19,6 +19,7 @@ import 'package:innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
 import 'package:innovator/screens/F&Q/F&Qscreen.dart';
 import 'package:innovator/screens/Privacy_Policy/privacy_screen.dart';
 import 'package:innovator/screens/Profile/profile_page.dart';
+import 'package:innovator/screens/Project_Management/Project_idea.dart';
 import 'package:innovator/screens/Report/Report_screen.dart';
 import 'package:innovator/screens/Settings/settings.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
@@ -265,7 +266,7 @@ class _CustomDrawerState extends State<CustomDrawer>
       }
 
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3067/api/v1/user-profile'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/user-profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
@@ -283,7 +284,7 @@ class _CustomDrawerState extends State<CustomDrawer>
           );
 
           if (userData['picture'] != null) {
-            const baseUrl = 'http://182.93.94.210:3067';
+            const baseUrl = 'http://182.93.94.210:3066';
             await precacheImage(
               CachedNetworkImageProvider('$baseUrl${userData['picture']}'),
               context,
@@ -337,7 +338,7 @@ class _CustomDrawerState extends State<CustomDrawer>
   Future<void> _loadNotifications() async {
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3067/api/v1/notifications'),
+        Uri.parse('http://182.93.94.210:3066/api/v1/notifications'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${AppData().authToken}',
@@ -469,6 +470,19 @@ class _CustomDrawerState extends State<CustomDrawer>
                                     );
                                   },
                                   delay: 300,
+                                ),
+                                _buildAnimatedMenuItem(
+                                  icon: Icons.help_rounded,
+                                  title: 'Projects',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>  Project_HomeScreen(),
+                                      ),
+                                    );
+                                  },// ROnit Shrivastav Ronit Shrivastav Ronit Shrivastav
+                                  delay: 600,
                                 ),
                                 _buildAnimatedMenuItem(
                                   icon: Icons.report_rounded,
@@ -646,7 +660,7 @@ class _CustomDrawerState extends State<CustomDrawer>
     final userData = AppData().currentUser ?? _userData;
     final String name = userData?['name'] ?? 'User';
     final String email = userData?['email'] ?? '';
-    const String baseUrl = 'http://182.93.94.210:3067';
+    const String baseUrl = 'http://182.93.94.210:3066';
 
     return DefaultTextStyle(
       style: const TextStyle(
@@ -911,7 +925,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Innovator App v1.0.18',
+                    'Innovator App v1.0.22',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

@@ -642,7 +642,7 @@ class FireChatController extends GetxController {
       if (picture.startsWith('http')) {
         return picture;
       } else {
-        return 'http://182.93.94.210:3067$picture';
+        return 'http://182.93.94.210:3066$picture';
       }
     }
 
@@ -1643,33 +1643,38 @@ class FireChatController extends GetxController {
   }
 
   @override
-  void navigateToChat(Map<String, dynamic> user) {
-    try {
-      // Check if user is mutual follower
-      if (!isMutualFollower(user)) {
-        Get.snackbar(
-          'Access Denied',
-          'You can only chat with users you mutually follow',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange.withOpacity(0.8),
-          colorText: Colors.white,
-          duration: const Duration(milliseconds: 800),
-        );
-        return;
+  void navigateToChat(Map<String, dynamic> user) async {
+  try {
+    // Quick fix: Always do a fresh API check if cache check fails
+    bool canChat = isMutualFollower(user);
+    
+    if (!canChat) {
+      final email = user['email']?.toString();
+      if (email != null) {
+        developer.log('🔄 Cache check failed, trying fresh API check...');
+        final freshStatus = await followStatusManager.checkFollowStatus(email);
+        canChat = freshStatus?['isMutualFollow'] == true;
       }
-
-      navigateToChatEnhanced(user);
-    } catch (e) {
-      developer.log('❌ Error in enhanced navigation: $e');
-      Get.snackbar(
-        'Error',
-        'Unable to open chat. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-      );
     }
+    
+    if (!canChat) {
+      Get.snackbar(
+        'Access Denied',
+        'You can only chat with users you mutually follow',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(milliseconds: 800),
+      );
+      return;
+    }
+
+    navigateToChatEnhanced(user);
+  } catch (e) {
+    developer.log('❌ Error in navigation: $e');
+    // Show error but don't crash
   }
+}
 
   void setTyping(bool typing) {
     isTyping.value = typing;
@@ -1967,7 +1972,7 @@ class FireChatController extends GetxController {
                       ...otherUser,
                       'name': apiUserData['name'],
                       'picture': apiUserData['picture'],
-                      'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}',
+                      'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}',
                       'isMutualFollow': true,
                     };
                   }

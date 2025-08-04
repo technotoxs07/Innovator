@@ -454,10 +454,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
 
           // Initialize overview video if available
           if (widget.course.overviewVideo != null && widget.course.overviewVideo!.isNotEmpty) {
+            developer.log('Initializing overview video: ${widget.course.overviewVideo}');
             _initializeVideo(widget.course.overviewVideo!);
+          } else {
+            developer.log('No overview video available for this course');
           }
 
-          developer.log('Course details loaded successfully');
         } catch (parseError) {
           developer.log('JSON parsing error: $parseError');
           throw Exception('Failed to parse course details: $parseError');
@@ -501,21 +503,51 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
 
   void _initializeVideo(String videoUrl) {
     try {
-      final fullVideoUrl = ApiService.getFullMediaUrl(videoUrl);
-      _videoController = VideoPlayerController.network(fullVideoUrl);
-      
-      _videoController!.initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _isVideoInitialized = true;
-          });
-          _startControlsTimer();
-        }
-      }).catchError((error) {
-        developer.log('Video initialization error: $error');
+      // Dispose of previous controller if exists
+      _videoController?.dispose();
+      setState(() {
+        _isVideoInitialized = false;
       });
+
+      final fullVideoUrl = ApiService.getFullMediaUrl(videoUrl);
+      developer.log('Full video URL: $fullVideoUrl');
+      
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(fullVideoUrl))
+        ..initialize().then((_) {
+          if (mounted) {
+            setState(() {
+              _isVideoInitialized = true;
+            });
+            developer.log('Video initialized successfully');
+            _startControlsTimer();
+          }
+        }).catchError((error) {
+          developer.log('Video initialization error: $error');
+          if (mounted) {
+            setState(() {
+              _isVideoInitialized = false;
+              _hasError = true;
+              _errorMessage = 'Failed to load video: $error';
+            });
+          }
+        });
+        
+      // Add listener for video state changes
+      _videoController!.addListener(() {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+      
     } catch (e) {
       developer.log('Video controller creation error: $e');
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = false;
+          _hasError = true;
+          _errorMessage = 'Failed to create video player: $e';
+        });
+      }
     }
   }
 
@@ -538,7 +570,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   }
 
   void _togglePlayPause() {
-    if (_videoController != null) {
+    if (_videoController != null && _isVideoInitialized) {
       setState(() {
         if (_videoController!.value.isPlaying) {
           _videoController!.pause();
@@ -551,7 +583,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   }
 
   void _seekVideo(Duration position) {
-    if (_videoController != null) {
+    if (_videoController != null && _isVideoInitialized) {
       final newPosition = _videoController!.value.position + position;
       final duration = _videoController!.value.duration;
       
@@ -672,40 +704,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     );
   }
 
-  Widget _buildVideoPlayerWithControls() {
-    if (_videoController == null || !_videoController!.value.isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(
-            Color.fromRGBO(244, 135, 6, 1),
-          ),
-        ),
-      );
-    }
-
-    final videoValue = _videoController!.value;
-    final videoAspectRatio = videoValue.aspectRatio;
-
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: videoAspectRatio > 0 ? videoAspectRatio : 16/9,
-          child: Stack(
-            children: [
-              // Video Player
-              Positioned.fill(
-                child: VideoPlayer(_videoController!),
-              ),
-              // Video Controls
-              _buildFullscreenVideoControls(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildFullscreenVideoControls() {
     return Stack(
       children: [
@@ -791,7 +789,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _videoController!.value.isPlaying 
+                    _videoController != null && _videoController!.value.isPlaying 
                         ? Icons.pause 
                         : Icons.play_arrow,
                     color: Colors.white,
@@ -844,7 +842,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
             ),
           ),
         // Bottom Progress Bar in Fullscreen
-        if (_showControls && _isFullScreen)
+        if (_showControls && _isFullScreen && _videoController != null)
           Positioned(
             bottom: 0,
             left: 0,
@@ -903,6 +901,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     setState(() {
       _selectedLesson = lesson;
     });
+    
+    // Play the first video of the selected lesson if available
+    if (lesson.videos.isNotEmpty) {
+      final firstVideo = lesson.videos.first;
+      developer.log('Playing lesson video: ${firstVideo.videoUrl}');
+      _initializeVideo(firstVideo.videoUrl);
+    }
     
     // Optionally fetch lesson-specific details
     _fetchLessonDetails(lesson.id);
@@ -1007,19 +1012,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
           fontSize: 18,
         ),
       ),
-      // actions: [
-      //   IconButton(
-      //     icon: const Icon(Icons.share),
-      //     onPressed: () {
-      //       ScaffoldMessenger.of(context).showSnackBar(
-      //         const SnackBar(
-      //           content: Text('Share feature coming soon!'),
-      //           backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-      //         ),
-      //       );
-      //     },
-      //   ),
-      // ],
     );
   }
 
@@ -1153,129 +1145,129 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   }
 
   Widget _buildCourseInfo() {
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 16),
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.course.title,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          widget.course.description,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
-            height: 1.5,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.course.title,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        // FIXED: Use Wrap instead of Row to prevent overflow
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildInfoChip(
-              Icons.school,
-              '${widget.course.contentStatistics?.totalLessons ?? 0} Lessons',
+          const SizedBox(height: 8),
+          Text(
+            widget.course.description,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              height: 1.5,
             ),
-            _buildInfoChip(
-              Icons.note,
-              '${widget.course.contentStatistics?.totalPDFs ?? 0} Notes',
-            ),
-            _buildInfoChip(
-              Icons.video_library,
-              '${widget.course.contentStatistics?.totalVideos ?? 0} Videos',
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(244, 135, 6, 0.1),
-                borderRadius: BorderRadius.circular(20),
+          ),
+          const SizedBox(height: 16),
+          // Use Wrap instead of Row to prevent overflow
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildInfoChip(
+                Icons.school,
+                '${widget.course.contentStatistics?.totalLessons ?? 0} Lessons',
               ),
-              child: Text(
-                widget.course.level.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(244, 135, 6, 1),
-                ),
+              _buildInfoChip(
+                Icons.note,
+                '${widget.course.contentStatistics?.totalPDFs ?? 0} Notes',
               ),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  widget.course.language,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              _buildInfoChip(
+                Icons.video_library,
+                '${widget.course.contentStatistics?.totalVideos ?? 0} Videos',
               ),
-            ),
-            const Spacer(),
-            if (widget.course.price.usd == 0)
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.green,
+                  color: const Color.fromRGBO(244, 135, 6, 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'FREE',
-                  style: TextStyle(
+                child: Text(
+                  widget.course.level.toUpperCase(),
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Color.fromRGBO(244, 135, 6, 1),
                   ),
                 ),
-              )
-            else
-              Text(
-                '\$${widget.course.price.usd}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(244, 135, 6, 1),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    widget.course.language,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
+              const Spacer(),
+              if (widget.course.price.usd == 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'FREE',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  '\$${widget.course.price.usd}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromRGBO(244, 135, 6, 1),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildInfoChip(IconData icon, String text) {
     return Container(
@@ -1301,276 +1293,273 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     );
   }
 
- Widget _buildTabBarSection() {
-  return Column(
-    children: [
-      Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: 0,
-            ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-        padding: const EdgeInsets.all(6),
-        child: TabBar(
-          controller: _tabController,
-          indicator: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color.fromRGBO(244, 135, 6, 1),
-                Color.fromRGBO(255, 165, 40, 1),
-              ],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildTabBarSection() {
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color.fromRGBO(244, 135, 6, 0.4),
-                blurRadius: 8,
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+                spreadRadius: 0,
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
                 spreadRadius: 0,
               ),
             ],
-          ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey[600],
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            letterSpacing: 0.3,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-            letterSpacing: 0.2,
-          ),
-          splashFactory: NoSplash.splashFactory,
-          overlayColor: WidgetStateProperty.all(Colors.transparent),
-          dividerColor: Colors.transparent,
-          tabs: [
-            // FIXED: Remove fixed mainAxisAlignment to prevent overflow
-            Tab(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.play_lesson, size: 16),
-                    SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        'Lessons',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.1),
+              width: 1,
             ),
-            Tab(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.sticky_note_2, size: 16),
-                    SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        'Notes',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Tab(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.info_outline, size: 16),
-                    SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        'About',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      Container(
-        height: 400,
-        //margin: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.08),
-            width: 1,
           ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: TabBarView(
+          padding: const EdgeInsets.all(6),
+          child: TabBar(
             controller: _tabController,
-            children: [
-              _buildLessonsTab(),
-              _buildNotesTab(),
-              _buildAboutTab(),
+            indicator: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color.fromRGBO(244, 135, 6, 1),
+                  Color.fromRGBO(255, 165, 40, 1),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color.fromRGBO(244, 135, 6, 0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.grey[600],
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              letterSpacing: 0.3,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              letterSpacing: 0.2,
+            ),
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            dividerColor: Colors.transparent,
+            tabs: [
+              Tab(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.play_lesson, size: 16),
+                      SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          'Lessons',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.sticky_note_2, size: 16),
+                      SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          'Notes',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.info_outline, size: 16),
+                      SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          'About',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-      ),
-    ],
-  );
-}
-
-  Widget _buildLessonsTab() {
-  if (_courseDetailData == null || _courseDetailData!.lessons.isEmpty) {
-    return const Center(
-      child: Text(
-        'No lessons available',
-        style: TextStyle(fontSize: 16, color: Colors.grey),
-      ),
+        Container(
+          height: 400,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            ],
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.08),
+              width: 1,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildLessonsTab(),
+                _buildNotesTab(),
+                _buildAboutTab(),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  return ListView.builder(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    itemCount: _courseDetailData!.lessons.length,
-    itemBuilder: (context, index) {
-      final lesson = _courseDetailData!.lessons[index];
-      final isSelected = _selectedLesson?.id == lesson.id;
-      
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: isSelected 
-              ? const Color.fromRGBO(244, 135, 6, 0.1)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: isSelected 
-              ? Border.all(color: const Color.fromRGBO(244, 135, 6, 1))
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
+  Widget _buildLessonsTab() {
+    if (_courseDetailData == null || _courseDetailData!.lessons.isEmpty) {
+      return const Center(
+        child: Text(
+          'No lessons available',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(16),
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isSelected 
-                  ? const Color.fromRGBO(244, 135, 6, 1)
-                  : Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                '${lesson.sortOrder}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : Colors.grey[600],
-                ),
-              ),
-            ),
-          ),
-          title: Text(
-            lesson.title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isSelected 
-                  ? const Color.fromRGBO(244, 135, 6, 1)
-                  : Colors.black87,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text(lesson.description),
-              const SizedBox(height: 8),
-              // FIXED: Use Wrap instead of Row for lesson statistics
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  _buildLessonInfoItem(Icons.schedule, lesson.duration),
-                  _buildLessonInfoItem(Icons.note, '${lesson.notes.length} notes'),
-                  _buildLessonInfoItem(Icons.video_library, '${lesson.videos.length} videos'),
-                ],
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _courseDetailData!.lessons.length,
+      itemBuilder: (context, index) {
+        final lesson = _courseDetailData!.lessons[index];
+        final isSelected = _selectedLesson?.id == lesson.id;
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? const Color.fromRGBO(244, 135, 6, 0.1)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected 
+                ? Border.all(color: const Color.fromRGBO(244, 135, 6, 1))
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          trailing: Icon(
-            isSelected ? Icons.expand_less : Icons.expand_more,
-            color: isSelected 
-                ? const Color.fromRGBO(244, 135, 6, 1)
-                : Colors.grey[400],
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSelected 
+                    ? const Color.fromRGBO(244, 135, 6, 1)
+                    : Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  '${lesson.sortOrder}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : Colors.grey[600],
+                  ),
+                ),
+              ),
+            ),
+            title: Text(
+              lesson.title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isSelected 
+                    ? const Color.fromRGBO(244, 135, 6, 1)
+                    : Colors.black87,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(lesson.description),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    _buildLessonInfoItem(Icons.schedule, lesson.duration),
+                    _buildLessonInfoItem(Icons.note, '${lesson.notes.length} notes'),
+                    _buildLessonInfoItem(Icons.video_library, '${lesson.videos.length} videos'),
+                  ],
+                ),
+              ],
+            ),
+            trailing: Icon(
+              isSelected ? Icons.expand_less : Icons.expand_more,
+              color: isSelected 
+                  ? const Color.fromRGBO(244, 135, 6, 1)
+                  : Colors.grey[400],
+            ),
+            onTap: () => _selectLesson(lesson),
           ),
-          onTap: () => _selectLesson(lesson),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
-Widget _buildLessonInfoItem(IconData icon, String text) {
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 14, color: Colors.grey[500]),
-      const SizedBox(width: 4),
-      Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.grey[500],
+  Widget _buildLessonInfoItem(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey[500]),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[500],
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   Widget _buildNotesTab() {
     List<Note> allNotes = [];

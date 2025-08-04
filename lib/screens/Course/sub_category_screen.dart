@@ -123,9 +123,10 @@ class _SubcategoryScreenState extends State<SubcategoryScreen>
   String _selectedFilter = "All";
   List<String> _filterTypes = [
     "All",
+    "Become a Steam Tutor",
     "Beginner",
-    "Intermediate",
-    "Advanced",
+    "Programming",
+    "IOT",
     "Free",
     "Paid",
   ];

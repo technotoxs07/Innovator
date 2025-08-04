@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Forget_PWD.dart';
+import 'package:innovator/Authorization/cross_platform.dart';
 import 'package:innovator/Authorization/firebase_services.dart';
 import 'package:innovator/Authorization/signup.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
       final body = jsonEncode({
         'email': emailController.text.trim(),
         'password': passwordController.text.trim(),
@@ -126,80 +127,86 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    setState(() {
-      _isGoogleLoading = true;
-    });
+  // Check platform support first
+  if (!CrossPlatformAuth.isGoogleSignInSupported) {
+    Dialogs.showSnackbar(
+      context, 
+      'Google Sign-In is not supported on this platform. Please use email/password login.'
+    );
+    return;
+  }
 
-    try {
-      // Show account picker and sign in
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+  setState(() {
+    _isGoogleLoading = true;
+  });
 
-      if (googleUser == null) {
-        // User cancelled the sign-in
-        setState(() {
-          _isGoogleLoading = false;
-        });
-        return;
-      }
-
-      // Get authentication details
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // Create a credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with Google credentials
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        // Get the ID token for API authentication
-        final String? idToken = await user.getIdToken(true);
-
-        developer.log('Google Sign-In successful for user: ${user.email}');
-        developer.log('User display name: ${user.displayName}');
-        developer.log('User photo URL: ${user.photoURL}');
-        developer.log('Firebase ID Token length: ${idToken?.length ?? 0}');
-
-        if (idToken == null || idToken.isEmpty) {
-          Dialogs.showSnackbar(context, 'Failed to get authentication token from Google');
-          return;
-        }
-
-        // Try to login first, if fails then register
-        bool loginSuccess = await _attemptGoogleLogin(user, idToken);
-
-        if (!loginSuccess) {
-          // If login fails, try to register the user
-          bool registrationSuccess = await _attemptGoogleRegister(user, idToken);
-
-          // If registration fails due to existing email, try login again with Firebase token
-          if (!registrationSuccess) {
-            developer.log('Registration failed, attempting login with Firebase token for existing user');
-            bool retryLoginSuccess = await _attemptGoogleLoginForExistingUser(user, idToken);
-
-            if (!retryLoginSuccess) {
-              Dialogs.showSnackbar(
-                context,
-                'Unable to sign in. Please try again or contact support.',
-              );
-            }
-          }
-        }
-      }
-    } catch (error) {
-      developer.log('Google Sign-In error: $error');
-      Dialogs.showSnackbar(context, 'Google Sign-In failed: ${error.toString()}');
-    } finally {
+  try {
+    final UserCredential? userCredential = await CrossPlatformAuth.signInWithGoogle();
+    
+    if (userCredential == null) {
+      // User cancelled the sign-in
       setState(() {
         _isGoogleLoading = false;
       });
+      return;
     }
-  }
 
+    final User? user = userCredential.user;
+    if (user != null) {
+      // Get the ID token for API authentication
+      final String? idToken = await user.getIdToken(true);
+
+      developer.log('Google Sign-In successful for user: ${user.email}');
+      developer.log('User display name: ${user.displayName}');
+      developer.log('User photo URL: ${user.photoURL}');
+      developer.log('Firebase ID Token length: ${idToken?.length ?? 0}');
+
+      if (idToken == null || idToken.isEmpty) {
+        Dialogs.showSnackbar(context, 'Failed to get authentication token from Google');
+        return;
+      }
+
+      // Try to login first, if fails then register
+      bool loginSuccess = await _attemptGoogleLogin(user, idToken);
+
+      if (!loginSuccess) {
+        // If login fails, try to register the user
+        bool registrationSuccess = await _attemptGoogleRegister(user, idToken);
+
+        // If registration fails due to existing email, try login again with Firebase token
+        if (!registrationSuccess) {
+          developer.log('Registration failed, attempting login with Firebase token for existing user');
+          bool retryLoginSuccess = await _attemptGoogleLoginForExistingUser(user, idToken);
+
+          if (!retryLoginSuccess) {
+            Dialogs.showSnackbar(
+              context,
+              'Unable to sign in. Please try again or contact support.',
+            );
+          }
+        }
+      }
+    }
+  } on UnsupportedError catch (e) {
+    developer.log('Platform not supported: $e');
+   // Dialogs.showSnackbar(context, e.message);
+  } catch (error) {
+    developer.log('Google Sign-In error: $error');
+    
+    if (error.toString().contains('MissingPluginException')) {
+      Dialogs.showSnackbar(
+        context, 
+        'Google Sign-In is not available on this platform. Please use email/password login.'
+      );
+    } else {
+      Dialogs.showSnackbar(context, 'Google Sign-In failed: ${error.toString()}');
+    }
+  } finally {
+    setState(() {
+      _isGoogleLoading = false;
+    });
+  }
+}
   Future<bool> _attemptGoogleLoginForExistingUser(User user, String? idToken) async {
   try {
     developer.log('Attempting to login existing Google user with Firebase token');
@@ -285,7 +292,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       developer.log('Trying API login with Firebase token for existing user');
 
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
       final body = jsonEncode({
         'email': user.email,
         'firebaseToken': idToken ?? '',
@@ -317,7 +324,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<bool> _attemptGoogleLogin(User user, String? idToken) async {
     try {
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
 
       // Try multiple request formats to see which one works
       List<Map<String, dynamic>> requestFormats = [
@@ -354,7 +361,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<bool> _attemptGoogleRegister(User user, String? idToken) async {
   try {
-    final url = Uri.parse('http://182.93.94.210:3067/api/v1/register-user');
+    final url = Uri.parse('http://182.93.94.210:3066/api/v1/register-user');
 
     // Prepare registration data with consistent ID fields
     Map<String, dynamic> body = {
@@ -676,16 +683,70 @@ Future<void> _initializeChatController() async {
   }
 
   Future<void> _showAccountPicker() async {
-    try {
-      await _googleSignIn.signOut();
-      await FirebaseAuth.instance.signOut();
-      _handleGoogleSignIn();
-    } catch (e) {
-      developer.log('Error showing account picker: $e');
-      _handleGoogleSignIn();
-    }
+  if (!CrossPlatformAuth.isGoogleSignInSupported) {
+    Dialogs.showSnackbar(
+      context, 
+      'Google Sign-In is not supported on this platform.'
+    );
+    return;
   }
 
+  try {
+    await CrossPlatformAuth.signOut();
+    _handleGoogleSignIn();
+  } catch (e) {
+    developer.log('Error showing account picker: $e');
+    _handleGoogleSignIn();
+  }
+}
+
+Widget _buildGoogleSignInButton() {
+  if (!CrossPlatformAuth.isGoogleSignInSupported) {
+    return SizedBox.shrink(); // Don't show the button on unsupported platforms
+  }
+
+  return ElevatedButton.icon(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Color.fromRGBO(244, 135, 6, 1),
+      shape: StadiumBorder(),
+      elevation: 1,
+    ),
+    onPressed: _isGoogleLoading ? null : _showAccountPicker,
+    icon: _isGoogleLoading
+        ? SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          )
+        : Lottie.asset(
+            'animation/Googlesignup.json',
+            height: MediaQuery.of(context).size.height * .05,
+          ),
+    label: RichText(
+      text: const TextSpan(
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 19,
+        ),
+        children: [
+          TextSpan(
+            text: 'Sign In with ',
+            style: TextStyle(color: Colors.white),
+          ),
+          TextSpan(
+            text: 'Google',
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
@@ -832,6 +893,8 @@ Future<void> _initializeChatController() async {
                                     ),
                             ),
                             SizedBox(height: 10),
+                                                        //_buildGoogleSignInButton(),
+
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color.fromRGBO(244, 135, 6, 1),
@@ -873,6 +936,7 @@ Future<void> _initializeChatController() async {
                                 ),
                               ),
                             ),
+                            
                             TextButton(
                               onPressed: () {
                                 TextInput.finishAutofillContext(shouldSave: false);

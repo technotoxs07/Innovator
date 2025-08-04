@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:innovator/screens/chatApp/EnhancedUserAvtar.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
+import 'package:innovator/screens/chatrrom/sound/soundplayer.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:developer' as developer;
 
@@ -57,6 +59,15 @@ class OptimizedChatScreen extends GetView<FireChatController> {
       floatingActionButton: _buildScrollToBottomFab(scrollController),
     );
   }
+  Widget  _buildChatAvatar(Map<String, dynamic> user, bool isOnline) {
+  return EnhancedUserAvatar(
+    user: user,
+    radius: 15,
+    isOnline: isOnline,
+    showOnlineIndicator: true,
+    heroTag: 'chat_avatar_${user['id']}',
+  );
+}
 
   PreferredSizeWidget _buildAppBar() {
     final receiverName = receiverUser['name']?.toString() ?? 'Unknown User';
@@ -76,50 +87,8 @@ class OptimizedChatScreen extends GetView<FireChatController> {
         onTap: () => _showUserProfile(),
         child: Row(
           children: [
-            Hero(
-              tag: 'user_avatar_${receiverUser['id'] ?? receiverUser['userId'] ?? 'unknown'}',
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white,
-                      backgroundImage: receiverPhoto != null && receiverPhoto.isNotEmpty
-                          ? NetworkImage(receiverPhoto)
-                          : null,
-                      child: receiverPhoto == null || receiverPhoto.isEmpty
-                          ? Text(
-                              receiverName.substring(0, 1).toUpperCase(),
-                              style: const TextStyle(
-                                color: Color.fromRGBO(244, 135, 6, 1),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-                  if (isOnline)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+                                   _buildChatAvatar(receiverUser, isOnline),
+
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -263,7 +232,8 @@ class OptimizedChatScreen extends GetView<FireChatController> {
     final messageTime = timestamp?.toDate();
     final isSending = message['isSending'] == true;
     final messageId = message['id']?.toString() ?? '';
-    
+        final isOnline = receiverUser['isOnline'] == true;
+
     bool showDateSeparator = false;
     if (previousMessage != null) {
       final prevTimestamp = previousMessage['timestamp'] as Timestamp?;
@@ -295,25 +265,8 @@ class OptimizedChatScreen extends GetView<FireChatController> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     if (!isMe) ...[
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-                        backgroundImage: receiverUser['photoURL']?.toString() != null &&
-                                        receiverUser['photoURL'].toString().isNotEmpty
-                            ? NetworkImage(receiverUser['photoURL'].toString())
-                            : null,
-                        child: receiverUser['photoURL']?.toString() == null ||
-                               receiverUser['photoURL'].toString().isEmpty
-                            ? Text(
-                                (receiverUser['name']?.toString() ?? 'U').substring(0, 1).toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            : null,
-                      ),
+                                                         _buildChatAvatar(receiverUser, isOnline),
+
                       const SizedBox(width: 8),
                     ],
                     
@@ -578,7 +531,11 @@ class OptimizedChatScreen extends GetView<FireChatController> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: controller.isTyping.value
-                        ? () => _sendMessage(messageController, chatId)
+                        ? () {
+                          _sendMessage(messageController, chatId);
+                          SoundPlayer play = new SoundPlayer();
+                          play.playSound();
+                        }
                         : null,
                     borderRadius: BorderRadius.circular(25),
                     child: Container(

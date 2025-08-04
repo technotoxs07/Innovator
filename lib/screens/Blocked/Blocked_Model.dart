@@ -60,7 +60,7 @@ class BlockedUser {
   String get fullPictureUrl {
     if (picture.isEmpty) return '';
     if (picture.startsWith('http')) return picture;
-    return 'http://182.93.94.210:3067$picture';
+    return 'http://182.93.94.210:3066$picture';
   }
 }
 

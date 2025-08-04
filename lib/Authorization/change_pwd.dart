@@ -48,7 +48,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/change-password');
+      final url = Uri.parse('http://182.93.94.210:3066/api/v1/change-password');
       final headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ${_appData.authToken}',
