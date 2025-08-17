@@ -249,6 +249,37 @@ class AppData {
       developer.log('❌ Error updating FCM token in Firestore: $e');
     }
   }
+
+   Future<void> initializeOffline() async {
+    try {
+      developer.log('🔄 Initializing AppData in offline mode...');
+      
+      // Initialize only offline-capable components
+      // Skip any network-dependent initialization like FCM, API calls, etc.
+      
+      // Initialize shared preferences if you have them
+      // await _initializeSharedPreferences();
+      
+      // Initialize local database if you have one
+      // await _initializeLocalDatabase();
+      
+      // Initialize cached data
+      // await _loadCachedUserData();
+      
+      // Set offline flag
+      _isOfflineMode = true;
+      
+      developer.log('✅ AppData initialized successfully in offline mode');
+    } catch (e) {
+      developer.log('❌ AppData offline initialization failed: $e');
+      rethrow;
+    }
+  }
+
+
+    // Add offline mode flag
+  bool _isOfflineMode = false;
+  bool get isOfflineMode => _isOfflineMode;
   
 
   String? getMostRecentFcmToken() {

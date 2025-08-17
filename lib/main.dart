@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,7 @@ import 'dart:developer' as developer;
 // Global variables and constants
 late Size mq;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+bool _isAppOnline = false;
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -114,7 +117,7 @@ Future<void> _initializeBackgroundNotifications(FlutterLocalNotificationsPlugin 
           'chat_messages',
           'Chat Messages',
           description: 'Notifications for new chat messages',
-          importance: Importance.max, // Increased for better visibility
+          importance: Importance.max,
           enableVibration: true,
           enableLights: true,
           ledColor: Color.fromRGBO(244, 135, 6, 1),
@@ -155,12 +158,12 @@ Future<void> _showBackgroundLocalNotification(
       'chat_messages',
       'Chat Messages',
       channelDescription: 'Notifications for new chat messages',
-      importance: Importance.max, // Maximum importance
-      priority: Priority.max, // Maximum priority
+      importance: Importance.max,
+      priority: Priority.max,
       showWhen: true,
       icon: '@mipmap/ic_launcher',
       styleInformation: BigTextStyleInformation(
-        '', // Will be filled with body
+        '',
         htmlFormatBigText: true,
       ),
       actions: [
@@ -223,14 +226,108 @@ int _generateNotificationId(Map<String, dynamic> data) {
   return DateTime.now().millisecondsSinceEpoch.remainder(100000);
 }
 
+// Enhanced connectivity check function
+Future<bool> _checkInternetConnectivity() async {
+  try {
+    // First check connectivity status
+    final connectivityResults = await Connectivity().checkConnectivity();
+    
+    // Check if any connection type is available
+    if (connectivityResults.every((result) => result == ConnectivityResult.none)) {
+      developer.log('📶 No connectivity reported by system');
+      return false;
+    }
+    
+    // Double-check with a simple network call
+    try {
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 5));
+      
+      bool hasInternet = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      developer.log('📶 Internet lookup result: $hasInternet');
+      return hasInternet;
+    } catch (e) {
+      developer.log('📶 Internet lookup failed: $e');
+      return false;
+    }
+  } catch (e) {
+    developer.log('❌ Connectivity check failed: $e');
+    return false;
+  }
+}
+
+// Enhanced Firebase initialization with offline support
+Future<void> _initializeFirebaseWithFallback(bool hasInternet) async {
+  try {
+    // Always try to initialize Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    if (hasInternet) {
+      developer.log('✅ Firebase initialized with internet connectivity');
+      // Set background handler only if online
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      developer.log('✅ Background message handler set');
+    } else {
+      developer.log('✅ Firebase initialized in offline mode');
+    }
+  } catch (e) {
+    developer.log('❌ Firebase initialization failed: $e');
+    // Don't rethrow - allow app to continue
+  }
+}
+
+// Enhanced AppData initialization with fallback
+Future<void> _initializeAppDataWithFallback(bool hasInternet) async {
+  try {
+    if (hasInternet) {
+      await AppData().initialize();
+      developer.log('✅ AppData initialized with internet');
+    } else {
+      // Try offline initialization
+      try {
+        // You'll need to add this method to your AppData class
+        await AppData().initializeOffline();
+        developer.log('✅ AppData initialized in offline mode');
+      } catch (offlineError) {
+        developer.log('⚠️ AppData offline initialization failed, using minimal setup');
+        // Minimal initialization fallback
+        await _initializeMinimalAppData();
+      }
+    }
+  } catch (e) {
+    developer.log('❌ AppData initialization failed: $e');
+    // Try minimal initialization as last resort
+    await _initializeMinimalAppData();
+  }
+}
+
+// Minimal AppData initialization for offline mode
+Future<void> _initializeMinimalAppData() async {
+  try {
+    // Initialize only essential offline components
+    developer.log('⚠️ Using minimal AppData initialization');
+  } catch (e) {
+    developer.log('❌ Even minimal AppData initialization failed: $e');
+  }
+}
+
+// Enhanced app initialization with comprehensive offline support
 Future<void> _initializeApp() async {
   try {
     developer.log('🚀 === APP INITIALIZATION START ===');
     
     // Ensure Flutter binding is initialized
     WidgetsFlutterBinding.ensureInitialized();
-     AdaptiveVideoSystem.initialize(); // Add this line
-// 
+    
+    try {
+      AdaptiveVideoSystem.initialize();
+      developer.log('✅ AdaptiveVideoSystem initialized');
+    } catch (e) {
+      developer.log('⚠️ AdaptiveVideoSystem initialization failed: $e');
+    }
+
     // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -239,49 +336,66 @@ Future<void> _initializeApp() async {
       ),
     );
     
-    // Initialize Firebase
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    developer.log('✅ Firebase initialized');
+    // Check internet connectivity first
+    bool hasInternet = await _checkInternetConnectivity();
+    _isAppOnline = hasInternet;
+    developer.log('📶 Internet connectivity: $hasInternet');
     
-    // CRITICAL: Set background handler BEFORE any other FCM operations
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    developer.log('✅ Background message handler set');
+    // Initialize Firebase with offline handling
+    await _initializeFirebaseWithFallback(hasInternet);
     
-    // Initialize AppData first
-    await AppData().initialize();
-    developer.log('✅ AppData initialized');
+    // Initialize AppData with offline support
+    await _initializeAppDataWithFallback(hasInternet);
     
-    // Initialize notification service with enhanced debugging
-    developer.log('📱 === NOTIFICATION SERVICE INITIALIZATION ===');
-    final notificationService = FirebaseNotificationService();
-    await notificationService.initialize();
-    developer.log('✅ Notification service initialized');
+    // Initialize notification service only if online
+    if (hasInternet) {
+      try {
+        developer.log('📱 === NOTIFICATION SERVICE INITIALIZATION ===');
+        final notificationService = FirebaseNotificationService();
+        await notificationService.initialize();
+        developer.log('✅ Notification service initialized');
+        
+        // Initialize other online services
+        await AppData().initializeFcmAfterLogin();
+        _setupNotificationListeners();
+        await _testFCMToken();
+      } catch (e) {
+        developer.log('⚠️ Online services initialization failed: $e');
+      }
+    } else {
+      developer.log('⚠️ Skipping online services due to no internet connectivity');
+    }
     
-    // Test notification immediately after init
-    //await _testNotificationSystem();
+    // Initialize offline-capable services
+    try {
+      await DrawerProfileCache.initialize();
+      developer.log('✅ DrawerProfileCache initialized');
+    } catch (e) {
+      developer.log('⚠️ DrawerProfileCache initialization failed: $e');
+    }
     
-    // Initialize other services
-    await AppData().initializeFcmAfterLogin();
-    await DrawerProfileCache.initialize();
-    await CacheManager.initialize();
-    developer.log('✅ App services initialized');
-    
-    // Setup notification listeners with enhanced logging
-    _setupNotificationListeners();
+    try {
+      await CacheManager.initialize();
+      developer.log('✅ CacheManager initialized');
+    } catch (e) {
+      developer.log('⚠️ CacheManager initialization failed: $e');
+    }
     
     // Initialize follow status manager
-    Get.put(FollowStatusManager(), permanent: true);
-    
-    // Test FCM token availability
-    await _testFCMToken();
+    try {
+      Get.put(FollowStatusManager(), permanent: true);
+      developer.log('✅ FollowStatusManager initialized');
+    } catch (e) {
+      developer.log('⚠️ FollowStatusManager initialization failed: $e');
+    }
 
     developer.log('🎉 === APP INITIALIZATION COMPLETED SUCCESSFULLY ===');
   } catch (e) {
     developer.log('❌ App initialization failed: $e');
     developer.log('❌ Stack trace: ${StackTrace.current}');
-    rethrow;
+    
+    // Don't rethrow - allow app to continue with limited functionality
+    developer.log('⚠️ Continuing with limited functionality...');
   }
 }
 
@@ -333,7 +447,7 @@ void _setupNotificationListeners() {
     // Get notification service instance
     final notificationService = FirebaseNotificationService();
     
-    // CRITICAL: Handle foreground messages with enhanced logging
+    // Handle foreground messages with enhanced logging
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       developer.log('📨 === FOREGROUND MESSAGE RECEIVED IN MAIN ===');
       developer.log('📨 Message ID: ${message.messageId}');
@@ -342,7 +456,7 @@ void _setupNotificationListeners() {
       developer.log('📨 Notification: ${message.notification?.toMap()}');
       developer.log('📨 Time: ${DateTime.now()}');
       
-      // ALWAYS handle foreground messages
+      // Handle foreground messages
       notificationService.handleForegroundMessage(message);
       
       // Additional immediate feedback
@@ -372,7 +486,7 @@ void _setupNotificationListeners() {
   }
 }
 
-// NEW: Show immediate visual feedback for foreground messages
+// Show immediate visual feedback for foreground messages
 void _showImmediateFeedback(RemoteMessage message) {
   try {
     final title = message.notification?.title ?? message.data['senderName'] ?? 'New Message';
@@ -492,8 +606,265 @@ void _handleCallNotification(Map<String, dynamic> data) {
   );
 }
 
+// Enhanced Offline-Aware Splash Screen
+class OfflineAwareSplashScreen extends StatefulWidget {
+  const OfflineAwareSplashScreen({Key? key}) : super(key: key);
+
+  @override
+  State<OfflineAwareSplashScreen> createState() => _OfflineAwareSplashScreenState();
+}
+
+class _OfflineAwareSplashScreenState extends State<OfflineAwareSplashScreen> with TickerProviderStateMixin {
+  bool _isOnline = true;
+  bool _isLoading = true;
+  String _loadingText = 'Loading...';
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupAnimation();
+    _checkConnectivityAndProceed();
+    _listenToConnectivityChanges();
+  }
+
+  void _setupAnimation() {
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    _animationController.forward();
+  }
+
+  void _listenToConnectivityChanges() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      if (mounted) {
+        // Check if any connection type is available
+        final bool isOnline = results.any((result) => result != ConnectivityResult.none);
+        if (_isOnline != isOnline) {
+          setState(() {
+            _isOnline = isOnline;
+            _loadingText = isOnline ? 'Connecting...' : 'Offline Mode';
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _checkConnectivityAndProceed() async {
+    try {
+      setState(() {
+        _loadingText = 'Checking connection...';
+      });
+
+      // Check connectivity
+      final hasInternet = await _checkInternetConnectivity();
+      
+      if (mounted) {
+        setState(() {
+          _isOnline = hasInternet;
+          _loadingText = hasInternet ? 'Loading services...' : 'Offline Mode';
+        });
+      }
+      
+      // Wait minimum splash time
+      await Future.delayed(const Duration(seconds: 2));
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Small delay before navigation
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Navigate to appropriate screen
+        _navigateToHome();
+      }
+    } catch (e) {
+      developer.log('❌ Splash screen error: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isOnline = false;
+          _loadingText = 'Error occurred';
+        });
+        
+        // Still navigate after error
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) _navigateToHome();
+        });
+      }
+    }
+  }
+
+  void _navigateToHome() {
+    if (mounted) {
+      // Use your original splash screen navigation logic
+      // Replace with your actual home screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => SplashScreen(), // Use your original SplashScreen here
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // App logo/icon
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.chat_rounded,
+                  size: 60,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 30),
+              
+              // App name
+              const Text(
+                'Innovator',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 50),
+              
+              // Loading content
+              if (_isLoading) ...[
+                const SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  _loadingText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ] else if (!_isOnline) ...[
+                // Offline indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(
+                        Icons.wifi_off,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Offline Mode',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Some features may be limited',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 60),
+              
+              // Connection status
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _isOnline ? Colors.green : Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isOnline ? 'Online' : 'Offline',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Enhanced main function with comprehensive error handling
 void main() async {
-  await _initializeApp();
+  try {
+    await _initializeApp();
+  } catch (e) {
+    developer.log('❌ Critical initialization error: $e');
+    // Still run the app with basic functionality
+  }
+  
   runApp(const ProviderScope(child: InnovatorHomePage()));
 }
 
@@ -506,6 +877,7 @@ class InnovatorHomePage extends ConsumerStatefulWidget {
 
 class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
   Timer? _notificationTimer;
+  Timer? _connectivityTimer;
   late NotificationService _notificationService;
 
   @override
@@ -513,6 +885,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     super.initState();
     _initializeAppNotifications();
     _setupPeriodicNotificationTest();
+    _setupConnectivityMonitoring();
   }
 
   void _initializeAppNotifications() async {
@@ -525,16 +898,97 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     }
   }
 
-  // NEW: Periodic test to ensure notifications are working
+  // Periodic test to ensure notifications are working
   void _setupPeriodicNotificationTest() {
-    _notificationTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      developer.log('🔔 Periodic notification system health check');
-      _testNotificationHealth();
+    if (_isAppOnline) {
+      _notificationTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+        developer.log('🔔 Periodic notification system health check');
+        _testNotificationHealth();
+      });
+    }
+  }
+
+  // Monitor connectivity changes
+  void _setupConnectivityMonitoring() {
+    _connectivityTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkAndUpdateConnectivity();
     });
+  }
+
+  Future<void> _checkAndUpdateConnectivity() async {
+    try {
+      final wasOnline = _isAppOnline;
+      final isOnline = await _checkInternetConnectivity();
+      
+      if (wasOnline != isOnline) {
+        _isAppOnline = isOnline;
+        developer.log('📶 Connectivity changed: $isOnline');
+        
+        if (isOnline) {
+          // Reconnected - reinitialize online services
+          _handleReconnection();
+        } else {
+          // Disconnected - handle offline mode
+          _handleDisconnection();
+        }
+      }
+    } catch (e) {
+      developer.log('❌ Error checking connectivity: $e');
+    }
+  }
+
+  Future<void> _handleReconnection() async {
+    try {
+      developer.log('🔄 Handling reconnection...');
+      
+      // Reinitialize Firebase services
+      final notificationService = FirebaseNotificationService();
+      await notificationService.initialize();
+      
+      // Refresh FCM token
+      await AppData().refreshFcmToken();
+      
+      // Show reconnection snackbar
+      Get.snackbar(
+        'Back Online',
+        'All features are now available',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+        icon: const Icon(Icons.wifi, color: Colors.white),
+      );
+      
+      // Restart periodic health checks
+      _setupPeriodicNotificationTest();
+      
+    } catch (e) {
+      developer.log('❌ Error handling reconnection: $e');
+    }
+  }
+
+  void _handleDisconnection() {
+    developer.log('📶 Handling disconnection...');
+    
+    // Cancel periodic tests
+    _notificationTimer?.cancel();
+    
+    // Show offline snackbar
+    Get.snackbar(
+      'Offline',
+      'Some features may be limited',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.orange,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      icon: const Icon(Icons.wifi_off, color: Colors.white),
+    );
   }
 
   Future<void> _testNotificationHealth() async {
     try {
+      if (!_isAppOnline) return;
+      
       final notificationService = FirebaseNotificationService();
       await notificationService.debugNotificationStatus();
       
@@ -552,6 +1006,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
   @override
   void dispose() {
     _notificationTimer?.cancel();
+    _connectivityTimer?.cancel();
     super.dispose();
   }
 
@@ -564,18 +1019,32 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       title: 'Innovator',
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+            home: SplashScreen(),
+ 
+      // Use the enhanced offline-aware splash screen
+      //home: const OfflineAwareSplashScreen(),
       onInit: () {
-        // Initialize chat controller globally
-        Get.put<FireChatController>(FireChatController(), permanent: true);
-        Get.put<CartStateManager>(CartStateManager(), permanent: true);
+        // Initialize chat controller globally with error handling
+        try {
+          Get.put<FireChatController>(FireChatController(), permanent: true);
+          developer.log('✅ Chat controller initialized globally');
+        } catch (e) {
+          developer.log('❌ Error initializing chat controller: $e');
+        }
 
-        developer.log('✅ Chat controller initialized globally');
+        try {
+          Get.put<CartStateManager>(CartStateManager(), permanent: true);
+          developer.log('✅ Cart state manager initialized globally');
+        } catch (e) {
+          developer.log('❌ Error initializing cart state manager: $e');
+        }
         
-        // Test notification after app is ready
-        // Future.delayed(const Duration(seconds: 3), () {
-        //   _performAppReadyNotificationTest();
-        // });
+        // Test notification after app is ready (only if online)
+        if (_isAppOnline) {
+          Future.delayed(const Duration(seconds: 3), () {
+            _performAppReadyNotificationTest();
+          });
+        }
       },
       getPages: [
         // Chat Home Page
@@ -605,7 +1074,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
             Get.lazyPut<FireChatController>(() => FireChatController());
           }),
         ),
-        // 
+        
         // Search Users Page
         GetPage(
           name: '/search',
@@ -615,6 +1084,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
           }),
         ),
 
+        // Shop Page
         GetPage(
           name: '/shop',
           page: () => const ShopPage(),
@@ -641,9 +1111,11 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     );
   }
 
-  // NEW: Test notifications when app is fully ready
+  // Test notifications when app is fully ready
   void _performAppReadyNotificationTest() async {
     try {
+      if (!_isAppOnline) return;
+      
       developer.log('🧪 === PERFORMING APP-READY NOTIFICATION TEST ===');
       
       final notificationService = FirebaseNotificationService();
@@ -690,6 +1162,109 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
         backgroundColor: Color.fromRGBO(244, 135, 6, 1),
         foregroundColor: Colors.white,
       ),
+    );
+  }
+}
+
+// Enhanced Connectivity Status Widget (optional - can be used in your screens)
+class ConnectivityStatusWidget extends StatefulWidget {
+  final Widget child;
+  
+  const ConnectivityStatusWidget({
+    Key? key,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  State<ConnectivityStatusWidget> createState() => _ConnectivityStatusWidgetState();
+}
+
+class _ConnectivityStatusWidgetState extends State<ConnectivityStatusWidget> {
+  bool _isOnline = true;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialConnectivity();
+    _listenToConnectivityChanges();
+  }
+
+  Future<void> _checkInitialConnectivity() async {
+    final isOnline = await _checkInternetConnectivity();
+    if (mounted) {
+      setState(() {
+        _isOnline = isOnline;
+      });
+    }
+  }
+
+  void _listenToConnectivityChanges() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+      (List<ConnectivityResult> results) async {
+        // Check if any connection type is available
+        final isOnline = results.any((result) => result != ConnectivityResult.none);
+        
+        // Double-check with actual internet access
+        if (isOnline) {
+          final hasInternet = await _checkInternetConnectivity();
+          if (mounted && _isOnline != hasInternet) {
+            setState(() {
+              _isOnline = hasInternet;
+            });
+          }
+        } else {
+          if (mounted && _isOnline) {
+            setState(() {
+              _isOnline = false;
+            });
+          }
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        if (!_isOnline)
+          Positioned(
+            top: MediaQuery.of(context).padding.top,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.red.withOpacity(0.9),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(
+                    Icons.wifi_off,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'No internet connection',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
