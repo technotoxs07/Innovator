@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/main.dart';
+import 'package:innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
 import 'package:innovator/screens/Likes/Content-Like-Service.dart';
 import 'package:innovator/screens/Likes/content-Like-Button.dart';
 
@@ -50,19 +51,90 @@ class StreamingUrls {
   final String hls;
   final String original;
   final String thumbnail;
+  final Map<VideoQuality, String> qualityUrls;
 
   StreamingUrls({
     required this.hls,
     required this.original,
     required this.thumbnail,
+    required this.qualityUrls,
   });
 
   factory StreamingUrls.fromJson(Map<String, dynamic> json) {
+    Map<VideoQuality, String> qualityUrls = {};
+    
+    // First, try to parse quality URLs from API response if available
+    final qualities = json['qualities'] as Map<String, dynamic>? ?? {};
+    qualities.forEach((key, value) {
+      switch (key) {
+        case '144p': qualityUrls[VideoQuality.low144p] = value ?? ''; break;
+        case '240p': qualityUrls[VideoQuality.low240p] = value ?? ''; break;
+        case '360p': qualityUrls[VideoQuality.medium360p] = value ?? ''; break;
+        case '480p': qualityUrls[VideoQuality.medium480p] = value ?? ''; break;
+        case '720p': qualityUrls[VideoQuality.high720p] = value ?? ''; break;
+        case '1080p': qualityUrls[VideoQuality.high1080p] = value ?? ''; break;
+      }
+    });
+
+    // If no quality URLs from API, generate them from original or HLS URL
+    if (qualityUrls.isEmpty) {
+      final baseUrl = json['original'] ?? json['hls'] ?? '';
+      if (baseUrl.isNotEmpty) {
+        qualityUrls = FrontendVideoUrlGenerator.generateAllQualityUrls(baseUrl);
+      }
+    }
+
     return StreamingUrls(
       hls: json['hls'] ?? '',
       original: json['original'] ?? '',
       thumbnail: json['thumbnail'] ?? '',
+      qualityUrls: qualityUrls,
     );
+  }
+
+  String getUrlForQuality(VideoQuality quality) {
+    if (qualityUrls.containsKey(quality) && qualityUrls[quality]!.isNotEmpty) {
+      final url = qualityUrls[quality]!;
+      // Add base URL if needed
+      if (url.startsWith('/')) {
+        return 'http://182.93.94.210:3066$url';
+      }
+      return url;
+    }
+    
+    // Fallback logic - find closest available quality
+    List<VideoQuality> fallbackOrder = [
+      VideoQuality.medium360p,
+      VideoQuality.medium480p,
+      VideoQuality.low240p,
+      VideoQuality.high720p,
+      VideoQuality.low144p,
+      VideoQuality.high1080p,
+    ];
+    
+    for (VideoQuality fallback in fallbackOrder) {
+      if (qualityUrls.containsKey(fallback) && qualityUrls[fallback]!.isNotEmpty) {
+        final url = qualityUrls[fallback]!;
+        if (url.startsWith('/')) {
+          return 'http://182.93.94.210:3066$url';
+        }
+        return url;
+      }
+    }
+    
+    // Final fallback to original or HLS
+    if (original.isNotEmpty) {
+      return original.startsWith('/') ? 'http://182.93.94.210:3066$original' : original;
+    }
+    if (hls.isNotEmpty) {
+      return hls.startsWith('/') ? 'http://182.93.94.210:3066$hls' : hls;
+    }
+    
+    return '';
+  }
+
+  List<VideoQuality> getAvailableQualities() {
+    return qualityUrls.keys.where((quality) => qualityUrls[quality]!.isNotEmpty).toList();
   }
 }
 
@@ -155,9 +227,15 @@ class FeedContent {
   }) : _mediaUrls = _buildMediaUrls(streamingUrls, videoUrl, allFiles),
        _hasVideos = _checkHasVideos(contentType, videoUrl, allFiles);
 
-  // Static method to build media URLs
   static List<String> _buildMediaUrls(StreamingUrls streamingUrls, String videoUrl, List<String> allFiles) {
     final List<String> mediaUrls = [];
+    
+    // Add quality 
+    streamingUrls.qualityUrls.values.forEach((url) {
+      if (url.isNotEmpty) {
+        mediaUrls.add('http://182.93.94.210:3066$url');
+      }
+    });
     
     // Add HLS URL if available
     if (streamingUrls.hls.isNotEmpty) {
@@ -181,7 +259,6 @@ class FeedContent {
     return mediaUrls.toSet().toList();
   }
 
-  // Static method to check if content has videos
   static bool _checkHasVideos(String contentType, String videoUrl, List<String> allFiles) {
     return contentType == 'video' || 
            videoUrl.isNotEmpty || 
@@ -233,7 +310,6 @@ class FeedContent {
     return null;
   }
 }
-
 // API Response wrapper for new structure
 class VideoApiResponse {
   final int status;
@@ -1144,10 +1220,17 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
                       thumbnailUrl: widget.content.thumbnailUrl,
                       autoPlay: widget.isCurrent,
                       playbackSettings: widget.content.playbackSettings,
+                      streamingUrls: widget.content.streamingUrls,
                     )
-                  : Center(child: Text('No video available', style: TextStyle(color: Colors.white))),
+                  : Center(
+                      child: Text(
+                        'No video available', 
+                        style: TextStyle(color: Colors.white)
+                      )
+                    ),
             ),
           ),
+          
           // Gradient Overlay
           Positioned(
             bottom: 0,
@@ -1427,6 +1510,7 @@ class AutoPlayVideoWidget extends StatefulWidget {
   final String? thumbnailUrl;
   final bool autoPlay;
   final PlaybackSettings? playbackSettings;
+  final StreamingUrls? streamingUrls;
 
   const AutoPlayVideoWidget({
     required this.url,
@@ -1436,6 +1520,7 @@ class AutoPlayVideoWidget extends StatefulWidget {
     this.thumbnailUrl,
     this.autoPlay = true,
     this.playbackSettings,
+    this.streamingUrls,
     Key? key,
   }) : super(key: key);
 
@@ -1445,6 +1530,7 @@ class AutoPlayVideoWidget extends StatefulWidget {
 
 class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver, TickerProviderStateMixin {
+  
   VideoPlayerController? _controller;
   bool _initialized = false;
   bool _isMuted = false;
@@ -1452,14 +1538,28 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   Timer? _initTimer;
   bool _isPlaying = true;
   bool _wasPlayingBeforePause = true;
-  final String videoId = UniqueKey().toString();
-  int _currentUrlIndex = 0;
   
-  // Animation controllers for sound indicators
+  // Quality management
+  final VideoQualityManager _qualityManager = VideoQualityManager();
+  final NetworkSpeedMonitor _speedMonitor = NetworkSpeedMonitor();
+  VideoQuality _currentVideoQuality = VideoQuality.auto;
+  bool _isQualityChanging = false;
+  Timer? _qualityCheckTimer;
+  bool _showQualitySelector = false;
+  
+  // Buffering and performance tracking
+  bool _isBuffering = false;
+  int _bufferingEvents = 0;
+  DateTime? _lastBufferTime;
+  Timer? _bufferMonitor;
+  
+  // Animation controllers
   late AnimationController _soundWaveController;
   late AnimationController _volumeBarController;
+  late AnimationController _qualityIndicatorController;
   late Animation<double> _soundWaveAnimation;
   late Animation<double> _volumeBarAnimation;
+  late Animation<double> _qualityIndicatorAnimation;
 
   @override
   bool get wantKeepAlive => _initialized;
@@ -1480,70 +1580,115 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
       vsync: this,
     );
     
-    _soundWaveAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _soundWaveController,
-      curve: Curves.easeInOut,
-    ));
+    _qualityIndicatorController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
     
-    _volumeBarAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _volumeBarController,
-      curve: Curves.easeOut,
-    ));
+    _soundWaveAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _soundWaveController, curve: Curves.easeInOut)
+    );
     
-    // Force video to start unmuted for better user experience
-    _isMuted = false; // Always start unmuted
-    _initializeVideoPlayer();
+    _volumeBarAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _volumeBarController, curve: Curves.easeOut)
+    );
+    
+    _qualityIndicatorAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _qualityIndicatorController, curve: Curves.elasticOut)
+    );
+    
+    _isMuted = false;
+    
+    // Start network monitoring
+    _speedMonitor.startMonitoring();
+    
+    // Initialize with optimal quality
+    _initializeAdaptiveVideo();
+    
+    // Start quality monitoring
+    _startQualityMonitoring();
   }
 
-  @override
-  void didUpdateWidget(covariant AutoPlayVideoWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
+  void _startQualityMonitoring() {
+    _qualityCheckTimer = Timer.periodic(Duration(seconds: 20), (timer) {
+      if (!_disposed && _initialized) {
+        _checkAndAdjustQuality();
+      }
+    });
     
-    if (widget.autoPlay != oldWidget.autoPlay) {
-      if (widget.autoPlay && _initialized && !_disposed) {
-        if (_wasPlayingBeforePause) {
-          _resumeVideo();
-        }
-      } else if (!widget.autoPlay && _initialized && !_disposed) {
-        _pauseVideo();
+    // Buffer monitoring for automatic quality adjustment
+    _bufferMonitor = Timer.periodic(Duration(seconds: 5), (timer) {
+      if (!_disposed && _initialized) {
+        _monitorBufferHealth();
+      }
+    });
+  }
+
+  void _monitorBufferHealth() {
+    if (_controller == null || !_initialized) return;
+    
+    final bufferHealth = _controller!.value.buffered;
+    final position = _controller!.value.position;
+    
+    // Check if we're close to running out of buffer
+    bool hasLowBuffer = true;
+    for (DurationRange range in bufferHealth) {
+      if (range.start <= position && range.end > position) {
+        final bufferAhead = range.end - position;
+        hasLowBuffer = bufferAhead.inSeconds < 3; // Less than 3 seconds buffered
+        break;
       }
     }
+    
+    // Auto-downgrade quality if buffering issues detected
+    if (hasLowBuffer && _qualityManager.selectedQuality == VideoQuality.auto) {
+      _bufferingEvents++;
+      _lastBufferTime = DateTime.now();
+      
+      if (_bufferingEvents >= 2) { // Multiple buffering events
+        final currentIndex = VideoQuality.values.indexOf(_currentVideoQuality);
+        if (currentIndex > 1) { // Can downgrade
+          final lowerQuality = VideoQuality.values[currentIndex - 1];
+          print('Auto-downgrading due to buffering: ${_qualityManager.getQualityLabel(lowerQuality)}');
+          _changeVideoQuality(lowerQuality);
+          _bufferingEvents = 0; // Reset counter
+        }
+      }
+    } else {
+      // Reset buffering counter if playback is smooth
+      if (_lastBufferTime != null && 
+          DateTime.now().difference(_lastBufferTime!).inSeconds > 30) {
+        _bufferingEvents = 0;
+      }
+    }
+  }
+
+  void _initializeAdaptiveVideo() {
+    _currentVideoQuality = _qualityManager.getOptimalQuality();
+    _initializeVideoPlayer();
   }
 
   void _initializeVideoPlayer() {
     if (_disposed) return;
 
+    _initTimer?.cancel();
     _initTimer = Timer(const Duration(seconds: 30), () {
       if (!_initialized && !_disposed) {
-        _tryNextUrl();
+        _handleInitializationError();
       }
     });
 
-    _initializeWithCurrentUrl();
-  }
-
-  void _initializeWithCurrentUrl() {
-    if (_disposed) return;
-
-    String currentUrl = _currentUrlIndex == 0
-        ? widget.url
-        : widget.fallbackUrls[_currentUrlIndex - 1];
-
-    if (currentUrl.isEmpty) {
+    String videoUrl = _getVideoUrlForCurrentQuality();
+    
+    if (videoUrl.isEmpty) {
       _handleInitializationError();
       return;
     }
 
-    bool isHls = currentUrl.toLowerCase().endsWith('.m3u8');
+    bool isHls = videoUrl.toLowerCase().endsWith('.m3u8');
     _controller = isHls
         ? VideoPlayerController.networkUrl(
-            Uri.parse(currentUrl),
+            Uri.parse(videoUrl),
             formatHint: VideoFormat.hls,
             videoPlayerOptions: VideoPlayerOptions(
               mixWithOthers: widget.playbackSettings?.playsInline ?? true,
@@ -1551,12 +1696,15 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
             ),
           )
         : VideoPlayerController.networkUrl(
-            Uri.parse(currentUrl),
+            Uri.parse(videoUrl),
             videoPlayerOptions: VideoPlayerOptions(
               mixWithOthers: widget.playbackSettings?.playsInline ?? true,
               allowBackgroundPlayback: false,
             ),
           );
+
+    // Listen for buffering events
+    _controller!.addListener(_onVideoPlayerStateChange);
 
     _controller!
       ..setLooping(widget.playbackSettings?.loop ?? true)
@@ -1567,11 +1715,13 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
           setState(() {
             _initialized = true;
           });
-          // Start sound animations if unmuted and playing
+          
+          _showQualityIndicator();
+          
           if (!_isMuted && _isPlaying) {
             _startSoundAnimations();
           }
-          // Auto-play based on API settings and widget autoPlay
+          
           if (mounted && 
               widget.autoPlay && 
               _wasPlayingBeforePause && 
@@ -1586,9 +1736,120 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
       }).catchError((error) {
         _initTimer?.cancel();
         if (!_disposed) {
-          _tryNextUrl();
+          _handleInitializationError();
         }
       });
+  }
+
+  void _onVideoPlayerStateChange() {
+    if (_controller == null || _disposed) return;
+    
+    final wasBuffering = _isBuffering;
+    _isBuffering = _controller!.value.isBuffering;
+    
+    if (!wasBuffering && _isBuffering) {
+      print('Video started buffering');
+    } else if (wasBuffering && !_isBuffering) {
+      print('Video stopped buffering');
+    }
+  }
+
+  String _getVideoUrlForCurrentQuality() {
+    if (widget.streamingUrls != null) {
+      final qualityUrl = widget.streamingUrls!.getUrlForQuality(_currentVideoQuality);
+      if (qualityUrl.isNotEmpty) {
+        return qualityUrl;
+      }
+    }
+    
+    // Fallback: Generate quality URL from original URL
+    if (widget.url.isNotEmpty) {
+      return FrontendVideoUrlGenerator.generateQualityUrl(widget.url, _currentVideoQuality);
+    }
+    
+    // Last fallback
+    return widget.fallbackUrls.isNotEmpty ? widget.fallbackUrls.first : '';
+  }
+
+  void _checkAndAdjustQuality() async {
+    if (_isQualityChanging || _qualityManager.selectedQuality != VideoQuality.auto) {
+      return; // Don't auto-adjust if user has manually selected quality
+    }
+
+    final optimalQuality = _qualityManager.getOptimalQuality();
+    
+    if (optimalQuality != _currentVideoQuality) {
+      await _changeVideoQuality(optimalQuality);
+    }
+  }
+
+  Future<void> _changeVideoQuality(VideoQuality newQuality) async {
+    if (_disposed || _isQualityChanging) return;
+    
+    setState(() {
+      _isQualityChanging = true;
+    });
+
+    // Store current playback state
+    final wasPlaying = _controller?.value.isPlaying ?? false;
+    final currentPosition = _controller?.value.position ?? Duration.zero;
+    
+    // Dispose current controller
+    _controller?.removeListener(_onVideoPlayerStateChange);
+    await _controller?.dispose();
+    _controller = null;
+    
+    // Update quality
+    _currentVideoQuality = newQuality;
+    
+    // Show quality change indicator
+    _showQualityIndicator();
+    
+    // Initialize new controller with new quality
+    _initializeVideoPlayer();
+    
+    // Wait for initialization and restore playback state
+    int attempts = 0;
+    while (!_initialized && !_disposed && attempts < 50) {
+      await Future.delayed(Duration(milliseconds: 100));
+      attempts++;
+    }
+    
+    if (_initialized && !_disposed) {
+      try {
+        await _controller?.seekTo(currentPosition);
+        if (wasPlaying && widget.autoPlay) {
+          await _controller?.play();
+          setState(() {
+            _isPlaying = true;
+          });
+        }
+      } catch (e) {
+        print('Error restoring playback state: $e');
+      }
+    }
+    
+    setState(() {
+      _isQualityChanging = false;
+    });
+  }
+
+  void _showQualityIndicator() {
+    _qualityIndicatorController.forward().then((_) {
+      Timer(Duration(seconds: 2), () {
+        if (mounted && !_disposed) {
+          _qualityIndicatorController.reverse();
+        }
+      });
+    });
+  }
+
+  void _handleInitializationError() {
+    if (mounted && !_disposed) {
+      setState(() {
+        _initialized = false;
+      });
+    }
   }
 
   void _startSoundAnimations() {
@@ -1602,88 +1863,6 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
     _soundWaveController.stop();
     _soundWaveController.reset();
     _volumeBarController.reverse();
-  }
-
-  void _tryNextUrl() {
-    if (_disposed) return;
-
-    _currentUrlIndex++;
-    if (_currentUrlIndex <= widget.fallbackUrls.length) {
-      _controller?.dispose();
-      _controller = null;
-      _initializeWithCurrentUrl();
-    } else {
-      _handleInitializationError();
-    }
-  }
-
-  void _handleInitializationError() {
-    if (mounted && !_disposed) {
-      setState(() {
-        _initialized = false;
-      });
-    }
-  }
-
-  void _pauseVideo() {
-    if (_controller != null && _initialized && !_disposed) {
-      _controller!.pause();
-      _stopSoundAnimations();
-      setState(() {
-        _isPlaying = false;
-      });
-    }
-  }
-
-  void _resumeVideo() {
-    if (_controller != null && _initialized && !_disposed) {
-      _controller!.play();
-      if (!_isMuted) {
-        _startSoundAnimations();
-      }
-      setState(() {
-        _isPlaying = true;
-      });
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (_controller == null || _disposed) return;
-
-    switch (state) {
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        _controller!.pause();
-        _stopSoundAnimations();
-        break;
-      case AppLifecycleState.resumed:
-        if (_initialized && mounted && _isPlaying && widget.autoPlay) {
-          _controller!.play();
-          if (!_isMuted) {
-            _startSoundAnimations();
-          }
-        }
-        break;
-      case AppLifecycleState.detached:
-      case AppLifecycleState.hidden:
-        _controller!.pause();
-        _stopSoundAnimations();
-        break;
-    }
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    _initTimer?.cancel();
-    _soundWaveController.dispose();
-    _volumeBarController.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    _controller?.dispose();
-    _controller = null;
-    super.dispose();
   }
 
   void _togglePlayPause() {
@@ -1717,6 +1896,186 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
         _startSoundAnimations();
       }
     });
+  }
+
+  Widget _buildQualitySelector() {
+    if (!_showQualitySelector) {
+      return SizedBox.shrink();
+    }
+
+    // Get available qualities - if streamingUrls exists, use those, otherwise generate them
+    List<VideoQuality> availableQualities = [VideoQuality.auto];
+    
+    if (widget.streamingUrls != null) {
+      availableQualities.addAll(widget.streamingUrls!.getAvailableQualities());
+    } else {
+      // Add all qualities as they can be generated from any URL
+      availableQualities.addAll([
+        VideoQuality.low144p,
+        VideoQuality.low240p,
+        VideoQuality.medium360p,
+        VideoQuality.medium480p,
+        VideoQuality.high720p,
+      ]);
+    }
+
+    return Positioned(
+      top: 60,
+      right: 20,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.deepOrange.withOpacity(0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.hd, color: Colors.deepOrange, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Quality',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showQualitySelector = false;
+                      });
+                    },
+                    child: Icon(Icons.close, color: Colors.white, size: 16),
+                  ),
+                ],
+              ),
+            ),
+            ...availableQualities.map((quality) {
+              final isSelected = _qualityManager.selectedQuality == quality;
+              final isCurrent = _currentVideoQuality == quality;
+              
+              return GestureDetector(
+                onTap: () async {
+                  _qualityManager.setManualQuality(quality);
+                  setState(() {
+                    _showQualitySelector = false;
+                  });
+                  
+                  if (quality == VideoQuality.auto) {
+                    await _changeVideoQuality(_qualityManager.getOptimalQuality());
+                  } else {
+                    await _changeVideoQuality(quality);
+                  }
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.deepOrange.withOpacity(0.3) : null,
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.withOpacity(0.3), width: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isCurrent) 
+                        Icon(Icons.play_arrow, color: Colors.green, size: 14)
+                      else
+                        SizedBox(width: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        _qualityManager.getQualityLabel(quality),
+                        style: TextStyle(
+                          color: isSelected ? Colors.deepOrange : Colors.white,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (quality == VideoQuality.auto) ...[
+                        SizedBox(width: 4),
+                        Text(
+                          '(${_qualityManager.getQualityLabel(_qualityManager.getOptimalQuality())})',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNetworkSpeedIndicator() {
+    final speed = _speedMonitor.currentSpeed;
+    Color speedColor;
+    String speedText;
+    IconData speedIcon;
+
+    if (speed >= 4.0) {
+      speedColor = Colors.green;
+      speedText = 'Fast';
+      speedIcon = Icons.signal_wifi_4_bar;
+    } else if (speed >= 2.0) {
+      speedColor = Colors.orange;
+      speedText = 'Good';
+      speedIcon = Icons.signal_wifi_4_bar;
+    } else if (speed >= 1.0) {
+      speedColor = Colors.yellow;
+      speedText = 'Slow';
+      speedIcon = Icons.signal_cellular_alt_2_bar;
+    } else {
+      speedColor = Colors.red;
+      speedText = 'Poor';
+      speedIcon = Icons.signal_cellular_alt_1_bar;
+    }
+
+    return AnimatedBuilder(
+      animation: _qualityIndicatorAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _qualityIndicatorAnimation.value,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: speedColor.withOpacity(0.5)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(speedIcon, color: speedColor, size: 14),
+                SizedBox(width: 4),
+                Text(
+                  '${_qualityManager.getQualityLabel(_currentVideoQuality)} • $speedText',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildSoundWaveIndicator() {
@@ -1771,6 +2130,87 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_controller == null || _disposed) return;
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        _controller!.pause();
+        _stopSoundAnimations();
+        break;
+      case AppLifecycleState.resumed:
+        if (_initialized && mounted && _isPlaying && widget.autoPlay) {
+          _controller!.play();
+          if (!_isMuted) {
+            _startSoundAnimations();
+          }
+        }
+        break;
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        _controller!.pause();
+        _stopSoundAnimations();
+        break;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AutoPlayVideoWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    if (widget.autoPlay != oldWidget.autoPlay) {
+      if (widget.autoPlay && _initialized && !_disposed) {
+        if (_wasPlayingBeforePause) {
+          _resumeVideo();
+        }
+      } else if (!widget.autoPlay && _initialized && !_disposed) {
+        _pauseVideo();
+      }
+    }
+  }
+
+  void _pauseVideo() {
+    if (_controller != null && _initialized && !_disposed) {
+      _controller!.pause();
+      _stopSoundAnimations();
+      setState(() {
+        _isPlaying = false;
+      });
+    }
+  }
+
+  void _resumeVideo() {
+    if (_controller != null && _initialized && !_disposed) {
+      _controller!.play();
+      if (!_isMuted) {
+        _startSoundAnimations();
+      }
+      setState(() {
+        _isPlaying = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _initTimer?.cancel();
+    _qualityCheckTimer?.cancel();
+    _bufferMonitor?.cancel();
+    _controller?.removeListener(_onVideoPlayerStateChange);
+    _soundWaveController.dispose();
+    _volumeBarController.dispose();
+    _qualityIndicatorController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _speedMonitor.stopMonitoring();
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
 
@@ -1778,8 +2218,11 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
       height: widget.height ?? MediaQuery.of(context).size.height,
       width: widget.width ?? MediaQuery.of(context).size.width,
       color: Colors.black,
-      child: !_initialized || _controller == null
-          ? Stack(
+      child: Stack(
+        children: [
+          // Video Player or Loading/Error State
+          if (!_initialized || _controller == null)
+            Stack(
               children: [
                 if (widget.thumbnailUrl != null && widget.thumbnailUrl!.isNotEmpty)
                   CachedNetworkImage(
@@ -1821,112 +2264,257 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
                     ),
                   ),
                 Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.deepOrange,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.deepOrange,
+                      ),
+                      if (_isQualityChanging) ...[
+                        SizedBox(height: 12),
+                        Text(
+                          'Adjusting quality...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
             )
-          : Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: double.infinity,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: SizedBox(
-                      width: _controller!.value.size.width,
-                      height: _controller!.value.size.height,
-                      child: VideoPlayer(_controller!),
+          else
+            SizedBox(
+              width: double.infinity,
+              height: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: _controller!.value.size.width,
+                  height: _controller!.value.size.height,
+                  child: VideoPlayer(_controller!),
+                ),
+              ),
+            ),
+
+          // Play/Pause overlay
+          if (!_isPlaying && _initialized)
+            Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.play_arrow,
+                  size: 50,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+            ),
+
+          // Network Speed and Quality Indicator
+          Positioned(
+            top: 20,
+            left: 20,
+            child: _buildNetworkSpeedIndicator(),
+          ),
+
+          // Sound wave indicator when unmuted and playing
+          if (!_isMuted && _isPlaying && _initialized)
+            Positioned(
+              top: 20,
+              right: 100, // Leave space for HD button
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.green.withOpacity(0.5), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.volume_up,
+                      color: Colors.green,
+                      size: 16,
                     ),
+                    SizedBox(width: 6),
+                    _buildSoundWaveIndicator(),
+                    SizedBox(width: 6),
+                    Text(
+                      'SOUND ON',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Quality selector button (HD Button)
+          Positioned(
+            top: 20,
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showQualitySelector = !_showQualitySelector;
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _showQualitySelector 
+                      ? Colors.deepOrange 
+                      : Colors.white.withOpacity(0.3),
+                    width: 1,
                   ),
                 ),
-                if (!_isPlaying)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      size: 50,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                // Sound wave indicator when unmuted and playing
-                if (!_isMuted && _isPlaying && _initialized)
-                  Positioned(
-                    top: 20,
-                    left: 20,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green.withOpacity(0.5), width: 1),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.volume_up,
-                            color: Colors.green,
-                            size: 16,
-                          ),
-                          SizedBox(width: 6),
-                          _buildSoundWaveIndicator(),
-                          SizedBox(width: 6),
-                          Text(
-                            'SOUND ON',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                // Show controls if enabled in playback settings
-                if (widget.playbackSettings?.controls ?? true)
-                  Positioned(
-                    bottom: 20,
-                    right: 20,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        shape: BoxShape.circle,
-                        border: _isMuted 
-                          ? null 
-                          : Border.all(color: Colors.green.withOpacity(0.7), width: 2),
-                      ),
-                      child: Stack(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              _isMuted ? Icons.volume_off : Icons.volume_up,
-                              color: _isMuted ? Colors.white : Colors.green,
-                              size: 28,
-                            ),
-                            onPressed: _toggleMute,
-                          ),
-                          // Volume bar indicator
-                          if (!_isMuted && _isPlaying)
-                            Positioned(
-                              right: 2,
-                              top: 6,
-                              child: _buildVolumeBarIndicator(),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+                child: Icon(
+                  Icons.hd,
+                  color: _showQualitySelector ? Colors.deepOrange : Colors.white,
+                  size: 20,
+                ),
+              ),
             ),
+          ),
+
+          // Quality selector dropdown
+          _buildQualitySelector(),
+
+          // Volume control (if controls enabled)
+          if (widget.playbackSettings?.controls ?? true)
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                  border: _isMuted 
+                    ? null 
+                    : Border.all(color: Colors.green.withOpacity(0.7), width: 2),
+                ),
+                child: Stack(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _isMuted ? Icons.volume_off : Icons.volume_up,
+                        color: _isMuted ? Colors.white : Colors.green,
+                        size: 28,
+                      ),
+                      onPressed: _toggleMute,
+                    ),
+                    // Volume bar indicator
+                    if (!_isMuted && _isPlaying)
+                      Positioned(
+                        right: 2,
+                        top: 6,
+                        child: _buildVolumeBarIndicator(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Loading overlay during quality change
+          if (_isQualityChanging)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Colors.deepOrange,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Switching to ${_qualityManager.getQualityLabel(_currentVideoQuality)}...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Buffering indicator
+          if (_isBuffering && _initialized && !_isQualityChanging)
+            Positioned(
+              bottom: 60,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Buffering...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
+  }
+}
+
+
+class AdaptiveVideoSystem {
+  static void initialize() {
+    final speedMonitor = NetworkSpeedMonitor();
+    final qualityManager = VideoQualityManager();
+    
+    speedMonitor.startMonitoring();
+    
+    // Set up automatic quality adjustment
+    Timer.periodic(Duration(seconds: 25), (timer) {
+      qualityManager.updateQualityBasedOnSpeed();
+    });
+    
+    print('Frontend Adaptive Video Quality System initialized');
+  }
+  
+  static void dispose() {
+    final speedMonitor = NetworkSpeedMonitor();
+    speedMonitor.stopMonitoring();
+    print('Frontend Adaptive Video Quality System disposed');
   }
 }
 

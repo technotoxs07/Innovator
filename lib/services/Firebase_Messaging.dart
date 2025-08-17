@@ -3,15 +3,19 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:innovator/App_data/App_data.dart';
-import 'package:innovator/Authorization/firebase_services.dart';
-import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'dart:developer' as developer;
 
+import 'package:innovator/Authorization/firebase_services.dart';
+import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
+
+
 class FirebaseNotificationService {
-  static final FirebaseNotificationService _instance = FirebaseNotificationService._internal();
+  static final FirebaseNotificationService _instance = 
+      FirebaseNotificationService._internal();
   factory FirebaseNotificationService() => _instance;
   FirebaseNotificationService._internal();
 
@@ -45,20 +49,16 @@ class FirebaseNotificationService {
       await _initializeFirebaseMessaging();
 
       // Setup message handlers
-      _setupMessageHandlers();
+      _setupMessageHandlers();// 
+      
 
       _isInitialized = true;
       developer.log('✅ === NOTIFICATION SERVICE INITIALIZED SUCCESSFULLY ===');
-      
-      // Test notification immediately after initialization
-      //await _testNotificationSystem();
     } catch (e) {
       developer.log('❌ Error initializing notification service: $e');
       rethrow;
     }
   }
-
-  
 
   Future<void> _requestPermissions() async {
     try {
@@ -70,7 +70,7 @@ class FirebaseNotificationService {
         announcement: false,
         badge: true,
         carPlay: false,
-        criticalAlert: false,// 
+        criticalAlert: false,
         provisional: false,
         sound: true,
       );
@@ -85,7 +85,7 @@ class FirebaseNotificationService {
         final granted = await plugin?.requestNotificationsPermission();
         developer.log('📱 Local notification permission: $granted');
         
-        // ADDITIONAL: Request exact alarm permission for Android 12+
+        // Request exact alarm permission for Android 12+
         final exactAlarmPermission = await plugin?.requestExactAlarmsPermission();
         developer.log('📱 Exact alarm permission: $exactAlarmPermission');
       }
@@ -94,14 +94,13 @@ class FirebaseNotificationService {
     }
   }
 
-
   Future<void> _initializeLocalNotifications() async {
     try {
       developer.log('📱 Initializing local notifications...');
+      
       // Android initialization with custom settings
       const androidInitialization = AndroidInitializationSettings(
         '@mipmap/ic_launcher',
-        // Add these for better visibility
       );
 
       // iOS initialization with enhanced settings
@@ -152,7 +151,7 @@ class FirebaseNotificationService {
             'chat_messages',
             'Chat Messages',
             description: 'Notifications for new chat messages',
-            importance: Importance.max, // Changed to max
+            importance: Importance.max,
             enableVibration: true,
             enableLights: true,
             ledColor: Color.fromRGBO(244, 135, 6, 1),
@@ -168,7 +167,7 @@ class FirebaseNotificationService {
             'general_notifications',
             'General Notifications',
             description: 'General app notifications',
-            importance: Importance.high, // Increased importance
+            importance: Importance.high,
             enableVibration: true,
             showBadge: true,
             playSound: true,
@@ -276,10 +275,10 @@ class FirebaseNotificationService {
     developer.log('✅ FCM message handlers setup completed');
   }
 
-  // ENHANCED: Handle foreground messages - SIMPLIFIED AND ALWAYS SHOW
+  // Handle foreground messages with badge management
   Future<void> handleForegroundMessage(RemoteMessage message) async {
     try {
-      developer.log('📱 ========= FOREGROUND MESSAGE HANDLER START =========');
+      developer.log('📱 ========= FOREGROUND MESSAGE WITH BADGE START =========');
       developer.log('📱 Message ID: ${message.messageId}');
       developer.log('📱 Time: ${DateTime.now()}');
       
@@ -289,103 +288,226 @@ class FirebaseNotificationService {
       // Extract notification details
       String title = notification?.title ?? data['senderName'] ?? 'New Message';
       String body = notification?.body ?? data['message'] ?? 'You have a new message';
+      String chatId = data['chatId']?.toString() ?? '';
+      String senderId = data['senderId']?.toString() ?? '';
       
-      developer.log('📱 Processed - Title: $title, Body: $body');
+      developer.log('📱 Processed - Title: $title, Body: $body, ChatId: $chatId');
 
-      // STEP 1: ALWAYS SHOW NOTIFICATION (NO SUPPRESSION FOR TESTING)
-      developer.log('📱 ========= SHOWING NOTIFICATION (NO SUPPRESSION) =========');
-      
+      // Update badge in chat controller
       try {
-        await _showLocalNotification(
-          title: title,
-          body: body,
-          data: data,
-          channelId: _chatChannelId,
-        );
-        developer.log('📱 ✅ Local notification displayed successfully');
+        if (Get.isRegistered<FireChatController>()) {
+          final chatController = Get.find<FireChatController>();
+          
+          // Check if user is currently viewing this specific chat
+          final isViewingThisChat = chatController.currentChatId.value == chatId;
+          
+          if (!isViewingThisChat && chatId.isNotEmpty) {
+            // Increment badge for this chat
+            chatController.initializeBadgeForChat(chatId);
+            final currentBadge = chatController.chatBadges[chatId]!.value;
+            chatController.chatBadges[chatId]!.value = currentBadge + 1;
+            chatController.unreadCounts[chatId] = currentBadge + 1;
+            
+
+
+            
+            // Update total badges
+            chatController.updateTotalUnreadBadges();
+            
+            developer.log('🔴 Badge incremented for chat $chatId: ${currentBadge + 1}');
+            
+            // Show notification only if not viewing the chat
+            await _showLocalNotificationWithBadge(
+              title: title,
+              body: body,
+              data: data,
+              channelId: 'chat_messages',
+              badgeCount: currentBadge + 1,
+            );
+          } else if (isViewingThisChat) {
+            // Auto-mark as read if viewing the chat
+            developer.log('📱 User viewing chat, auto-marking as read');
+            Future.delayed(const Duration(milliseconds: 500), () {
+              chatController.markMessagesAsRead(chatId);
+            });
+          } else {
+            // Still show notification even without chat ID
+            await _showLocalNotificationWithBadge(
+              title: title,
+              body: body,
+              data: data,
+              channelId: 'chat_messages',
+              badgeCount: 1,
+            );
+          }
+        } else {
+          // Controller not available, show notification anyway
+          await _showLocalNotificationWithBadge(
+            title: title,
+            body: body,
+            data: data,
+            channelId: 'chat_messages',
+            badgeCount: 1,
+          );
+        }
+        
+        developer.log('📱 ✅ Badge and notification updated');
       } catch (e) {
-        developer.log('📱 ❌ Error showing local notification: $e');
-        developer.log('📱 ❌ Error type: ${e.runtimeType}');
-        developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
+        developer.log('📱 ❌ Error updating badge: $e');
       }
 
-      // STEP 2: Update badge count
-      try {
-        await _updateBadgeCount(data);
-        developer.log('📱 ✅ Badge count updated');
-      } catch (e) {
-        developer.log('📱 ❌ Error updating badge count: $e');
-      }
+      // Show in-app notification
+      _showInAppNotificationWithBadge(title, body, chatId);
 
-      // STEP 3: Show additional visual feedback
-      _showInAppNotification(title, body);
-
-      developer.log('📱 ✅ Foreground notification process completed successfully');
-      developer.log('📱 ========= FOREGROUND MESSAGE HANDLER END =========');
+      developer.log('📱 ✅ Foreground notification with badge completed');
+      developer.log('📱 ========= FOREGROUND MESSAGE WITH BADGE END =========');
 
     } catch (e) {
-      developer.log('📱 ❌ CRITICAL ERROR in handleForegroundMessage: $e');
-      developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
+      developer.log('📱 ❌ CRITICAL ERROR in handleForegroundMessageWithBadge: $e');
     }
   }
 
-  // NEW: Show additional in-app visual feedback
-  void _showInAppNotification(String title, String body) {
+  void _showInAppNotificationWithBadge(String title, String body, String chatId) {
     try {
-      // Show GetX snackbar for immediate visual feedback
+      // Get current badge count for this chat
+      int badgeCount = 1;
+      try {
+        if (Get.isRegistered<FireChatController>()) {
+          final chatController = Get.find<FireChatController>();
+          if (chatId.isNotEmpty && chatController.chatBadges.containsKey(chatId)) {
+            badgeCount = chatController.chatBadges[chatId]!.value;
+          }
+        }
+      } catch (e) {
+        developer.log('Could not get badge count for in-app notification: $e');
+      }
+
+      // Show enhanced GetX snackbar with badge indication
       Get.snackbar(
         title,
         body,
         snackPosition: SnackPosition.TOP,
-        backgroundColor: const Color.fromRGBO(244, 135, 6, 0.9),
+        backgroundColor: Colors.red.withOpacity(0.9),
         colorText: Colors.white,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
         margin: const EdgeInsets.all(16),
-        borderRadius: 8,
-        icon: const Icon(
-          Icons.message,
-          color: Colors.white,
+        borderRadius: 12,
+        icon: Stack(
+          children: [
+            const Icon(
+              Icons.message_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+            if (badgeCount > 1)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.red, width: 1),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
         ),
         shouldIconPulse: true,
-        barBlur: 10,
+        barBlur: 15,
         isDismissible: true,
+        dismissDirection: DismissDirection.horizontal,
         mainButton: TextButton(
           onPressed: () {
             Get.back();
+            _handleNotificationTapFromSnackbar(chatId);
           },
           child: const Text(
             'View',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       );
       
-      developer.log('📱 ✅ In-app notification shown');
+      // Haptic feedback for unread messages
+      HapticFeedback.mediumImpact();
+      
+      developer.log('📱 ✅ In-app notification with badge shown');
     } catch (e) {
-      developer.log('📱 ❌ Error showing in-app notification: $e');
+      developer.log('📱 ❌ Error showing in-app notification with badge: $e');
     }
   }
 
-  Future<void> _showLocalNotification({
+  void _handleNotificationTapFromSnackbar(String chatId) {
+    try {
+      if (chatId.isNotEmpty && Get.isRegistered<FireChatController>()) {
+        final chatController = Get.find<FireChatController>();
+        
+        // Find the chat and navigate
+        final chat = chatController.chatList.firstWhere(
+          (chat) => chat['chatId'] == chatId,
+          orElse: () => <String, dynamic>{},
+        );
+        
+        if (chat.isNotEmpty) {
+          final otherUser = chat['otherUser'] as Map<String, dynamic>?;
+          if (otherUser != null) {
+            chatController.navigateToChat(otherUser);
+            // Mark as read will be handled automatically when opening chat
+          }
+        }
+      }
+    } catch (e) {
+      developer.log('❌ Error handling snackbar tap: $e');
+    }
+  }
+
+  Future<void> _showLocalNotificationWithBadge({
     required String title,
     required String body,
     required Map<String, dynamic> data,
     required String channelId,
+    required int badgeCount,
   }) async {
     try {
-      developer.log('📱 ========= _showLocalNotification START =========');
-      developer.log('📱 Title: $title');
-      developer.log('📱 Body: $body');
-      developer.log('📱 Channel ID: $channelId');
-      developer.log('📱 Data: $data');
+      developer.log('📱 ========= SHOWING NOTIFICATION WITH BADGE =========');
+      developer.log('📱 Badge Count: $badgeCount');
       
-      // ENHANCED Android notification details
+      // Calculate total badge count across all chats
+      int totalBadges = badgeCount;
+      try {
+        if (Get.isRegistered<FireChatController>()) {
+          final chatController = Get.find<FireChatController>();
+          totalBadges = chatController.getTotalUnreadCount();
+        }
+      } catch (e) {
+        developer.log('📱 Could not get total badge count: $e');
+      }
+      
+      // Enhanced Android notification with badge number
       final androidDetails = AndroidNotificationDetails(
         channelId,
         _getChannelName(channelId),
         channelDescription: _getChannelDescription(channelId),
-        importance: Importance.max, // Maximum importance
-        priority: Priority.max, // Maximum priority
+        importance: Importance.max,
+        priority: Priority.max,
         showWhen: true,
         when: DateTime.now().millisecondsSinceEpoch,
         icon: '@mipmap/ic_launcher',
@@ -395,7 +517,7 @@ class FirebaseNotificationService {
           htmlFormatBigText: true,
           contentTitle: title,
           htmlFormatContentTitle: true,
-          summaryText: 'New message',
+          summaryText: badgeCount > 1 ? '$badgeCount new messages' : 'New message',
         ),
         actions: _getNotificationActions(data),
         autoCancel: true,
@@ -403,35 +525,33 @@ class FirebaseNotificationService {
         visibility: NotificationVisibility.public,
         ticker: '$title: $body',
         enableVibration: true,
-        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]), // Custom vibration
+        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
         enableLights: true,
-        ledColor: const Color.fromRGBO(244, 135, 6, 1),
+        ledColor: Colors.red,
         ledOnMs: 1000,
         ledOffMs: 500,
         playSound: true,
         sound: const RawResourceAndroidNotificationSound('notification_sound'),
         category: AndroidNotificationCategory.message,
-        fullScreenIntent: false, // Set to true for urgent notifications
-        timeoutAfter: null, // Don't timeout
+        fullScreenIntent: false,
+        timeoutAfter: null,
         groupKey: 'chat_messages',
         setAsGroupSummary: false,
+        number: badgeCount,
       );
 
-      developer.log('📱 Android details created successfully');
-
-      // Enhanced iOS notification details
-      const iosDetails = DarwinNotificationDetails(
+      // Enhanced iOS notification with badge
+      final iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
         sound: 'default.wav',
-        badgeNumber: 1,
-        threadIdentifier: 'chat_thread',
+        badgeNumber: totalBadges,
+        threadIdentifier: data['chatId']?.toString() ?? 'chat_thread',
         categoryIdentifier: 'MESSAGE_CATEGORY',
         interruptionLevel: InterruptionLevel.active,
+        subtitle: badgeCount > 1 ? '$badgeCount messages' : null,
       );
-
-      developer.log('📱 iOS details created successfully');
 
       final notificationDetails = NotificationDetails(
         android: androidDetails,
@@ -439,68 +559,23 @@ class FirebaseNotificationService {
       );
 
       final notificationId = _generateNotificationId(data);
-      developer.log('📱 Generated notification ID: $notificationId');
-
-      developer.log('📱 ⏳ Calling FlutterLocalNotificationsPlugin.show()...');
       
-      // Show the notification
       await _flutterLocalNotificationsPlugin.show(
         notificationId,
         title,
         body,
         notificationDetails,
-        payload: jsonEncode(data),
+        payload: jsonEncode({
+          ...data,
+          'badgeCount': badgeCount,
+          'totalBadges': totalBadges,
+        }),
       );
 
-      developer.log('📱 ✅ FlutterLocalNotificationsPlugin.show() completed');
+      developer.log('📱 ✅ Notification with badge shown successfully');
       
-      // Additional verification - check if notification was actually scheduled
-      final pendingNotifications = await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
-      developer.log('📱 📊 Pending notifications count: ${pendingNotifications.length}');
-      
-      // Show immediate feedback
-      developer.log('📱 ✅ === LOCAL NOTIFICATION SHOULD BE VISIBLE NOW ===');
-      developer.log('📱 ========= _showLocalNotification END (SUCCESS) =========');
-
     } catch (e) {
-      developer.log('📱 ❌ CRITICAL ERROR in _showLocalNotification: $e');
-      developer.log('📱 ❌ Error type: ${e.runtimeType}');
-      developer.log('📱 ❌ Stack trace: ${StackTrace.current}');
-      
-      // Try alternative notification method
-      await _showFallbackNotification(title, body);
-    }
-  }
-
-  // NEW: Fallback notification method using different approach
-  Future<void> _showFallbackNotification(String title, String body) async {
-    try {
-      developer.log('📱 🔄 Attempting fallback notification...');
-      
-      const androidDetails = AndroidNotificationDetails(
-        'fallback_channel',
-        'Fallback Notifications',
-        channelDescription: 'Fallback notifications when primary channel fails',
-        importance: Importance.high,
-        priority: Priority.high,
-        showWhen: true,
-        autoCancel: true,
-        playSound: true,
-        enableVibration: true,
-      );
-
-      const notificationDetails = NotificationDetails(android: androidDetails);
-      
-      await _flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        title,
-        body,
-        notificationDetails,
-      );
-      
-      developer.log('📱 ✅ Fallback notification sent');
-    } catch (e) {
-      developer.log('📱 ❌ Fallback notification also failed: $e');
+      developer.log('📱 ❌ Error showing notification with badge: $e');
     }
   }
 
@@ -555,26 +630,168 @@ class FirebaseNotificationService {
     }
   }
 
-  Future<void> _updateBadgeCount(Map<String, dynamic> data) async {
+  // Handle notification tap response
+  void _onNotificationTapped(NotificationResponse response) {
+    developer.log('👆 Notification tapped with badge handling: ${response.actionId}');
+    
+    if (response.payload != null) {
+      try {
+        final data = jsonDecode(response.payload!) as Map<String, dynamic>;
+        
+        // Handle specific actions
+        switch (response.actionId) {
+          case 'reply':
+            _handleQuickReplyWithBadge(data, response.input);
+            break;
+          case 'mark_read':
+            _handleMarkAsReadWithBadge(data);
+            break;
+          default:
+            _handleNotificationTapWithBadge(data);
+            break;
+        }
+      } catch (e) {
+        developer.log('❌ Error handling notification tap with badge: $e');
+      }
+    }
+  }
+
+  void _handleQuickReplyWithBadge(Map<String, dynamic> data, String? replyText) {
+    if (replyText == null || replyText.trim().isEmpty) return;
+    
     try {
-      if (!Get.isRegistered<FireChatController>()) return;
+      if (!Get.isRegistered<FireChatController>()) {
+        developer.log('⚠️ Chat controller not available for quick reply');
+        return;
+      }
+      
+      final chatController = Get.find<FireChatController>();
+      final receiverId = data['senderId']?.toString() ?? '';
+      final chatId = data['chatId']?.toString() ?? '';
+      
+      if (receiverId.isNotEmpty) {
+        chatController.sendMessage(
+          receiverId: receiverId,
+          message: replyText.trim(),
+        );
+        
+        // Clear badge for this chat after replying
+        if (chatId.isNotEmpty) {
+          chatController.clearBadgeForChat(chatId);
+        }
+        
+        // Show confirmation
+        Get.snackbar(
+          'Reply Sent',
+          'Your message has been sent',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+        );
+      }
+    } catch (e) {
+      developer.log('❌ Error sending quick reply with badge: $e');
+    }
+  }
+
+  void _handleMarkAsReadWithBadge(Map<String, dynamic> data) {
+    try {
+      if (!Get.isRegistered<FireChatController>()) {
+        developer.log('⚠️ Chat controller not available for mark as read');
+        return;
+      }
       
       final chatController = Get.find<FireChatController>();
       final chatId = data['chatId']?.toString() ?? '';
       
       if (chatId.isNotEmpty) {
-        final currentCount = chatController.unreadCounts[chatId] ?? 0;
-        chatController.unreadCounts[chatId] = currentCount + 1;
+        // Mark messages as read
+        chatController.markMessagesAsRead(chatId);
         
-        if (!chatController.badgeCounts.containsKey(chatId)) {
-          chatController.badgeCounts[chatId] = 0.obs;
-        }
-        chatController.badgeCounts[chatId]!.value = currentCount + 1;
+        // Clear badge immediately
+        chatController.clearBadgeForChat(chatId);
         
-        developer.log('📊 Badge count updated for chat $chatId: ${currentCount + 1}');
+        // Cancel notification
+        _flutterLocalNotificationsPlugin.cancel(_generateNotificationId(data));
+        
+        Get.snackbar(
+          'Marked as Read',
+          'Messages marked as read',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+        );
       }
     } catch (e) {
-      developer.log('❌ Error updating badge count: $e');
+      developer.log('❌ Error marking as read with badge: $e');
+    }
+  }
+
+  void _handleNotificationTapWithBadge(Map<String, dynamic> data) {
+    try {
+      developer.log('👆 Handling notification tap with badge: $data');
+      
+      final type = data['type']?.toString() ?? '';
+      final chatId = data['chatId']?.toString() ?? '';
+      
+      // Clear badge when tapping notification
+      if (chatId.isNotEmpty && Get.isRegistered<FireChatController>()) {
+        final chatController = Get.find<FireChatController>();
+        chatController.clearBadgeForChat(chatId);
+      }
+      
+      switch (type) {
+        case 'chat':
+        case 'message':
+          _navigateToChatWithBadge(data);
+          break;
+        case 'call':
+          _handleCallNotification(data);
+          break;
+        default:
+          // Navigate to home
+          Get.toNamed('/home');
+          break;
+      }
+    } catch (e) {
+      developer.log('❌ Error handling notification tap with badge: $e');
+    }
+  }
+
+  void _navigateToChatWithBadge(Map<String, dynamic> data) {
+    try {
+      final senderId = data['senderId']?.toString() ?? '';
+      final senderName = data['senderName']?.toString() ?? 'Unknown';
+      final chatId = data['chatId']?.toString() ?? '';
+      
+      if (senderId.isNotEmpty) {
+        // Navigate to chat screen
+        Get.toNamed('/chat', arguments: {
+          'receiverUser': {
+            'id': senderId,
+            'userId': senderId,
+            '_id': senderId,
+            'name': senderName,
+          },
+          'chatId': chatId,
+          'fromNotification': true,
+        });
+        
+        // Mark messages as read and clear badge
+        if (Get.isRegistered<FireChatController>()) {
+          final chatController = Get.find<FireChatController>();
+          if (chatId.isNotEmpty) {
+            chatController.markMessagesAsRead(chatId);
+            chatController.clearBadgeForChat(chatId);
+          }
+        }
+      }
+    } catch (e) {
+      developer.log('❌ Error navigating to chat with badge: $e');
     }
   }
 
@@ -658,98 +875,6 @@ class FirebaseNotificationService {
     }
   }
 
-  // Handle notification tap response
-  void _onNotificationTapped(NotificationResponse response) {
-    developer.log('👆 Notification tapped: ${response.actionId}');
-    
-    if (response.payload != null) {
-      try {
-        final data = jsonDecode(response.payload!) as Map<String, dynamic>;
-        
-        // Handle specific actions
-        switch (response.actionId) {
-          case 'reply':
-            _handleQuickReply(data, response.input);
-            break;
-          case 'mark_read':
-            _handleMarkAsRead(data);
-            break;
-          default:
-            _handleNotificationTap(data);
-            break;
-        }
-      } catch (e) {
-        developer.log('❌ Error handling notification tap: $e');
-      }
-    }
-  }
-
-  void _handleQuickReply(Map<String, dynamic> data, String? replyText) {
-    if (replyText == null || replyText.trim().isEmpty) return;
-    
-    try {
-      if (!Get.isRegistered<FireChatController>()) {
-        developer.log('⚠️ Chat controller not available for quick reply');
-        return;
-      }
-      
-      final chatController = Get.find<FireChatController>();
-      final receiverId = data['senderId']?.toString() ?? '';
-      
-      if (receiverId.isNotEmpty) {
-        chatController.sendMessage(
-          receiverId: receiverId,
-          message: replyText.trim(),
-        );
-        
-        // Show confirmation
-        Get.snackbar(
-          'Sent',
-          'Your reply has been sent',
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
-          backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-          colorText: Colors.white,
-        );
-      }
-    } catch (e) {
-      developer.log('❌ Error sending quick reply: $e');
-    }
-  }
-
-  void _handleMarkAsRead(Map<String, dynamic> data) {
-    try {
-      if (!Get.isRegistered<FireChatController>()) {
-        developer.log('⚠️ Chat controller not available for mark as read');
-        return;
-      }
-      
-      final chatController = Get.find<FireChatController>();
-      final chatId = data['chatId']?.toString() ?? '';
-      
-      if (chatId.isNotEmpty) {
-        chatController.markMessagesAsRead(chatId);
-        
-        // Clear badge
-        chatController.clearBadge(chatId);
-        
-        // Cancel notification
-        _flutterLocalNotificationsPlugin.cancel(_generateNotificationId(data));
-        
-        Get.snackbar(
-          'Marked as Read',
-          'Messages marked as read',
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 1),
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-      }
-    } catch (e) {
-      developer.log('❌ Error marking as read: $e');
-    }
-  }
-
   // Public methods
   Future<String?> getFCMToken() async {
     try {
@@ -803,12 +928,14 @@ class FirebaseNotificationService {
     Map<String, dynamic>? data,
     String? channelId,
     int? id,
+    int badgeCount = 1,
   }) async {
-    await _showLocalNotification(
+    await _showLocalNotificationWithBadge(
       title: title,
       body: body,
       data: data ?? {},
       channelId: channelId ?? _generalChannelId,
+      badgeCount: badgeCount,
     );
   }
 
@@ -822,7 +949,7 @@ class FirebaseNotificationService {
     );
   }
 
-  // NEW: Debug method to check notification status
+  // Debug method to check notification status
   Future<void> debugNotificationStatus() async {
     try {
       developer.log('📱 === NOTIFICATION DEBUG STATUS ===');

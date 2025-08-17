@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import 'package:innovator/Authorization/firebase_services.dart';
 import 'package:innovator/App_data/App_data.dart';
-import 'package:innovator/screens/chatApp/FollowStatusManager.dart' show FollowStatusManager;
+import 'package:innovator/screens/chatApp/FollowStatusManager.dart'
+    show FollowStatusManager;
 import 'package:innovator/services/Firebase_Messaging.dart';
 
 class FireChatController extends GetxController {
@@ -61,21 +62,229 @@ class FireChatController extends GetxController {
   final RxBool isLoadingFollowStatus = false.obs;
   final RxString loadingStatusText = ''.obs;
 
-    final RxBool _usersInitialized = false.obs;
+  final RxBool _usersInitialized = false.obs;
   final RxBool _preventAutoReload = false.obs;
+
+  final RxMap<String, RxInt> chatBadges = <String, RxInt>{}.obs;
+  final RxInt totalUnreadBadges = 0.obs;
 
   @override
   void onInit() {
     super.onInit();
 
-      _initializeFollowStatusManager();
+   _initializeFollowStatusManager();
+  initializeUser();
+  _setupReactiveListeners();
+  _startGlobalMessageListener(); // This also needs to use badge handlers
+  _initializeNotificationService();
+  _loadRecentUsersFromStorage();
 
-    initializeUser();
-    _setupReactiveListeners();
-    _startGlobalMessageListener();
-    _initializeNotificationService(); // Add this
-    _loadRecentUsersFromStorage();
+  // IMPORTANT: Initialize badge system
+  chatBadges.clear();
+  totalUnreadBadges.value = 0;
+  developer.log('✅ Badge system initialized');
   }
+
+  // Add these methods to your FireChatController class
+
+// Initialize badge for a specific chat
+void initializeBadgeForChat(String chatId) {
+  if (!chatBadges.containsKey(chatId)) {
+    chatBadges[chatId] = 0.obs;
+  }
+}
+
+// Clear badge for specific chat
+void clearBadgeForChat(String chatId) {
+  if (chatBadges.containsKey(chatId)) {
+    chatBadges[chatId]!.value = 0;
+  }
+  unreadCounts[chatId] = 0;
+  // Update total badges
+  updateTotalUnreadBadges();
+  developer.log('🟢 Badge cleared for chat: $chatId');
+}
+
+// Calculate total unread badges across all chats
+void updateTotalUnreadBadges() {
+  int total = 0;
+  for (final badge in chatBadges.values) {
+    total += badge.value;
+  }
+  totalUnreadBadges.value = total;
+  developer.log('📊 Total unread badges: $total');
+}
+
+// Animate new badge appearance
+void _animateNewBadge(String chatId) {
+  // Trigger badge pulse animation
+  Future.delayed(const Duration(milliseconds: 100), () {
+    // This will be used in UI for badge animation
+    developer.log('🔴 New badge animation for chat: $chatId');
+  });
+}
+
+// Enhanced update unread count with badge system
+void _updateUnreadCountWithBadge(String chatId, String otherUserId) {
+  if (chatId.isEmpty) return;
+
+  try {
+    initializeBadgeForChat(chatId);
+    
+    // Listen to unread message count
+    FirebaseService.getUnreadMessageCount(chatId, currentUserId.value).listen(
+      (snapshot) {
+        final count = snapshot.docs.length;
+        
+        // Update local cache
+        unreadCounts[chatId] = count;
+        
+        // Update reactive badge count
+        chatBadges[chatId]!.value = count;
+        
+        // Update total unread badges
+        updateTotalUnreadBadges();
+        
+        // Trigger animation if count increased
+        if (count > 0) {
+          _animateNewBadge(chatId);
+          
+          // Force UI refresh
+          chatList.refresh();
+        }
+        
+        developer.log('📊 Badge updated for chat $chatId: $count unread messages');
+      },
+      onError: (error) {
+        developer.log('❌ Error updating badge count: $error');
+      },
+    );
+  } catch (e) {
+    developer.log('❌ Error updating unread count with badge: $e');
+  }
+}
+
+// ENHANCED: Handle new incoming message with proper badge management
+void _handleNewMessageWithBadge(String chatId, Map<String, dynamic> messageData) {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    final isMyMessage = senderId == currentUserId.value;
+    
+    developer.log('📨 New message - Chat: $chatId, IsMyMessage: $isMyMessage');
+    
+    // CRITICAL: Process ALL new messages, not just received ones
+    if (!isMyMessage) {
+      // Initialize badge for this chat if not exists
+      initializeBadgeForChat(chatId);
+      
+      // Check if user is currently viewing this chat
+      final isViewingThisChat = currentChatId.value == chatId;
+      
+      if (!isViewingThisChat) {
+        // CRITICAL: Increment badge for unread messages
+        final currentBadge = chatBadges[chatId]?.value ?? 0;
+        chatBadges[chatId]!.value = currentBadge + 1;
+        unreadCounts[chatId] = currentBadge + 1;
+        
+        developer.log('🔴 NEW UNREAD MESSAGE - Badge incremented for chat $chatId: ${currentBadge + 1}');
+        
+        // Update total badges
+        updateTotalUnreadBadges();
+        
+        // Animate badge
+        _animateNewBadge(chatId);
+        
+        // Trigger UI refresh
+        chatList.refresh();
+      } else {
+        developer.log('👀 User viewing chat $chatId, auto-marking as read');
+        // Auto-mark as read after short delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          markMessagesAsRead(chatId);
+        });
+      }
+    }
+    
+    // ALWAYS move chat to top for any new message
+    _moveChatToTopWithAnimation(chatId, messageData);
+    
+  } catch (e) {
+    developer.log('❌ Error handling new message with badge: $e');
+  }
+}
+
+// ENHANCED: Move chat to top with smooth animation
+void _moveChatToTopWithAnimation(String chatId, Map<String, dynamic> messageData) {
+  try {
+    developer.log('⬆️ Moving chat to top: $chatId');
+    
+    final chatIndex = chatList.indexWhere((chat) => chat['chatId'] == chatId);
+    
+    if (chatIndex > 0) {
+      // Remove from current position
+      final chat = chatList.removeAt(chatIndex);
+      
+      // Update with latest message data
+      chat['lastMessage'] = messageData['message']?.toString() ?? '';
+      chat['lastMessageTime'] = messageData['timestamp'];
+      chat['lastMessageSender'] = messageData['senderId']?.toString() ?? '';
+      chat['lastMessageSenderName'] = messageData['senderName']?.toString() ?? '';
+      chat['lastMessageId'] = messageData['id']?.toString() ?? '';
+      
+      // Insert at top
+      chatList.insert(0, chat);
+      
+      developer.log('✅ Chat moved to top successfully');
+      
+      // Trigger animation
+      _triggerChatMoveAnimation();
+      
+    } else if (chatIndex == 0) {
+      // Already at top, just update data
+      final chat = chatList[0];
+      chat['lastMessage'] = messageData['message']?.toString() ?? '';
+      chat['lastMessageTime'] = messageData['timestamp'];
+      chat['lastMessageSender'] = messageData['senderId']?.toString() ?? '';
+      chat['lastMessageSenderName'] = messageData['senderName']?.toString() ?? '';
+      chat['lastMessageId'] = messageData['id']?.toString() ?? '';
+      
+      chatList.refresh(); // Trigger UI update
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error moving chat to top: $e');
+  }
+}
+
+// Trigger chat move animation
+void _triggerChatMoveAnimation() {
+  // This will be used in UI for smooth list reordering animation
+  chatList.refresh();
+}
+
+// Get badge count for chat (reactive)
+RxInt getBadgeCountReactive(String chatId) {
+  initializeBadgeForChat(chatId);
+  return chatBadges[chatId]!;
+}
+
+// Check if chat has unread messages
+bool hasUnreadMessages(String chatId) {
+  return (chatBadges[chatId]?.value ?? 0) > 0;
+}
+
+// Clear all badges (useful for mark all as read)
+void clearAllBadges() {
+  for (final chatId in chatBadges.keys) {
+    clearBadgeForChat(chatId);
+  }
+  developer.log('🟢 All badges cleared');
+}
+
+// Get total unread count across all chats
+int getTotalUnreadCount() {
+  return totalUnreadBadges.value;
+}
 
   void _initializeFollowStatusManager() {
     try {
@@ -92,10 +301,47 @@ class FireChatController extends GetxController {
     }
   }
 
+  // ENHANCED: Clear badge when messages are read
+  @override
+Future<void> markMessagesAsRead(String chatId) async {
+  if (chatId.isEmpty) return;
+
+  try {
+    // Call original Firebase method
+    await FirebaseService.markMessagesAsRead(chatId, currentUserId.value);
+
+    // Clear local badge immediately
+    clearBadgeForChat(chatId);
+
+    // Update UI immediately
+    for (var message in messages) {
+      if (message['chatId'] == chatId &&
+          message['senderId'] != currentUserId.value) {
+        message['isRead'] = true;
+      }
+    }
+    messages.refresh();
+
+    // Clear notification
+    try {
+      final notificationService = FirebaseNotificationService();
+      await notificationService.clearNotification(chatId.hashCode);
+    } catch (e) {
+      developer.log('Error clearing notification: $e');
+    }
+
+    developer.log('✅ Messages marked as read and badge cleared for: $chatId');
+  } catch (e) {
+    developer.log('❌ Error marking messages as read: $e');
+  }
+}
+
+  // Get badge count for chat (reactive)
+
   @override
   void onReady() {
     super.onReady();
-    
+
     // Initialize with preloading when controller is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       initializeWithPreloading();
@@ -624,8 +870,6 @@ class FireChatController extends GetxController {
     }
   }
 
-
-
   // NEW: Get profile picture URL with fallback
   String? getProfilePictureUrl(Map<String, dynamic>? user) {
     if (user == null) return null;
@@ -656,68 +900,74 @@ class FireChatController extends GetxController {
   }
 
   // Enhanced clear reactive variables with error handling
-  void _clearAllReactiveVariables() {
+  // Replace your _clearAllReactiveVariables method with this updated version:
+
+void _clearAllReactiveVariables() {
+  try {
+    developer.log('🧹 Clearing all reactive variables...');
+
+    // Reset initialization flags
+    _usersInitialized.value = false;
+    _preventAutoReload.value = false;
+
+    // Clear user data
     try {
-      developer.log('🧹 Clearing all reactive variables...');
-
-      // Reset initialization flags
-      _usersInitialized.value = false;
-      _preventAutoReload.value = false;
-
-      // Clear user data
-      try {
-        currentUser.value = null;
-        currentUserId.value = '';
-      } catch (e) {
-        developer.log('Error clearing user data: $e');
-      }
-
-      // Clear lists
-      try {
-        allUsers.clear();
-        chatList.clear();
-        searchResults.clear();
-        messages.clear();
-        recentUsers.clear();
-      } catch (e) {
-        developer.log('Error clearing lists: $e');
-      }
-
-      // Clear maps
-      try {
-        userCache.clear();
-        unreadCounts.clear();
-        badgeCounts.clear();
-        messageStatuses.clear();
-        lastMessageTimes.clear();
-        userInteractionTimes.clear();
-      } catch (e) {
-        developer.log('Error clearing maps: $e');
-      }
-
-      // Reset search and states
-      try {
-        searchQuery.value = '';
-        isLoadingUsers.value = false;
-        isLoadingChats.value = false;
-        isSearching.value = false;
-        isLoadingMessages.value = false;
-        isSendingMessage.value = false;
-        isTyping.value = false;
-        selectedBottomIndex.value = 0;
-        currentChatId.value = '';
-        typingIndicator.value = '';
-        showScrollToBottom.value = false;
-        fabScale.value = 1.0;
-      } catch (e) {
-        developer.log('Error resetting states: $e');
-      }
-
-      developer.log('✅ All reactive variables cleared');
+      currentUser.value = null;
+      currentUserId.value = '';
     } catch (e) {
-      developer.log('❌ Error clearing reactive variables: $e');
+      developer.log('Error clearing user data: $e');
     }
+
+    // Clear lists
+    try {
+      allUsers.clear();
+      chatList.clear();
+      searchResults.clear();
+      messages.clear();
+      recentUsers.clear();
+    } catch (e) {
+      developer.log('Error clearing lists: $e');
+    }
+
+    // Clear maps and badges
+    try {
+      userCache.clear();
+      unreadCounts.clear();
+      badgeCounts.clear();
+      messageStatuses.clear();
+      lastMessageTimes.clear();
+      userInteractionTimes.clear();
+      
+      // IMPORTANT: Clear badge system
+      chatBadges.clear();
+      totalUnreadBadges.value = 0;
+    } catch (e) {
+      developer.log('Error clearing maps and badges: $e');
+    }
+
+    // Reset search and states
+    try {
+      searchQuery.value = '';
+      isLoadingUsers.value = false;
+      isLoadingChats.value = false;
+      isSearching.value = false;
+      isLoadingMessages.value = false;
+      isSendingMessage.value = false;
+      isTyping.value = false;
+      selectedBottomIndex.value = 0;
+      currentChatId.value = '';
+      typingIndicator.value = '';
+      showScrollToBottom.value = false;
+      fabScale.value = 1.0;
+    } catch (e) {
+      developer.log('Error resetting states: $e');
+    }
+
+    developer.log('✅ All reactive variables and badges cleared');
+  } catch (e) {
+    developer.log('❌ Error clearing reactive variables: $e');
   }
+}
 
   // Reset controller state
   void _resetControllerState() {
@@ -769,64 +1019,56 @@ class FireChatController extends GetxController {
 
   // Setup managed streams with proper cleanup
   void _setupManagedStreams() {
-    try {
-      developer.log('📡 Setting up managed streams...');
+  try {
+    developer.log('📡 Setting up managed streams...');
+    _cancelAllStreamSubscriptions();
 
-      // Cancel existing streams first
-      _cancelAllStreamSubscriptions();
+    if (currentUserId.value.isEmpty) return;
 
-      if (currentUserId.value.isEmpty) return;
+    // Users stream
+    _streamSubscriptions['users'] = FirebaseService.getAllUsers().listen(
+      (snapshot) {
+        if (!_usersInitialized.value) {
+          _handleUsersUpdate(snapshot);
+        }
+      },
+    );
 
-      // MODIFIED: Users stream with filtering protection
-      _streamSubscriptions['users'] = FirebaseService.getAllUsers().listen(
-        (snapshot) {
-          // Only handle if users aren't already filtered
-          if (!_usersInitialized.value) {
-            _handleUsersUpdate(snapshot);
-          }
-        },
-        onError: (error) {
-          developer.log('❌ Users stream error: $error');
-        },
-      );
+    // FIXED: Use badge handler for chats
+    _streamSubscriptions['chats'] = FirebaseService.getUserChats(
+      currentUserId.value,
+    ).listen(
+      (snapshot) {
+        _handleChatsUpdateWithBadges(snapshot); // ✅ CORRECT
+      },
+    );
 
-      // Chats stream (unchanged)
-      _streamSubscriptions['chats'] = FirebaseService.getUserChats(currentUserId.value).listen(
-        (snapshot) {
-          _handleChatsUpdate(snapshot);
-        },
-        onError: (error) {
-          developer.log('❌ Chats stream error: $error');
-        },
-      );
+    // FIXED: Use badge handler for messages
+    _streamSubscriptions['messages'] = FirebaseFirestore.instance
+        .collection('messages')
+        .where('participants', arrayContains: currentUserId.value)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen(
+          (snapshot) {
+            _handleGlobalMessagesUpdateWithBadges(snapshot); // ✅ CORRECT
+          },
+        );
 
-      // Global messages stream (unchanged)
-      _streamSubscriptions['messages'] = FirebaseFirestore.instance
-          .collection('messages')
-          .where('participants', arrayContains: currentUserId.value)
-          .orderBy('timestamp', descending: true)
-          .snapshots()
-          .listen(
-        (snapshot) {
-          _handleGlobalMessagesUpdate(snapshot);
-        },
-        onError: (error) {
-          developer.log('❌ Messages stream error: $error');
-        },
-      );
-
-      developer.log('✅ Managed streams setup completed');
-    } catch (e) {
-      developer.log('❌ Error setting up managed streams: $e');
-    }
+    developer.log('✅ Managed streams setup completed');
+  } catch (e) {
+    developer.log('❌ Error setting up managed streams: $e');
   }
+}
 
   // Handle users update
   void _handleUsersUpdate(QuerySnapshot snapshot) {
     try {
       // IMPORTANT: Only process if we haven't filtered users yet
       if (_usersInitialized.value) {
-        developer.log('🔒 Users already filtered, skipping Firestore users update');
+        developer.log(
+          '🔒 Users already filtered, skipping Firestore users update',
+        );
         return;
       }
 
@@ -848,13 +1090,13 @@ class FireChatController extends GetxController {
           userCache[doc.id] = userData;
         }
       }
-      
+
       // Only update if we don't have filtered users yet
       if (allUsers.isEmpty) {
         allUsers.assignAll(users);
         developer.log('📱 Initial users loaded: ${users.length}');
       }
-      
+
       isLoadingUsers.value = false;
     } catch (e) {
       developer.log('❌ Error handling users update: $e');
@@ -1003,42 +1245,43 @@ class FireChatController extends GetxController {
 
   // Global message listener for real-time updates
   void _startGlobalMessageListener() {
-    if (currentUserId.value.isEmpty) return;
+  if (currentUserId.value.isEmpty) return;
 
-    try {
-      // Listen to all messages where current user is participant
-      FirebaseFirestore.instance
-          .collection('messages')
-          .where('participants', arrayContains: currentUserId.value)
-          .orderBy('timestamp', descending: true)
-          .snapshots()
-          .listen((snapshot) {
-            for (var change in snapshot.docChanges) {
-              final messageData = change.doc.data() as Map<String, dynamic>?;
-              if (messageData == null) continue;
+  try {
+    FirebaseFirestore.instance
+        .collection('messages')
+        .where('participants', arrayContains: currentUserId.value)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+          for (var change in snapshot.docChanges) {
+            final messageData = change.doc.data() as Map<String, dynamic>?;
+            if (messageData == null) continue;
 
-              final chatId = messageData['chatId']?.toString() ?? '';
-              final senderId = messageData['senderId']?.toString() ?? '';
-              final isMyMessage = senderId == currentUserId.value;
+            final chatId = messageData['chatId']?.toString() ?? '';
+            final senderId = messageData['senderId']?.toString() ?? '';
+            final isMyMessage = senderId == currentUserId.value;
 
-              switch (change.type) {
-                case DocumentChangeType.added:
-                  if (!isMyMessage) {
-                    _handleNewMessage(chatId, messageData);
-                  }
-                  break;
-                case DocumentChangeType.modified:
-                  _handleMessageUpdate(change.doc.id, messageData);
-                  break;
-                default:
-                  break;
-              }
+            // Add message ID to data
+            messageData['id'] = change.doc.id;
+
+            switch (change.type) {
+              case DocumentChangeType.added:
+                // FIXED: Use badge handler for new messages
+                _handleNewMessageWithBadge(chatId, messageData); // ✅ Use badge handler
+                break;
+              case DocumentChangeType.modified:
+                _handleMessageUpdate(change.doc.id, messageData);
+                break;
+              default:
+                break;
             }
-          });
-    } catch (e) {
-      developer.log('Error setting up global message listener: $e');
-    }
+          }
+        });
+  } catch (e) {
+    developer.log('Error setting up global message listener: $e');
   }
+}
 
   // Handle new incoming messages
   void _handleNewMessage(String chatId, Map<String, dynamic> messageData) {
@@ -1437,6 +1680,7 @@ class FireChatController extends GetxController {
   }
 
   // ENHANCED: Send message with proper user validation and instant status updates
+  @override
   Future<void> sendMessage({
     required String receiverId,
     required String message,
@@ -1506,10 +1750,13 @@ class FireChatController extends GetxController {
     messages.insert(0, tempMessage);
     messageStatuses[tempMessageId] = 'sending';
 
+    // IMMEDIATELY move chat to top when I send a message
+    _moveChatToTopWhenSending(chatId, tempMessage);
+
     isSendingMessage.value = true;
 
     try {
-      // Send message to Firebase (this will trigger notification)
+      // Send message to Firebase
       final sentMessageRef = await FirebaseService.sendMessage(
         chatId: chatId,
         senderId: currentUserId.value,
@@ -1524,8 +1771,8 @@ class FireChatController extends GetxController {
       // Remove temp message (real one will come through stream)
       messages.removeWhere((msg) => msg['id'] == tempMessageId);
 
-      // Move chat to top
-      _moveChatToTop(chatId);
+      // Move chat to top again after successful send
+      _moveChatToTopAfterSending(chatId);
 
       animateFab();
 
@@ -1557,38 +1804,39 @@ class FireChatController extends GetxController {
     }
   }
 
-  // ENHANCED: Mark messages as read with instant update
-  Future<void> markMessagesAsRead(String chatId) async {
-    if (chatId.isEmpty) return;
-
+  void _moveChatToTopWhenSending(
+    String chatId,
+    Map<String, dynamic> messageData,
+  ) {
     try {
-      await FirebaseService.markMessagesAsRead(chatId, currentUserId.value);
+      final chatIndex = chatList.indexWhere((chat) => chat['chatId'] == chatId);
 
-      // Instantly update local state
-      unreadCounts[chatId] = 0;
-      if (badgeCounts.containsKey(chatId)) {
-        badgeCounts[chatId]!.value = 0;
-      }
+      if (chatIndex > 0) {
+        final chat = chatList.removeAt(chatIndex);
 
-      // Clear notification
-      try {
-        final notificationService = FirebaseNotificationService();
-        await notificationService.clearNotification(chatId.hashCode);
-      } catch (e) {
-        developer.log('Error clearing notification: $e');
-      }
+        // Update with my message
+        chat['lastMessage'] = messageData['message']?.toString() ?? '';
+        chat['lastMessageTime'] = messageData['timestamp'];
+        chat['lastMessageSender'] = currentUserId.value;
+        chat['lastMessageSenderName'] =
+            currentUser.value?['name']?.toString() ?? 'User';
 
-      // Update messages in current chat
-      for (var message in messages) {
-        if (message['chatId'] == chatId &&
-            message['senderId'] != currentUserId.value) {
-          message['isRead'] = true;
-        }
+        chatList.insert(0, chat);
+
+        developer.log('⬆️ Chat moved to top when sending message');
       }
-      messages.refresh();
     } catch (e) {
-      developer.log('Error marking messages as read: $e');
+      developer.log('❌ Error moving chat to top when sending: $e');
     }
+  }
+
+  // Move chat to top after successful send
+  void _moveChatToTopAfterSending(String chatId) {
+    // This will be handled by the real-time listener
+    // Just trigger a refresh to ensure proper ordering
+    Future.delayed(const Duration(milliseconds: 500), () {
+      chatList.refresh();
+    });
   }
 
   void clearCurrentChat() {
@@ -1597,6 +1845,166 @@ class FireChatController extends GetxController {
     }
     currentChatId.value = '';
   }
+
+  void _setupManagedStreamsWithBadges() {
+    try {
+      developer.log('📡 Setting up managed streams with badges...');
+
+      // Cancel existing streams first
+      _cancelAllStreamSubscriptions();
+
+      if (currentUserId.value.isEmpty) return;
+
+      // Users stream (unchanged)
+      _streamSubscriptions['users'] = FirebaseService.getAllUsers().listen(
+        (snapshot) {
+          if (!_usersInitialized.value) {
+            _handleUsersUpdate(snapshot);
+          }
+        },
+        onError: (error) {
+          developer.log('❌ Users stream error: $error');
+        },
+      );
+
+      // UPDATED: Chats stream with badge management
+      _streamSubscriptions['chats'] = FirebaseService.getUserChats(
+        currentUserId.value,
+      ).listen(
+        (snapshot) {
+          _handleChatsUpdateWithBadges(snapshot); // UPDATED
+        },
+        onError: (error) {
+          developer.log('❌ Chats stream error: $error');
+        },
+      );
+
+      // UPDATED: Global messages stream with badge management
+      _streamSubscriptions['messages'] = FirebaseFirestore.instance
+          .collection('messages')
+          .where('participants', arrayContains: currentUserId.value)
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .listen(
+            (snapshot) {
+              _handleGlobalMessagesUpdateWithBadges(snapshot); // UPDATED
+            },
+            onError: (error) {
+              developer.log('❌ Messages stream error: $error');
+            },
+          );
+
+      developer.log('✅ Managed streams with badges setup completed');
+    } catch (e) {
+      developer.log('❌ Error setting up managed streams with badges: $e');
+    }
+  }
+
+  void _handleChatsUpdateWithBadges(QuerySnapshot snapshot) async {
+  try {
+    final chats = <Map<String, dynamic>>[];
+
+    for (var doc in snapshot.docs) {
+      final chatData = Map<String, dynamic>.from(
+        doc.data() as Map<String, dynamic>,
+      );
+      chatData['id'] = doc.id;
+
+      final participants = List<String>.from(chatData['participants'] ?? []);
+      final otherUserId = participants.firstWhere(
+        (id) => id != currentUserId.value,
+        orElse: () => '',
+      );
+
+      if (otherUserId.isNotEmpty) {
+        Map<String, dynamic>? otherUser = userCache[otherUserId];
+        if (otherUser == null) {
+          try {
+            final userDoc = await FirebaseService.getUserById(otherUserId);
+            if (userDoc.exists) {
+              otherUser = Map<String, dynamic>.from(
+                userDoc.data() as Map<String, dynamic>,
+              );
+              otherUser['id'] = otherUserId;
+              otherUser['userId'] = otherUserId;
+              if (!otherUser.containsKey('_id')) {
+                otherUser['_id'] = otherUserId;
+              }
+              userCache[otherUserId] = otherUser;
+            }
+          } catch (e) {
+            developer.log('Error loading user $otherUserId: $e');
+            continue;
+          }
+        }
+
+        if (otherUser != null) {
+          chatData['otherUser'] = otherUser;
+          chats.add(chatData);
+
+          final chatId = chatData['chatId'] ?? '';
+          
+          // CRITICAL: Initialize badge and update unread count
+          initializeBadgeForChat(chatId);
+          _updateUnreadCountWithBadge(chatId, otherUserId);
+        }
+      }
+    }
+
+    // Sort chats by last message time (newest first)
+    chats.sort((a, b) {
+      final aTime = a['lastMessageTime'] as Timestamp?;
+      final bTime = b['lastMessageTime'] as Timestamp?;
+
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+
+      return bTime.compareTo(aTime);
+    });
+
+    chatList.assignAll(chats);
+    isLoadingChats.value = false;
+    
+    // Update total unread badges after loading chats
+    updateTotalUnreadBadges();
+    
+    developer.log('💬 Updated ${chats.length} chats with badges');
+  } catch (e) {
+    developer.log('❌ Error handling chats update with badges: $e');
+  }
+}
+
+  // Enhanced global message handler with badge management
+  void _handleGlobalMessagesUpdateWithBadges(QuerySnapshot snapshot) {
+  try {
+    for (var change in snapshot.docChanges) {
+      final messageData = change.doc.data() as Map<String, dynamic>?;
+      if (messageData == null) continue;
+
+      final chatId = messageData['chatId']?.toString() ?? '';
+      final senderId = messageData['senderId']?.toString() ?? '';
+      final isMyMessage = senderId == currentUserId.value;
+
+      // Add message ID
+      messageData['id'] = change.doc.id;
+
+      switch (change.type) {
+        case DocumentChangeType.added:
+          // Handle new message with badge management
+          _handleNewMessageWithBadge(chatId, messageData);
+          break;
+        case DocumentChangeType.modified:
+          _handleMessageUpdate(change.doc.id, messageData);
+          break;
+        default:
+          break;
+      }
+    }
+  } catch (e) {
+    developer.log('❌ Error handling global messages with badges: $e');
+  }
+}
 
   // Get message status for blue tick display
   String getMessageStatus(String messageId) {
@@ -1620,7 +2028,7 @@ class FireChatController extends GetxController {
   }
 
   // ADDED: Refresh users and clear cache (useful after new user signup)
- 
+
   // UI Animations
   void animateFab() {
     fabScale.value = 0.8;
@@ -1644,37 +2052,39 @@ class FireChatController extends GetxController {
 
   @override
   void navigateToChat(Map<String, dynamic> user) async {
-  try {
-    // Quick fix: Always do a fresh API check if cache check fails
-    bool canChat = isMutualFollower(user);
-    
-    if (!canChat) {
-      final email = user['email']?.toString();
-      if (email != null) {
-        developer.log('🔄 Cache check failed, trying fresh API check...');
-        final freshStatus = await followStatusManager.checkFollowStatus(email);
-        canChat = freshStatus?['isMutualFollow'] == true;
-      }
-    }
-    
-    if (!canChat) {
-      Get.snackbar(
-        'Access Denied',
-        'You can only chat with users you mutually follow',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange.withOpacity(0.8),
-        colorText: Colors.white,
-        duration: const Duration(milliseconds: 800),
-      );
-      return;
-    }
+    try {
+      // Quick fix: Always do a fresh API check if cache check fails
+      bool canChat = isMutualFollower(user);
 
-    navigateToChatEnhanced(user);
-  } catch (e) {
-    developer.log('❌ Error in navigation: $e');
-    // Show error but don't crash
+      if (!canChat) {
+        final email = user['email']?.toString();
+        if (email != null) {
+          developer.log('🔄 Cache check failed, trying fresh API check...');
+          final freshStatus = await followStatusManager.checkFollowStatus(
+            email,
+          );
+          canChat = freshStatus?['isMutualFollow'] == true;
+        }
+      }
+
+      if (!canChat) {
+        Get.snackbar(
+          'Access Denied',
+          'You can only chat with users you mutually follow',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange.withOpacity(0.8),
+          colorText: Colors.white,
+          duration: const Duration(milliseconds: 800),
+        );
+        return;
+      }
+
+      navigateToChatEnhanced(user);
+    } catch (e) {
+      developer.log('❌ Error in navigation: $e');
+      // Show error but don't crash
+    }
   }
-}
 
   void setTyping(bool typing) {
     isTyping.value = typing;
@@ -1712,26 +2122,27 @@ class FireChatController extends GetxController {
     }
   }
 
- Future<void> loadAllUsersWithSmartCaching() async {
+  Future<void> loadAllUsersWithSmartCaching() async {
     if (isLoadingUsers.value) return;
-    
+
     // IMPORTANT: If users are already loaded and filtered, don't reload
     if (_usersInitialized.value && allUsers.isNotEmpty) {
       developer.log('✅ Users already loaded and filtered, skipping reload');
       return;
     }
-    
+
     isLoadingUsers.value = true;
     isLoadingFollowStatus.value = true;
     loadingStatusText.value = 'Loading users...';
-    
+
     try {
       developer.log('📱 Smart loading users with caching...');
-      
+
       // Step 1: Get all users from Firestore first
-      final usersSnapshot = await FirebaseFirestore.instance.collection('users').get();
+      final usersSnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
       final allFirestoreUsers = <Map<String, dynamic>>[];
-      
+
       for (var doc in usersSnapshot.docs) {
         final userData = Map<String, dynamic>.from(doc.data());
         userData['id'] = doc.id;
@@ -1739,26 +2150,31 @@ class FireChatController extends GetxController {
         userData['_id'] = doc.id;
         allFirestoreUsers.add(userData);
       }
-      
+
       developer.log('📱 Got ${allFirestoreUsers.length} users from Firestore');
-      
+
       // Step 2: Show cached mutual followers immediately (if any)
       loadingStatusText.value = 'Checking follow status...';
-      final cachedMutualFollowers = followStatusManager.filterMutualFollowers(allFirestoreUsers);
-      
+      final cachedMutualFollowers = followStatusManager.filterMutualFollowers(
+        allFirestoreUsers,
+      );
+
       if (cachedMutualFollowers.isNotEmpty) {
         // Filter out current user
         final currentUserId = getCurrentUserId();
-        final displayUsers = cachedMutualFollowers.where((user) {
-          final userId = user['userId']?.toString() ?? '';
-          return userId != currentUserId;
-        }).toList();
-        
+        final displayUsers =
+            cachedMutualFollowers.where((user) {
+              final userId = user['userId']?.toString() ?? '';
+              return userId != currentUserId;
+            }).toList();
+
         // Show cached data immediately
         allUsers.assignAll(displayUsers);
         _usersInitialized.value = true; // Mark as initialized
-        developer.log('✅ Showing ${displayUsers.length} cached mutual followers');
-        
+        developer.log(
+          '✅ Showing ${displayUsers.length} cached mutual followers',
+        );
+
         // Update cache
         for (final user in displayUsers) {
           final userId = user['userId']?.toString() ?? '';
@@ -1767,32 +2183,35 @@ class FireChatController extends GetxController {
           }
         }
       }
-      
+
       // Step 3: Get emails that need follow status checking
-      final emailsToCheck = allFirestoreUsers
-          .map((user) => user['email']?.toString())
-          .where((email) => email != null && email.isNotEmpty)
-          .cast<String>()
-          .toList();
-      
+      final emailsToCheck =
+          allFirestoreUsers
+              .map((user) => user['email']?.toString())
+              .where((email) => email != null && email.isNotEmpty)
+              .cast<String>()
+              .toList();
+
       // Step 4: Batch check follow statuses for uncached users
       if (emailsToCheck.isNotEmpty) {
         loadingStatusText.value = 'Updating follow status...';
-        
+
         await followStatusManager.batchCheckFollowStatus(emailsToCheck);
-        
+
         // Step 5: Update with fresh data
-        final updatedMutualFollowers = followStatusManager.filterMutualFollowers(allFirestoreUsers);
+        final updatedMutualFollowers = followStatusManager
+            .filterMutualFollowers(allFirestoreUsers);
         final currentUserId = getCurrentUserId();
-        final finalUsers = updatedMutualFollowers.where((user) {
-          final userId = user['userId']?.toString() ?? '';
-          return userId != currentUserId;
-        }).toList();
-        
+        final finalUsers =
+            updatedMutualFollowers.where((user) {
+              final userId = user['userId']?.toString() ?? '';
+              return userId != currentUserId;
+            }).toList();
+
         // Update reactive list
         allUsers.assignAll(finalUsers);
         _usersInitialized.value = true; // Mark as initialized
-        
+
         // Update cache
         for (final user in finalUsers) {
           final userId = user['userId']?.toString() ?? '';
@@ -1800,10 +2219,9 @@ class FireChatController extends GetxController {
             userCache[userId] = user;
           }
         }
-        
+
         developer.log('✅ Updated with ${finalUsers.length} mutual followers');
       }
-      
     } catch (e) {
       developer.log('❌ Error in smart loading: $e');
       // Get.snackbar(
@@ -1826,24 +2244,23 @@ class FireChatController extends GetxController {
       searchResults.clear();
       return;
     }
-    
+
     isSearching.value = true;
-    
+
     try {
       developer.log('🔍 Smart searching: $query');
-      
+
       // First, search in cached data
       final cachedResults = _searchInCachedData(query);
       if (cachedResults.isNotEmpty) {
         searchResults.assignAll(cachedResults);
         developer.log('✅ Found ${cachedResults.length} results in cache');
       }
-      
+
       // Then, if we need more comprehensive search, do full search
       if (cachedResults.length < 5) {
         await _performFullSearch(query);
       }
-      
     } catch (e) {
       developer.log('❌ Error in smart search: $e');
     } finally {
@@ -1865,32 +2282,38 @@ class FireChatController extends GetxController {
       // Get all users and check follow status
       final results = await FirebaseService.searchUsers(query);
       final users = <Map<String, dynamic>>[];
-      
+
       for (var doc in results.docs) {
-        final userData = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
+        final userData = Map<String, dynamic>.from(
+          doc.data() as Map<String, dynamic>,
+        );
         userData['id'] = doc.id;
         userData['userId'] = doc.id;
         userData['_id'] = doc.id;
         users.add(userData);
       }
-      
+
       // Check follow status for search results
-      final emails = users
-          .map((user) => user['email']?.toString())
-          .where((email) => email != null && email.isNotEmpty)
-          .cast<String>()
-          .toList();
-      
+      final emails =
+          users
+              .map((user) => user['email']?.toString())
+              .where((email) => email != null && email.isNotEmpty)
+              .cast<String>()
+              .toList();
+
       if (emails.isNotEmpty) {
         await followStatusManager.batchCheckFollowStatus(emails);
-        final mutualFollowers = followStatusManager.filterMutualFollowers(users);
-        
+        final mutualFollowers = followStatusManager.filterMutualFollowers(
+          users,
+        );
+
         final currentUserId = getCurrentUserId();
-        final finalResults = mutualFollowers.where((user) {
-          final userId = user['userId']?.toString() ?? '';
-          return userId != currentUserId;
-        }).toList();
-        
+        final finalResults =
+            mutualFollowers.where((user) {
+              final userId = user['userId']?.toString() ?? '';
+              return userId != currentUserId;
+            }).toList();
+
         searchResults.assignAll(finalResults);
       }
     } catch (e) {
@@ -1902,18 +2325,20 @@ class FireChatController extends GetxController {
   Future<void> preloadFollowStatuses() async {
     try {
       developer.log('🚀 Preloading follow statuses...');
-      
+
       // Get all user emails from Firestore
-      final usersSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .get(); // REMOVED .select(['email']) as it's not supported
-      
-      final emails = usersSnapshot.docs
-          .map((doc) => doc.data()['email']?.toString())
-          .where((email) => email != null && email.isNotEmpty)
-          .cast<String>()
-          .toList();
-      
+      final usersSnapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .get(); // REMOVED .select(['email']) as it's not supported
+
+      final emails =
+          usersSnapshot.docs
+              .map((doc) => doc.data()['email']?.toString())
+              .where((email) => email != null && email.isNotEmpty)
+              .cast<String>()
+              .toList();
+
       if (emails.isNotEmpty) {
         await followStatusManager.preloadFollowStatuses(emails);
         developer.log('✅ Preloaded follow statuses for ${emails.length} users');
@@ -1926,86 +2351,97 @@ class FireChatController extends GetxController {
   // ENHANCED: Load chats with cached profile data
   Future<void> loadUserChatsWithSmartCaching() async {
     if (isLoadingChats.value || currentUserId.value.isEmpty) return;
-    
+
     isLoadingChats.value = true;
     try {
       developer.log('💬 Smart loading chats...');
-      
-      FirebaseService.getUserChats(currentUserId.value).listen((snapshot) async {
+
+      FirebaseService.getUserChats(currentUserId.value).listen((
+        snapshot,
+      ) async {
         final chats = <Map<String, dynamic>>[];
-        
+
         for (var doc in snapshot.docs) {
-          final chatData = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
+          final chatData = Map<String, dynamic>.from(
+            doc.data() as Map<String, dynamic>,
+          );
           chatData['id'] = doc.id;
-          
-          final participants = List<String>.from(chatData['participants'] ?? []);
+
+          final participants = List<String>.from(
+            chatData['participants'] ?? [],
+          );
           final otherUserId = participants.firstWhere(
             (id) => id != currentUserId.value,
             orElse: () => '',
           );
-          
+
           if (otherUserId.isNotEmpty) {
             // Try to get enhanced user from cache first
             Map<String, dynamic>? otherUser = userCache[otherUserId];
-            
+
             if (otherUser == null) {
               // Get from Firestore
               final userDoc = await FirebaseService.getUserById(otherUserId);
               if (userDoc.exists) {
-                otherUser = Map<String, dynamic>.from(userDoc.data() as Map<String, dynamic>);
+                otherUser = Map<String, dynamic>.from(
+                  userDoc.data() as Map<String, dynamic>,
+                );
                 otherUser['id'] = otherUserId;
                 otherUser['userId'] = otherUserId;
                 otherUser['_id'] = otherUserId;
               }
             }
-            
+
             if (otherUser != null) {
               // Check if mutual follower using cached data
               if (followStatusManager.isMutualFollower(otherUser)) {
                 // Get enhanced data from cache
                 final email = otherUser['email']?.toString();
                 if (email != null) {
-                  final followStatus = followStatusManager.getCachedFollowStatus(email);
+                  final followStatus = followStatusManager
+                      .getCachedFollowStatus(email);
                   if (followStatus != null) {
-                    final apiUserData = followStatus['user'] as Map<String, dynamic>;
+                    final apiUserData =
+                        followStatus['user'] as Map<String, dynamic>;
                     otherUser = {
                       ...otherUser,
                       'name': apiUserData['name'],
                       'picture': apiUserData['picture'],
-                      'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}',
+                      'apiPictureUrl':
+                          'http://182.93.94.210:3066${apiUserData['picture']}',
                       'isMutualFollow': true,
                     };
                   }
                 }
-                
+
                 chatData['otherUser'] = otherUser;
                 chats.add(chatData);
-                
+
                 final chatId = chatData['chatId'] ?? '';
                 _updateUnreadCount(chatId, otherUserId);
-                
+
                 if (!badgeCounts.containsKey(chatId)) {
                   badgeCounts[chatId] = 0.obs;
                 }
-                
+
                 userCache[otherUserId] = otherUser;
               }
             }
           }
         }
-        
+
         // Sort chats by last message time
         chats.sort((a, b) {
           final aTime = a['lastMessageTime'] as Timestamp?;
           final bTime = b['lastMessageTime'] as Timestamp?;
-          
+
           if (aTime == null && bTime == null) return 0;
           if (aTime == null) return 1;
           if (bTime == null) return -1;
-          
+
           return bTime.compareTo(aTime);
         });
-        
+
         chatList.assignAll(chats);
         isLoadingChats.value = false;
         developer.log('✅ Loaded ${chats.length} chats (mutual followers only)');
@@ -2037,19 +2473,19 @@ class FireChatController extends GetxController {
   Future<void> refreshUsersAndCache() async {
     try {
       developer.log('🔄 Refreshing users and clearing cache...');
-      
+
       // Reset initialization flag to allow fresh loading
       _usersInitialized.value = false;
-      
+
       // Clear caches
       userCache.clear();
       allUsers.clear();
       searchResults.clear();
       followStatusManager.clearCache();
-      
+
       // Reload with fresh data
       await loadAllUsersWithSmartCaching();
-      
+
       developer.log('✅ Refresh completed');
     } catch (e) {
       developer.log('❌ Error refreshing: $e');
@@ -2060,13 +2496,12 @@ class FireChatController extends GetxController {
   Future<void> initializeWithPreloading() async {
     try {
       developer.log('🚀 Initializing with preloading...');
-      
+
       // Start preloading in background
       preloadFollowStatuses();
-      
+
       // Load users normally
       await loadAllUsersWithSmartCaching();
-      
     } catch (e) {
       developer.log('❌ Error in initialization: $e');
     }

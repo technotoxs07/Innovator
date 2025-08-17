@@ -22,6 +22,7 @@ import 'package:innovator/screens/Profile/profile_page.dart';
 import 'package:innovator/screens/Project_Management/Project_idea.dart';
 import 'package:innovator/screens/Report/Report_screen.dart';
 import 'package:innovator/screens/Settings/settings.dart';
+import 'package:innovator/screens/chatApp/chat_homepage.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/utils/Drawer/drawer_cache_manager.dart';
 import 'package:lottie/lottie.dart';
@@ -415,26 +416,19 @@ class _CustomDrawerState extends State<CustomDrawer>
                                   icon: Icons.message_rounded,
                                   title: 'Messages',
                                   onTap: () {
-                                    // Navigator.push(
-                                    //   context,
-                                    //   MaterialPageRoute(
-                                    //     builder:
-                                    //         (_) => ChatListScreen(
-                                    //           currentUserId:
-                                    //               AppData().currentUserId ?? '',
-                                    //           currentUserName:
-                                    //               AppData().currentUserName ??
-                                    //               '',
-                                    //           currentUserPicture:
-                                    //               AppData()
-                                    //                   .currentUserProfilePicture ??
-                                    //               '',
-                                    //           currentUserEmail:
-                                    //               AppData().currentUserEmail ??
-                                    //               '',
-                                    //         ),
-                                    //   ),
-                                    // );
+                                    if (!Get.isRegistered<
+                                      FireChatController
+                                    >()) {
+                                      Get.put(FireChatController());
+                                    }
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (_) =>
+                                                const OptimizedChatHomePage(),
+                                      ),
+                                    );
                                   },
                                   delay: 100,
                                 ),
@@ -478,10 +472,10 @@ class _CustomDrawerState extends State<CustomDrawer>
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) =>  Project_HomeScreen(),
+                                        builder: (_) => Project_HomeScreen(),
                                       ),
                                     );
-                                  },// ROnit Shrivastav Ronit Shrivastav Ronit Shrivastav
+                                  }, // ROnit Shrivastav Ronit Shrivastav Ronit Shrivastav
                                   delay: 600,
                                 ),
                                 _buildAnimatedMenuItem(
@@ -950,236 +944,237 @@ class _CustomDrawerState extends State<CustomDrawer>
   }
 
   void _showLogoutDialog() {
-  showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-      child: AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.logout_rounded,
-                color: Colors.red,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Logout Confirmation',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Are you sure you want to logout from your account?',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: Colors.grey,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => _performLogout(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Logout',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-// Add this new method to handle the complete logout process:
-// Replace your _performLogout method with this fixed version:
-
-Future<void> _performLogout(BuildContext dialogContext) async {
-  try {
-    developer.log('🚪 Starting drawer logout process...');
-    
-    // Close the confirmation dialog first
-    Navigator.of(dialogContext).pop();
-    
-    // Show loading dialog
-    showDialog(
+    showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false,
-        child: AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(
-                color: Color(0xFFEB6B46),
+      builder:
+          (context) => BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 16),
-              const Text('Logging out...'),
-            ],
+              backgroundColor: Colors.white,
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.red,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Logout Confirmation',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              content: const Text(
+                'Are you sure you want to logout from your account?',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.grey,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => _performLogout(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
     );
+  }
 
-    // Execute logout steps with proper stream cancellation FIRST
-    await _executeCompleteLogoutWithStreamCleanup();
+  // Add this new method to handle the complete logout process:
+  // Replace your _performLogout method with this fixed version:
 
-    // Close loading dialog
-    if (mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
+  Future<void> _performLogout(BuildContext dialogContext) async {
+    try {
+      developer.log('🚪 Starting drawer logout process...');
 
-    // Use Navigator instead of Get for navigation
-    if (mounted) {
-      developer.log('🔄 Navigating to login page...');
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => const LoginPage(),
-          settings: const RouteSettings(name: '/login'),
-        ),
-        (route) => false, // Remove all previous routes
+      // Close the confirmation dialog first
+      Navigator.of(dialogContext).pop();
+
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => WillPopScope(
+              onWillPop: () async => false,
+              child: AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Color(0xFFEB6B46)),
+                    const SizedBox(height: 16),
+                    const Text('Logging out...'),
+                  ],
+                ),
+              ),
+            ),
       );
-      developer.log('✅ Navigation to login completed');
-    }
 
-  } catch (e) {
-    developer.log('❌ Error during logout: $e');
-    
-    // Close loading dialog if open
-    if (mounted && Navigator.of(context).canPop()) {
-      try {
+      // Execute logout steps with proper stream cancellation FIRST
+      await _executeCompleteLogoutWithStreamCleanup();
+
+      // Close loading dialog
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
-      } catch (popError) {
-        developer.log('Error closing loading dialog: $popError');
       }
-    }
-    
-    // Force navigate to login even if there were errors
-    if (mounted) {
-      try {
+
+      // Use Navigator instead of Get for navigation
+      if (mounted) {
+        developer.log('🔄 Navigating to login page...');
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const LoginPage(),
             settings: const RouteSettings(name: '/login'),
           ),
-          (route) => false,
+          (route) => false, // Remove all previous routes
         );
-        developer.log('✅ Emergency navigation to login completed');
-      } catch (navError) {
-        developer.log('❌ Emergency navigation failed: $navError');
+        developer.log('✅ Navigation to login completed');
+      }
+    } catch (e) {
+      developer.log('❌ Error during logout: $e');
+
+      // Close loading dialog if open
+      if (mounted && Navigator.of(context).canPop()) {
+        try {
+          Navigator.of(context).pop();
+        } catch (popError) {
+          developer.log('Error closing loading dialog: $popError');
+        }
+      }
+
+      // Force navigate to login even if there were errors
+      if (mounted) {
+        try {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const LoginPage(),
+              settings: const RouteSettings(name: '/login'),
+            ),
+            (route) => false,
+          );
+          developer.log('✅ Emergency navigation to login completed');
+        } catch (navError) {
+          developer.log('❌ Emergency navigation failed: $navError');
+        }
       }
     }
   }
-}
 
-// Updated logout execution with proper stream cleanup order:
-Future<void> _executeCompleteLogoutWithStreamCleanup() async {
-  developer.log('🧹 Executing complete logout with stream cleanup...');
+  // Updated logout execution with proper stream cleanup order:
+  Future<void> _executeCompleteLogoutWithStreamCleanup() async {
+    developer.log('🧹 Executing complete logout with stream cleanup...');
 
-  // STEP 1: Cancel streams FIRST to prevent permission errors
-  try {
-    if (Get.isRegistered<FireChatController>()) {
-      final chatController = Get.find<FireChatController>();
-      // Cancel streams before anything else
-      await chatController.cancelAllStreamSubscriptionsImmediate();
-      developer.log('✅ Chat streams canceled immediately');
+    // STEP 1: Cancel streams FIRST to prevent permission errors
+    try {
+      if (Get.isRegistered<FireChatController>()) {
+        final chatController = Get.find<FireChatController>();
+        // Cancel streams before anything else
+        await chatController.cancelAllStreamSubscriptionsImmediate();
+        developer.log('✅ Chat streams canceled immediately');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error canceling chat streams: $e');
     }
-  } catch (e) {
-    developer.log('⚠️ Error canceling chat streams: $e');
-  }
 
-  // STEP 2: Update user status to offline (with short timeout)
-  try {
-    final currentUser = AppData().currentUser;
-    if (currentUser != null && currentUser['_id'] != null) {
-      await FirebaseService.updateUserStatus(currentUser['_id'], false)
-          .timeout(const Duration(seconds: 3));
-      developer.log('✅ User status updated to offline');
+    // STEP 2: Update user status to offline (with short timeout)
+    try {
+      final currentUser = AppData().currentUser;
+      if (currentUser != null && currentUser['_id'] != null) {
+        await FirebaseService.updateUserStatus(
+          currentUser['_id'],
+          false,
+        ).timeout(const Duration(seconds: 3));
+        developer.log('✅ User status updated to offline');
+      }
+    } catch (e) {
+      developer.log('⚠️ Failed to update user status (continuing): $e');
     }
-  } catch (e) {
-    developer.log('⚠️ Failed to update user status (continuing): $e');
-  }
 
-  // STEP 3: Sign out from Firebase Auth (this will invalidate tokens)
-  try {
-    await FirebaseAuth.instance.signOut();
-    await GoogleSignIn().signOut();
-    developer.log('✅ Signed out from Firebase and Google');
-  } catch (e) {
-    developer.log('⚠️ Error signing out from Firebase: $e');
-  }
-
-  // STEP 4: Clear controllers after Firebase signout
-  try {
-    if (Get.isRegistered<FireChatController>()) {
-      final chatController = Get.find<FireChatController>();
-      await chatController.completeLogoutAfterSignout();
-      Get.delete<FireChatController>(force: true);
-      developer.log('✅ Chat controller cleared');
+    // STEP 3: Sign out from Firebase Auth (this will invalidate tokens)
+    try {
+      await FirebaseAuth.instance.signOut();
+      await GoogleSignIn().signOut();
+      developer.log('✅ Signed out from Firebase and Google');
+    } catch (e) {
+      developer.log('⚠️ Error signing out from Firebase: $e');
     }
-  } catch (e) {
-    developer.log('⚠️ Error clearing chat controller: $e');
-  }
 
-  try {
-    if (Get.isRegistered<UserController>()) {
-      Get.delete<UserController>(force: true);
-      developer.log('✅ User controller cleared');
+    // STEP 4: Clear controllers after Firebase signout
+    try {
+      if (Get.isRegistered<FireChatController>()) {
+        final chatController = Get.find<FireChatController>();
+        await chatController.completeLogoutAfterSignout();
+        Get.delete<FireChatController>(force: true);
+        developer.log('✅ Chat controller cleared');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error clearing chat controller: $e');
     }
-  } catch (e) {
-    developer.log('⚠️ Error clearing user controller: $e');
-  }
 
-  // STEP 5: Clear AppData (this will clear tokens and SharedPreferences)
-  try {
-    await AppData().clearAuthToken();
-    developer.log('✅ AppData cleared');
-  } catch (e) {
-    developer.log('⚠️ Error clearing AppData: $e');
-  }
+    try {
+      if (Get.isRegistered<UserController>()) {
+        Get.delete<UserController>(force: true);
+        developer.log('✅ User controller cleared');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error clearing user controller: $e');
+    }
 
-  // STEP 6: Clear caches
-  try {
-    await DrawerProfileCache.clearCache();
-    await DefaultCacheManager().emptyCache();
-    developer.log('✅ Caches cleared');
-  } catch (e) {
-    developer.log('⚠️ Error clearing caches: $e');
-  }
+    // STEP 5: Clear AppData (this will clear tokens and SharedPreferences)
+    try {
+      await AppData().clearAuthToken();
+      developer.log('✅ AppData cleared');
+    } catch (e) {
+      developer.log('⚠️ Error clearing AppData: $e');
+    }
 
-  developer.log('✅ Complete logout execution finished');
-}
+    // STEP 6: Clear caches
+    try {
+      await DrawerProfileCache.clearCache();
+      await DefaultCacheManager().emptyCache();
+      developer.log('✅ Caches cleared');
+    } catch (e) {
+      developer.log('⚠️ Error clearing caches: $e');
+    }
+
+    developer.log('✅ Complete logout execution finished');
+  }
 }
 
 class DrawerClipper extends CustomClipper<Path> {

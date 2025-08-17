@@ -10,6 +10,8 @@ import 'package:get/get.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/screens/Feed/Services/Feed_Cache_service.dart';
+import 'package:innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
+import 'package:innovator/screens/Feed/Video_Feed.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/screens/Shop/Shop_Page.dart';
 import 'package:innovator/screens/Splash_Screen/splash_screen.dart';
@@ -227,7 +229,8 @@ Future<void> _initializeApp() async {
     
     // Ensure Flutter binding is initialized
     WidgetsFlutterBinding.ensureInitialized();
-    
+     AdaptiveVideoSystem.initialize(); // Add this line
+// 
     // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(

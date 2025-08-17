@@ -18,64 +18,73 @@ class OptimizedChatListPage extends GetView<FireChatController> {
   }
 
   PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: const Text(
-        'Chats',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          fontSize: 20,
-        ),
+  return AppBar(
+    title: const Text(
+      'Chats',
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+        fontSize: 20,
       ),
-      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      actions: [
-        // NEW: Global badge indicator
-        Obx(() {
-          final totalUnread = controller.unreadCounts.values.fold(0, (sum, count) => sum + count);
-          return Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.search, color: Colors.white),
-                onPressed: () => Get.toNamed('/search'),
-                tooltip: 'Search Users',
-              ),
-              if (totalUnread > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
+    ),
+    backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+    elevation: 0,
+    automaticallyImplyLeading: false,
+    actions: [
+      // ENHANCED: Global badge indicator with total count
+      Obx(() {
+        final totalUnread = controller.getTotalUnreadCount();
+        return Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.white),
+              onPressed: () => Get.toNamed('/search'),
+              tooltip: 'Search Users',
+            ),
+            if (totalUnread > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.red.shade400, Colors.red.shade600],
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      totalUnread > 99 ? '99+' : '$totalUnread',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
-                      textAlign: TextAlign.center,
+                    ],
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Text(
+                    totalUnread > 99 ? '99+' : '$totalUnread',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
-            ],
-          );
-        }),
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.white),
-          onPressed: _showMoreOptions,
-        ),
-      ],
-    );
-  }
+              ),
+          ],
+        );
+      }),
+      IconButton(
+        icon: const Icon(Icons.more_vert, color: Colors.white),
+        onPressed: _showMoreOptions,
+      ),
+    ],
+  );
+}
 
   Widget _buildChatList() {
     return Obx(() {
@@ -106,149 +115,194 @@ class OptimizedChatListPage extends GetView<FireChatController> {
   }
 
   Widget _buildChatCard(Map<String, dynamic> chat, int index) {
-    final otherUser = chat['otherUser'] as Map<String, dynamic>?;
-    if (otherUser == null) return const SizedBox.shrink();
+  final otherUser = chat['otherUser'] as Map<String, dynamic>?;
+  if (otherUser == null) return const SizedBox.shrink();
 
-    final lastMessage = chat['lastMessage']?.toString() ?? '';
-    final lastMessageTime = chat['lastMessageTime'];
-    final lastMessageSender = chat['lastMessageSender']?.toString() ?? '';
-    final isMyLastMessage = lastMessageSender == controller.currentUserId.value;
-    final chatId = chat['chatId']?.toString() ?? '';
-    final isOnline = otherUser['isOnline'] ?? false;
+  final lastMessage = chat['lastMessage']?.toString() ?? '';
+  final lastMessageTime = chat['lastMessageTime'];
+  final lastMessageSender = chat['lastMessageSender']?.toString() ?? '';
+  final isMyLastMessage = lastMessageSender == controller.currentUserId.value;
+  final chatId = chat['chatId']?.toString() ?? '';
+  final isOnline = otherUser['isOnline'] ?? false;
 
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 300 + (index * 50)),
-      curve: Curves.elasticOut,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  // Clear badge when opening chat
-                  controller.clearBadge(chatId);
-                  controller.navigateToChat(otherUser);
-                },
-                onLongPress: () => _showChatOptions(chat),
-                borderRadius: BorderRadius.circular(16),
-                child: Obx(() {
-                  final badgeCount = controller.getBadgeCount(chatId);
-                  final unreadCount = badgeCount.value;
-                  
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Get.theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: unreadCount > 0
-                          ? Border.all(
-                              color: const Color.fromRGBO(244, 135, 6, 0.3),
-                              width: 1,
-                            )
-                          : null,
-                      boxShadow: [
-                        BoxShadow(
-                          color: unreadCount > 0
-                              ? const Color.fromRGBO(244, 135, 6, 0.1)
-                              : Colors.black.withOpacity(0.05),
-                          blurRadius: unreadCount > 0 ? 12 : 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        _buildChatAvatar(otherUser, isOnline),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      otherUser['name']?.toString() ?? 'Unknown User',
-                                      style: TextStyle(
-                                        fontWeight: unreadCount > 0
-                                            ? FontWeight.bold
-                                            : FontWeight.w600,
-                                        fontSize: 16,
-                                        color: Get.theme.textTheme.bodyLarge?.color,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+  return TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0.0, end: 1.0),
+    duration: Duration(milliseconds: 300 + (index * 50)),
+    curve: Curves.elasticOut,
+    builder: (context, value, child) {
+      return Transform.scale(
+        scale: value,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                // Clear badge when opening chat
+                final chatId = chat['chatId']?.toString() ?? '';
+                controller.markMessagesAsRead(chatId);
+                controller.navigateToChat(otherUser);
+              },
+              onLongPress: () => _showChatOptions(chat),
+              borderRadius: BorderRadius.circular(16),
+              child: Obx(() {
+                // ENHANCED: Use reactive badge system
+                final badgeCount = controller.getBadgeCountReactive(chatId).value;
+                final hasUnread = badgeCount > 0;
+                
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: hasUnread 
+                        ? const Color.fromRGBO(244, 135, 6, 0.05) // Subtle highlight for unread
+                        : Get.theme.cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: hasUnread
+                        ? Border.all(
+                            color: const Color.fromRGBO(244, 135, 6, 0.2),
+                            width: 1,
+                          )
+                        : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: hasUnread
+                            ? const Color.fromRGBO(244, 135, 6, 0.1)
+                            : Colors.black.withOpacity(0.03),
+                        blurRadius: hasUnread ? 12 : 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Enhanced Avatar with unread indication
+                      Stack(
+                        children: [
+                          _buildChatAvatar(otherUser, isOnline),
+                          // Unread indicator ring around avatar
+                          if (hasUnread)
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.red.withOpacity(0.6),
+                                    width: 2,
                                   ),
-                                  Text(
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    otherUser['name']?.toString() ?? 'Unknown User',
+                                    style: TextStyle(
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w800 // Extra bold for unread
+                                          : FontWeight.w600,
+                                      fontSize: 16,
+                                      color: hasUnread
+                                          ? Get.theme.textTheme.bodyLarge?.color
+                                          : Get.theme.textTheme.bodyLarge?.color?.withOpacity(0.9),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // Enhanced time display
+                                Container(
+                                  padding: hasUnread 
+                                      ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+                                      : EdgeInsets.zero,
+                                  decoration: hasUnread
+                                      ? BoxDecoration(
+                                          color: const Color.fromRGBO(244, 135, 6, 0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        )
+                                      : null,
+                                  child: Text(
                                     controller.formatChatTime(lastMessageTime),
                                     style: TextStyle(
-                                      color: unreadCount > 0
+                                      color: hasUnread
                                           ? const Color.fromRGBO(244, 135, 6, 1)
                                           : Colors.grey.shade600,
                                       fontSize: 12,
-                                      fontWeight: unreadCount > 0
+                                      fontWeight: hasUnread
                                           ? FontWeight.bold
                                           : FontWeight.normal,
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  if (isMyLastMessage)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: _buildMessageStatusIcon(chat),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      controller.truncateMessage(lastMessage, 35),
-                                      style: TextStyle(
-                                        color: unreadCount > 0
-                                            ? Get.theme.textTheme.bodyMedium?.color
-                                            : Colors.grey.shade600,
-                                        fontSize: 14,
-                                        fontWeight: unreadCount > 0
-                                            ? FontWeight.w500
-                                            : FontWeight.normal,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                // Message status icon for my messages
+                                if (isMyLastMessage)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: _buildMessageStatusIcon(chat),
                                   ),
-                                  // ENHANCED: Animated badge with bounce effect
-                                  if (unreadCount > 0)
-                                    TweenAnimationBuilder<double>(
+                                Expanded(
+                                  child: Text(
+                                    controller.truncateMessage(lastMessage, 35),
+                                    style: TextStyle(
+                                      color: hasUnread
+                                          ? Get.theme.textTheme.bodyMedium?.color
+                                          : Colors.grey.shade600,
+                                      fontSize: 14,
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // ENHANCED: Red Badge with better animation
+                                if (hasUnread)
+                                  Container(
+                                    margin:  EdgeInsets.only(left: 8),
+                                    child: TweenAnimationBuilder<double>(
                                       tween: Tween(begin: 0.0, end: 1.0),
-                                      duration: const Duration(milliseconds: 500),
+                                      duration: const Duration(milliseconds: 600),
                                       curve: Curves.elasticOut,
                                       builder: (context, scale, child) {
                                         return Transform.scale(
                                           scale: scale,
                                           child: Container(
-                                            margin: const EdgeInsets.only(left: 8),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
+                                            padding:  EdgeInsets.symmetric(
+                                              horizontal: badgeCount > 99 ? 6 : 8,
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
                                                 colors: [
-                                                  const Color.fromRGBO(244, 135, 6, 1),
-                                                  const Color.fromRGBO(255, 152, 0, 1),
+                                                  Colors.red.shade500,
+                                                  Colors.red.shade600,
                                                 ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
                                               ),
                                               borderRadius: BorderRadius.circular(12),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: const Color.fromRGBO(244, 135, 6, 0.4),
+                                                  color: Colors.red.withOpacity(0.4),
                                                   blurRadius: 8,
                                                   offset: const Offset(0, 2),
+                                                ),
+                                                BoxShadow(
+                                                  color: Colors.red.withOpacity(0.2),
+                                                  blurRadius: 16,
+                                                  offset: const Offset(0, 4),
                                                 ),
                                               ],
                                             ),
@@ -257,10 +311,10 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                                               minHeight: 20,
                                             ),
                                             child: Text(
-                                              unreadCount > 99 ? '99+' : '$unreadCount',
+                                              badgeCount > 999 ? '999+' : '$badgeCount',
                                               style: const TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 12,
+                                                fontSize: 11,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                               textAlign: TextAlign.center,
@@ -269,22 +323,23 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                                         );
                                       },
                                     ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   // NEW: Build message status icon with blue tick animation
   Widget _buildMessageStatusIcon(Map<String, dynamic> chat) {
@@ -427,60 +482,69 @@ class OptimizedChatListPage extends GetView<FireChatController> {
     );
   }
 
-  Widget _buildFloatingActionButton() {
-    return Obx(() {
-      final totalUnread = controller.unreadCounts.values.fold(0, (sum, count) => sum + count);
-      
-      return Stack(
-        children: [
-          AnimatedScale(
-            scale: controller.fabScale.value,
-            duration: const Duration(milliseconds: 150),
-            child: FloatingActionButton(
-              onPressed: () {
-                controller.animateFab();
-                Get.toNamed('/search');
-              },
-              backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-              elevation: 8,
-              child: const Icon(
-                Icons.edit,
-                color: Colors.white,
-                size: 24,
+ Widget _buildFloatingActionButton() {
+  return Obx(() {
+    final totalUnread = controller.getTotalUnreadCount();
+    
+    return Stack(
+      children: [
+        AnimatedScale(
+          scale: controller.fabScale.value,
+          duration: const Duration(milliseconds: 150),
+          child: FloatingActionButton(
+            onPressed: () {
+              controller.animateFab();
+              Get.toNamed('/search');
+            },
+            backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+            elevation: 8,
+            child: const Icon(
+              Icons.edit,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+        // ENHANCED: Red badge on FAB for total unread messages
+        if (totalUnread > 0)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.red.shade400, Colors.red.shade600],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 24,
+                minHeight: 24,
+              ),
+              child: Text(
+                totalUnread > 99 ? '99+' : '$totalUnread',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
-          // NEW: Badge on FAB for total unread messages
-          if (totalUnread > 0)
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                constraints: const BoxConstraints(
-                  minWidth: 20,
-                  minHeight: 20,
-                ),
-                child: Text(
-                  totalUnread > 99 ? '99+' : '$totalUnread',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-        ],
-      );
-    });
-  }
+      ],
+    );
+  });
+}
 
   void _showChatOptions(Map<String, dynamic> chat) {
     final otherUser = chat['otherUser'] as Map<String, dynamic>?;
@@ -621,57 +685,128 @@ class OptimizedChatListPage extends GetView<FireChatController> {
   }
 
   void _showMoreOptions() {
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Get.theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
+  Get.bottomSheet(
+    Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Get.theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade400,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // ENHANCED: Mark All as Read with badge count
+          Obx(() {
+            final totalUnread = controller.getTotalUnreadCount();
+            return ListTile(
+              leading: Stack(
+                children: [
+                  const Icon(Icons.mark_chat_read),
+                  if (totalUnread > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.mark_chat_read),
-              title: const Text('Mark All as Read'),
+              title: Text('Mark All as Read${totalUnread > 0 ? ' ($totalUnread)' : ''}'),
               onTap: () {
                 Get.back();
-                // Clear all badges
-                for (final chatId in controller.badgeCounts.keys) {
-                  controller.clearBadge(chatId);
-                }
-                Get.snackbar('Success', 'All chats marked as read');
+                _markAllAsRead();
               },
-            ),
-            ListTile(
-              leading: const Icon(Icons.archive),
-              title: const Text('Archived Chats'),
-              onTap: () {
-                Get.back();
-                Get.snackbar('Info', 'Archived chats feature coming soon');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Chat Settings'),
-              onTap: () {
-                Get.back();
-                Get.snackbar('Info', 'Chat settings feature coming soon');
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+            );
+          }),
+          ListTile(
+            leading: const Icon(Icons.archive),
+            title: const Text('Archived Chats'),
+            onTap: () {
+              Get.back();
+              Get.snackbar('Info', 'Archived chats feature coming soon');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Chat Settings'),
+            onTap: () {
+              Get.back();
+              Get.snackbar('Info', 'Chat settings feature coming soon');
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    ),
+  );
+}
+void _markAllAsRead() async {
+  try {
+    final totalUnread = controller.getTotalUnreadCount();
+    if (totalUnread == 0) {
+      Get.snackbar('Info', 'No unread messages');
+      return;
+    }
+
+    // Show loading
+    Get.dialog(
+      const Center(
+        child: CircularProgressIndicator(
+          color: Color.fromRGBO(244, 135, 6, 1),
         ),
       ),
+      barrierDismissible: false,
+    );
+
+    // Mark all chats as read
+    final futures = <Future>[];
+    for (final chat in controller.chatList) {
+      final chatId = chat['chatId']?.toString() ?? '';
+      if (chatId.isNotEmpty && controller.hasUnreadMessages(chatId)) {
+        futures.add(controller.markMessagesAsRead(chatId));
+      }
+    }
+
+    await Future.wait(futures);
+
+    // Clear all badges
+    controller.clearAllBadges();
+
+    Get.back(); // Close loading dialog
+
+    Get.snackbar(
+      'Success',
+      'All messages marked as read',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+      icon: const Icon(Icons.check_circle, color: Colors.white),
+    );
+  } catch (e) {
+    Get.back(); // Close loading dialog
+    Get.snackbar(
+      'Error',
+      'Failed to mark all as read',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
     );
   }
+}
 }
