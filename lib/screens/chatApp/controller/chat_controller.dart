@@ -5,11 +5,16 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
-import 'package:innovator/Authorization/firebase_services.dart';
 import 'package:innovator/App_data/App_data.dart';
+import 'package:innovator/screens/Call/Incoming_Call_screen.dart';
+import 'package:innovator/screens/Call/outgoing_call_screen.dart';
 import 'package:innovator/screens/chatApp/FollowStatusManager.dart'
     show FollowStatusManager;
 import 'package:innovator/services/Firebase_Messaging.dart';
+import 'package:innovator/services/call_permission_service.dart';
+import 'package:innovator/services/firebase_services.dart';
+import 'package:innovator/services/webrtc_call_service.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class FireChatController extends GetxController {
   // Reactive variables
@@ -93,7 +98,299 @@ void initializeBadgeForChat(String chatId) {
     chatBadges[chatId] = 0.obs;
   }
 }
+Future<void> startVoiceCall(Map<String, dynamic> user) async {
+  try {
+    developer.log('📞 Starting voice call to: ${user['name']}');
+    
+    // Check if user is mutual follower
+    if (!isMutualFollower(user)) {
+      Get.snackbar(
+        'Cannot Call User',
+        'You can only call users you mutually follow',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+    
+    // Check permissions
+    final hasPermissions = await CallPermissionService.requestPermissions(isVideoCall: false);
+    if (!hasPermissions) {
+      Get.snackbar(
+        'Permission Required',
+        'Microphone permission is required for voice calls',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    final receiverId = user['userId']?.toString() ?? 
+                      user['_id']?.toString() ?? 
+                      user['id']?.toString() ?? '';
+    final receiverName = user['name']?.toString() ?? 'Unknown User';
+    
+    if (receiverId.isEmpty || receiverName.isEmpty) {
+      Get.snackbar('Error', 'Invalid user data');
+      return;
+    }
+    
+    // Initialize call service if not already done
+    if (!Get.isRegistered<WebRTCCallService>()) {
+      Get.put(WebRTCCallService(), permanent: true);
+    }
+    
+    final callService = WebRTCCallService.instance;
+    
+    // Enable wake lock during calls
+    await WakelockPlus.enable();
+    
+    // Start the call
+    final callId = await callService.startCall(
+      receiverId: receiverId,
+      receiverName: receiverName,
+      callerId: currentUserId.value,
+      callerName: currentUser.value?['name']?.toString() ?? 'User',
+      isVideoCall: false,
+    );
+    
+    // Add to recent users
+    addUserToRecent(user);
+    
+    // Navigate to outgoing call screen
+    Get.to(
+      () => OutgoingCallScreen(
+        callData: {
+          'callId': callId,
+          'receiverId': receiverId,
+          'receiverName': receiverName,
+          'callerId': currentUserId.value,
+          'callerName': currentUser.value?['name']?.toString() ?? 'User',
+          'isVideoCall': false,
+        },
+      ),
+      transition: Transition.fadeIn,
+      fullscreenDialog: true,
+    );
+    
+    developer.log('✅ Voice call started: $callId');
+    
+    // Track call in analytics (optional)
+    _trackCallEvent('voice_call_started', receiverId, receiverName);
+    
+  } catch (e) {
+    developer.log('❌ Error starting voice call: $e');
+    await WakelockPlus.disable();
+    Get.snackbar(
+      'Call Failed',
+      'Failed to start voice call. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+    );
+  }
+}
 
+
+// Start video call
+Future<void> startVideoCall(Map<String, dynamic> user) async {
+  try {
+    developer.log('📹 Starting video call to: ${user['name']}');
+    
+    // Check if user is mutual follower
+    if (!isMutualFollower(user)) {
+      Get.snackbar(
+        'Cannot Call User',
+        'You can only call users you mutually follow',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+    
+    // Check permissions
+    final hasPermissions = await CallPermissionService.requestPermissions(isVideoCall: true);
+    if (!hasPermissions) {
+      Get.snackbar(
+        'Permissions Required',
+        'Camera and microphone permissions are required for video calls',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    final receiverId = user['userId']?.toString() ?? 
+                      user['_id']?.toString() ?? 
+                      user['id']?.toString() ?? '';
+    final receiverName = user['name']?.toString() ?? 'Unknown User';
+    
+    if (receiverId.isEmpty || receiverName.isEmpty) {
+      Get.snackbar('Error', 'Invalid user data');
+      return;
+    }
+    
+    // Initialize call service if not already done
+    if (!Get.isRegistered<WebRTCCallService>()) {
+      Get.put(WebRTCCallService(), permanent: true);
+    }
+    
+    final callService = WebRTCCallService.instance;
+    
+    // Enable wake lock during calls
+    await WakelockPlus.enable();
+    
+    // Start the call
+    final callId = await callService.startCall(
+      receiverId: receiverId,
+      receiverName: receiverName,
+      callerId: currentUserId.value,
+      callerName: currentUser.value?['name']?.toString() ?? 'User',
+      isVideoCall: true,
+    );
+    
+    // Add to recent users
+    addUserToRecent(user);
+    
+    // Navigate to outgoing call screen
+    Get.to(
+      () => OutgoingCallScreen(
+        callData: {
+          'callId': callId,
+          'receiverId': receiverId,
+          'receiverName': receiverName,
+          'callerId': currentUserId.value,
+          'callerName': currentUser.value?['name']?.toString() ?? 'User',
+          'isVideoCall': true,
+        },
+      ),
+      transition: Transition.fadeIn,
+      fullscreenDialog: true,
+    );
+    
+    developer.log('✅ Video call started: $callId');
+    
+    // Track call in analytics (optional)
+    _trackCallEvent('video_call_started', receiverId, receiverName);
+    
+  } catch (e) {
+    developer.log('❌ Error starting video call: $e');
+    await WakelockPlus.disable();
+    Get.snackbar(
+      'Call Failed',
+      'Failed to start video call. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+    );
+  }
+}
+
+
+void _trackCallEvent(String event, String receiverId, String receiverName) {
+  try {
+    // You can integrate with your analytics service here
+    developer.log('📊 Call event: $event to $receiverName ($receiverId)');
+  } catch (e) {
+    developer.log('❌ Error tracking call event: $e');
+  }
+}
+
+bool canCallUser(Map<String, dynamic> user) {
+  final isOnline = user['isOnline'] == true;
+  final isMutual = isMutualFollower(user);
+  
+  return isOnline && isMutual;
+}
+
+// Get call button for user
+Widget buildCallButtons(Map<String, dynamic> user) {
+  if (!canCallUser(user)) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.phone_disabled, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 4),
+          Text(
+            'Unavailable',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // Voice call button
+      GestureDetector(
+        onTap: () => startVoiceCall(user),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.green,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.call,
+            color: Colors.white,
+            size: 18,
+          ),
+        ),
+      ),
+      
+      const SizedBox(width: 8),
+      
+      // Video call button
+      GestureDetector(
+        onTap: () => startVideoCall(user),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.videocam,
+            color: Colors.white,
+            size: 18,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+  
 // Clear badge for specific chat
 void clearBadgeForChat(String chatId) {
   if (chatBadges.containsKey(chatId)) {

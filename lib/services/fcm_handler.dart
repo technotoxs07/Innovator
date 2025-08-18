@@ -30,21 +30,12 @@ class FCMHandler {
     try {
       developer.log('🔥 Initializing FCMHandler...');
       
-      // Parse the service account JSON
       _credentials = ServiceAccountCredentials.fromJson(_serviceAccountKey);
-      
-      // Define the required scopes for FCM
       const scopes = ['https://www.googleapis.com/auth/cloud-platform'];
-      
-      // Obtain an authenticated HTTP client
       _authClient = await clientViaServiceAccount(_credentials!, scopes);
-      
-      // Set token expiry (tokens typically last 1 hour)
       _tokenExpiry = DateTime.now().add(const Duration(minutes: 50));
       
       developer.log('✅ FCMHandler initialized successfully');
-      
-      // Test the initialization
       await _testConnection();
     } catch (e) {
       developer.log('❌ Error initializing FCMHandler: $e');
@@ -56,7 +47,6 @@ class FCMHandler {
     try {
       developer.log('🧪 Testing FCM connection...');
       
-      // Test by sending a minimal request (this won't actually send a notification)
       final testPayload = {
         'validate_only': true,
         'message': {
@@ -88,109 +78,112 @@ class FCMHandler {
     }
   }
 
+  // FIXED: Correct FCM v1 payload structure
   static Future<bool> sendToToken(
-  String fcmToken, {
-  required String title,
-  required String body,
-  String? type,
-  String? screen,
-  Map<String, dynamic>? data,
-  String? clickAction,
-}) async {
-  if (_authClient == null || _credentials == null) {
-    developer.log('⚠️ FCMHandler not initialized, initializing now...');
-    await initialize();
-  }
+    String fcmToken, {
+    required String title,
+    required String body,
+    String? type,
+    String? screen,
+    Map<String, dynamic>? data,
+    String? clickAction,
+  }) async {
+    if (_authClient == null || _credentials == null) {
+      developer.log('⚠️ FCMHandler not initialized, initializing now...');
+      await initialize();
+    }
 
-  await _refreshAuthClientIfNeeded();
+    await _refreshAuthClientIfNeeded();
 
-  try {
-    developer.log('📤 === SENDING FCM TO TOKEN ===');
-    developer.log('📤 Token: ${fcmToken.substring(0, 20)}...');
-    developer.log('📤 Title: $title');
-    developer.log('📤 Body: ${body.length > 50 ? body.substring(0, 50) + "..." : body}');
-    developer.log('📤 Type: $type');
+    try {
+      developer.log('📤 === SENDING FCM TO TOKEN ===');
+      developer.log('📤 Token: ${fcmToken.substring(0, 20)}...');
+      developer.log('📤 Title: $title');
+      developer.log('📤 Body: ${body.length > 50 ? body.substring(0, 50) + "..." : body}');
+      developer.log('📤 Type: $type');
 
-    // FIXED: Corrected FCM v1 payload structure
-    final payload = {
-      'message': {
-        'token': fcmToken,
-        'notification': {
-          'title': title,
-          'body': body,
-        },
-        'data': {
-          'type': type ?? 'message',
-          'screen': screen ?? '/chat',
-          'click_action': clickAction ?? 'FLUTTER_NOTIFICATION_CLICK',
-          ...?(data?.map((key, value) => MapEntry(key, value.toString()))),
-        },
-        'android': {
+      // FIXED: Completely corrected FCM v1 payload structure
+      final payload = {
+        'message': {
+          'token': fcmToken,
           'notification': {
-            'channel_id': 'chat_messages', // CRITICAL: Must match your app
-            'sound': 'default',
-            'icon': '@mipmap/ic_launcher',
-            'color': '#F48706',
-            'tag': data?['chatId']?.toString(),
-            // FIXED: Removed all invalid fields:
-            // - priority (not supported in android.notification)
-            // - default_sound, default_vibrate_timings, default_light_settings
-            // - notification_priority
-            // - visibility (if using, should be lowercase)
+            'title': title,
+            'body': body,
           },
-          'priority': 'high', // FIXED: Priority goes at android level, not notification level
-          'ttl': '3600s',
-        },
-        'apns': {
-          'headers': {
-            'apns-priority': '10',
-            'apns-push-type': 'alert',
+          'data': {
+            'type': type ?? 'message',
+            'screen': screen ?? '/chat',
+            'click_action': clickAction ?? 'FLUTTER_NOTIFICATION_CLICK',
+            ...?(data?.map((key, value) => MapEntry(key, value.toString()))),
           },
-          'payload': {
-            'aps': {
-              'alert': {
-                'title': title,
-                'body': body,
-              },
+          'android': {
+            'notification': {
+              'channel_id': 'chat_messages', // Must match your app's channel
               'sound': 'default',
-              'badge': 1,
-              'category': 'MESSAGE_CATEGORY',
-              'thread-id': data?['chatId']?.toString(),
+              'icon': '@mipmap/ic_launcher',
+              'color': '#F48706',
+              'tag': data?['chatId']?.toString(),
+              // REMOVED: All invalid Android notification fields
+              // priority, default_sound, default_vibrate_timings, default_light_settings
+              // notification_priority, visibility are NOT supported here
+            },
+            'priority': 'high', // Priority belongs at android level
+            'ttl': '3600s',
+          },
+          'apns': {
+            'headers': {
+              'apns-priority': '10',
+              'apns-push-type': 'alert',
+            },
+            'payload': {
+              'aps': {
+                'alert': {
+                  'title': title,
+                  'body': body,
+                },
+                'sound': 'default',
+                'badge': 1,
+                'category': 'MESSAGE_CATEGORY',
+                // FIXED: Remove thread-id completely - it's causing the error
+                // Only include if you really need it and ensure proper format
+              },
+              // FIXED: Custom data goes outside of 'aps'
+              'chatId': data?['chatId']?.toString(),
+              'senderId': data?['senderId']?.toString(),
+              'type': type,
             },
           },
+          'fcm_options': {
+            'analytics_label': 'chat_message_direct'
+          }
         },
-        'fcm_options': {
-          'analytics_label': 'chat_message_direct'
-        }
-      },
-    };
+      };
 
-    final response = await _authClient!.post(
-      Uri.parse(_fcmEndpoint),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(payload),
-    );
+      final response = await _authClient!.post(
+        Uri.parse(_fcmEndpoint),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
 
-    developer.log('📨 FCM Response: ${response.statusCode}');
-    developer.log('📨 FCM Body: ${response.body}');
+      developer.log('📨 FCM Response: ${response.statusCode}');
+      developer.log('📨 FCM Body: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      developer.log('✅ FCM notification sent successfully: ${responseData['name']}');
-      return true;
-    } else {
-      developer.log('❌ FCM notification failed: ${response.statusCode} - ${response.body}');
-      await _handleFCMError(response.statusCode, response.body);
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        developer.log('✅ FCM notification sent successfully: ${responseData['name']}');
+        return true;
+      } else {
+        developer.log('❌ FCM notification failed: ${response.statusCode} - ${response.body}');
+        await _handleFCMError(response.statusCode, response.body);
+        return false;
+      }
+    } catch (e) {
+      developer.log('❌ Error sending FCM notification: $e');
       return false;
     }
-  } catch (e) {
-    developer.log('❌ Error sending FCM notification: $e');
-    return false;
   }
-}
 
+  // FIXED: Correct payload for user/topic notifications
   static Future<bool> sendToUser(
     String userId, {
     required String title,
@@ -215,7 +208,7 @@ class FCMHandler {
 
       final payload = {
         'message': {
-          'topic': 'user_$userId', // Users subscribe to their own topics
+          'topic': 'user_$userId',
           'notification': {
             'title': title,
             'body': body,
@@ -231,15 +224,10 @@ class FCMHandler {
             'notification': {
               'channel_id': 'chat_messages',
               'sound': 'default',
-              'priority': 'high',
-              'default_sound': true,
-              'default_vibrate_timings': true,
-              'default_light_settings': true,
-              'notification_priority': 'PRIORITY_HIGH',
-              'visibility': 'PUBLIC',
               'icon': '@mipmap/ic_launcher',
               'color': '#F48706',
               'tag': data?['chatId']?.toString(),
+              // REMOVED all invalid fields
             },
             'priority': 'high',
             'ttl': '3600s',
@@ -258,8 +246,11 @@ class FCMHandler {
                 'sound': 'default',
                 'badge': 1,
                 'category': 'MESSAGE_CATEGORY',
-                'thread-id': data?['chatId']?.toString(),
+                // REMOVED thread-id
               },
+              'chatId': data?['chatId']?.toString(),
+              'userId': userId,
+              'type': type,
             },
           },
           'fcm_options': {
@@ -270,14 +261,11 @@ class FCMHandler {
 
       final response = await _authClient!.post(
         Uri.parse(_fcmEndpoint),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
 
       developer.log('📨 FCM Response: ${response.statusCode}');
-      developer.log('📨 FCM Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -314,8 +302,6 @@ class FCMHandler {
     try {
       developer.log('📤 === SENDING FCM TO TOPIC ===');
       developer.log('📤 Topic: $topic');
-      developer.log('📤 Title: $title');
-      developer.log('📤 Body: ${body.length > 50 ? body.substring(0, 50) + "..." : body}');
 
       final payload = {
         'message': {
@@ -335,7 +321,6 @@ class FCMHandler {
             'notification': {
               'channel_id': 'general_notifications',
               'sound': 'default',
-              'priority': 'high',
               'icon': '@mipmap/ic_launcher',
               'color': '#F48706',
             },
@@ -351,6 +336,8 @@ class FCMHandler {
                 'sound': 'default',
                 'badge': 1,
               },
+              'topic': topic,
+              'type': type,
             },
           },
         },
@@ -358,9 +345,7 @@ class FCMHandler {
 
       final response = await _authClient!.post(
         Uri.parse(_fcmEndpoint),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
 
@@ -391,10 +376,23 @@ class FCMHandler {
       switch (statusCode) {
         case 400:
           developer.log('⚠️ Bad Request - Check payload format');
+          // Log specific field violations
+          final details = errorData['error']?['details'] as List<dynamic>?;
+          if (details != null) {
+            for (var detail in details) {
+              if (detail.containsKey('fieldViolations')) {
+                final violations = detail['fieldViolations'] as List<dynamic>;
+                for (var violation in violations) {
+                  developer.log('   Field: ${violation['field']}');
+                  developer.log('   Issue: ${violation['description']}');
+                }
+              }
+            }
+          }
           break;
         case 401:
           developer.log('⚠️ Unauthorized - Token may have expired, refreshing...');
-          await initialize(); // Refresh auth
+          await initialize();
           break;
         case 403:
           developer.log('⚠️ Forbidden - Check project permissions');
@@ -481,7 +479,6 @@ class FCMHandler {
     }
   }
 
-  // Health check method
   static Future<bool> isHealthy() async {
     try {
       if (_authClient == null || _credentials == null) {

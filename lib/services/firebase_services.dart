@@ -879,6 +879,8 @@ static Future<Map<String, dynamic>?> checkUserFollowStatus(String email) async {
     }
   }
 
+  
+
   // Update user online status
   static Future<void> updateUserStatus(String userId, bool isOnline, {String? currentChatId}) async {
     try {

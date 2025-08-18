@@ -25,9 +25,12 @@ import 'package:innovator/screens/chatApp/chat_homepage.dart';
 import 'package:innovator/screens/chatApp/chatlistpage.dart';
 import 'package:innovator/screens/chatApp/chatscreen.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
+import 'package:innovator/screens/chatApp/widgets/call_floating_widget.dart';
 import 'package:innovator/services/Firebase_Messaging.dart';
-import 'package:innovator/services/Notification_services.dart';
+import 'package:innovator/services/Notification_Like.dart';
+import 'package:innovator/services/call_permission_service.dart';
 import 'package:innovator/services/fcm_handler.dart';
+import 'package:innovator/services/webrtc_call_service.dart';
 import 'package:innovator/utils/Drawer/drawer_cache_manager.dart';
 import 'dart:developer' as developer;
 
@@ -313,6 +316,20 @@ Future<void> _initializeMinimalAppData() async {
   }
 }
 
+Future<void> _initializeCallServices() async {
+  try {
+    // Initialize WebRTC call service
+    Get.put(WebRTCCallService(), permanent: true);
+    developer.log('✅ WebRTC Call Service initialized');
+    
+    // Initialize call permissions
+    await CallPermissionService.checkPermissions(isVideoCall: true);
+    
+  } catch (e) {
+    developer.log('❌ Error initializing call services: $e');
+  }
+}
+
 // Enhanced app initialization with comprehensive offline support
 Future<void> _initializeApp() async {
   try {
@@ -346,6 +363,8 @@ Future<void> _initializeApp() async {
     
     // Initialize AppData with offline support
     await _initializeAppDataWithFallback(hasInternet);
+
+    await _initializeCallServices();
     
     // Initialize notification service only if online
     if (hasInternet) {
@@ -1020,6 +1039,15 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
             home: SplashScreen(),
+            builder: (context, child) {
+      return Stack(
+        children: [
+          child!,
+          // Add floating call widget overlay
+          const CallFloatingWidget(),
+        ],
+      );
+    },
  
       // Use the enhanced offline-aware splash screen
       //home: const OfflineAwareSplashScreen(),

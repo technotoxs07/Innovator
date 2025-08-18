@@ -131,11 +131,11 @@ class OptimizedChatScreen extends GetView<FireChatController> {
       actions: [
         IconButton(
           icon: const Icon(Icons.videocam, color: Colors.white),
-          onPressed: () => _showComingSoon('Video call'),
+          onPressed: () => _startVideoCall(),
         ),
         IconButton(
           icon: const Icon(Icons.call, color: Colors.white),
-          onPressed: () => _showComingSoon('Voice call'),
+          onPressed: () => _startVoiceCall(),
         ),
         PopupMenuButton(
           icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -771,15 +771,21 @@ class OptimizedChatScreen extends GetView<FireChatController> {
     return message['senderId']?.toString() == currentUserId;
   }
 
-  void _showComingSoon(String feature) {
-    Get.snackbar(
-      'Coming Soon',
-      '$feature feature will be available soon!',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-      colorText: Colors.white,
-    );
+  void _startVideoCall() async {
+  try {
+    await controller.startVideoCall(receiverUser);
+  } catch (e) {
+    Get.snackbar('Error', 'Failed to start video call');
   }
+}
+
+void _startVoiceCall() async {
+  try {
+    await controller.startVoiceCall(receiverUser);
+  } catch (e) {
+    Get.snackbar('Error', 'Failed to start voice call');
+  }
+}
 
   void _showClearChatDialog() {
     Get.dialog(
