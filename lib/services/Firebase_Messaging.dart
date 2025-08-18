@@ -113,6 +113,7 @@ class FirebaseNotificationService {
         channelDescription: 'Incoming call notifications',
         importance: Importance.max,
         priority: Priority.max,
+       // sound: const RawResourceAndroidNotificationSound('ringtone'),
         category: AndroidNotificationCategory.call,
         fullScreenIntent: true, // Show as full screen
         ongoing: true, // Keep notification until answered/declined
@@ -146,7 +147,7 @@ class FirebaseNotificationService {
         enableLights: true,
         ledColor: Colors.blue,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('call_ringtone'),
+        sound: const RawResourceAndroidNotificationSound('ringtone'),
       );
 
       final iosDetails = DarwinNotificationDetails(
