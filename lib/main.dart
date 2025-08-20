@@ -1,6 +1,10 @@
+// Enhanced main.dart - COMPLETE BACKGROUND CALL HANDLING
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -11,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/firebase_options.dart';
+import 'package:innovator/screens/Call/Incoming_Call_screen.dart';
 import 'package:innovator/screens/Feed/Services/Feed_Cache_service.dart';
 import 'package:innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
 import 'package:innovator/screens/Feed/Video_Feed.dart';
@@ -28,10 +33,14 @@ import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/screens/chatApp/widgets/call_floating_widget.dart';
 import 'package:innovator/services/Firebase_Messaging.dart';
 import 'package:innovator/services/Notification_Like.dart';
+import 'package:innovator/services/background_call_service.dart';
 import 'package:innovator/services/call_permission_service.dart';
 import 'package:innovator/services/fcm_handler.dart';
 import 'package:innovator/services/webrtc_call_service.dart';
 import 'package:innovator/utils/Drawer/drawer_cache_manager.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:vibration/vibration.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:developer' as developer;
 
 // Global variables and constants
@@ -39,33 +48,647 @@ late Size mq;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool _isAppOnline = false;
 
+// ENHANCED: Background message handler with call support
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     developer.log('🔥 === BACKGROUND MESSAGE HANDLER START ===');
     developer.log('🔥 Message ID: ${message.messageId}');
-    developer.log('🔥 From: ${message.from}');
     developer.log('🔥 Data: ${message.data}');
-    developer.log('🔥 Notification: ${message.notification?.toMap()}');
     
     // Initialize Firebase if not already done
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      developer.log('🔥 Firebase initialized in background handler');
+      developer.log('🔥 Firebase initialized in background');
     }
     
-    // Handle the notification display
-    await _handleBackgroundNotification(message);
+    // Get message type
+    final messageType = message.data['type']?.toString() ?? '';
     
-    developer.log('✅ Background notification processed: ${message.messageId}');
+    switch (messageType) {
+      case 'call':
+        await _handleBackgroundCallWithPersistentRinging(message);
+        break;
+      case 'chat':
+      case 'message':
+        await _handleBackgroundChatNotification(message);
+        break;
+      default:
+        await _handleBackgroundNotification(message);
+        break;
+    }
+    
+    developer.log('✅ Background notification processed');
     developer.log('🔥 === BACKGROUND MESSAGE HANDLER END ===');
   } catch (e) {
-    developer.log('❌ Error handling background message: $e');
+    developer.log('❌ Error in background handler: $e');
   }
 }
 
+Future<void> _handleBackgroundCallWithPersistentRinging(RemoteMessage message) async {
+  try {
+    developer.log('📞 === HANDLING BACKGROUND CALL WITH PERSISTENT RINGING ===');
+    
+    final data = message.data;
+    final callId = data['callId']?.toString() ?? '';
+    final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
+    final isVideoCall = data['isVideoCall']?.toString() == 'true';
+    
+    developer.log('📞 Call ID: $callId');
+    developer.log('📞 Caller: $callerName');
+    developer.log('📞 Video: $isVideoCall');
+    
+    // CRITICAL: Use the enhanced background call service
+    await EnhancedBackgroundCallService.handleBackgroundCall(data);
+    
+    // Also show a persistent notification
+    await _showPersistentCallNotification(
+      callId: callId,
+      callerName: callerName,
+      isVideoCall: isVideoCall,
+      data: data,
+    );
+    
+    developer.log('✅ Background call handled with persistent ringing');
+  } catch (e) {
+    developer.log('❌ Error handling background call: $e');
+  }
+}
+
+
+Future<void> _showPersistentCallNotification({
+  required String callId,
+  required String callerName,
+  required bool isVideoCall,
+  required Map<String, dynamic> data,
+}) async {
+  try {
+    developer.log('📱 Showing persistent call notification...');
+    
+    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    
+    // Initialize with call-specific settings
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
+    
+    await flutterLocalNotificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (response) {
+        _handleCallNotificationResponse(response, data);
+      },
+    );
+    
+    // Create incoming calls channel if not exists
+    final androidPlugin = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'incoming_calls',
+          'Incoming Calls',
+          description: 'Notifications for incoming calls',
+          importance: Importance.max,
+          enableVibration: true,
+          enableLights: true,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound('call_ringtone'),
+        ),
+      );
+    }
+    
+    // Enhanced notification for calls
+    final androidDetails = AndroidNotificationDetails(
+      'incoming_calls',
+      'Incoming Calls',
+      channelDescription: 'Notifications for incoming calls',
+      importance: Importance.max,
+      priority: Priority.max,
+      category: AndroidNotificationCategory.call,
+      fullScreenIntent: true, // Shows over lock screen
+      ongoing: true, // Persistent notification
+      autoCancel: false,
+      showWhen: false,
+      timeoutAfter: 45000, // 45 seconds timeout
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      styleInformation: BigTextStyleInformation(
+        'Tap to answer or decline',
+        htmlFormatBigText: true,
+        contentTitle: '${isVideoCall ? 'Video' : 'Voice'} Call',
+        htmlFormatContentTitle: true,
+      ),
+      actions: [
+        AndroidNotificationAction(
+          'accept_$callId',
+          'Answer',
+          titleColor: Colors.green,
+          showsUserInterface: true,
+        ),
+        AndroidNotificationAction(
+          'decline_$callId',
+          'Decline',
+          titleColor: Colors.red,
+          cancelNotification: true,
+        ),
+      ],
+      visibility: NotificationVisibility.public,
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
+      enableLights: true,
+      ledColor: Colors.blue,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound('call_ringtone'),
+    );
+    
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'call_ringtone.wav',
+      interruptionLevel: InterruptionLevel.critical,
+      categoryIdentifier: 'CALL_CATEGORY',
+    );
+    
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+    
+    await flutterLocalNotificationsPlugin.show(
+      callId.hashCode,
+      '${isVideoCall ? 'Video' : 'Voice'} Call',
+      'Incoming ${isVideoCall ? 'video' : 'voice'} call from $callerName',
+      notificationDetails,
+      payload: jsonEncode({
+        ...data,
+        'action': 'incoming_call',
+      }),
+    );
+    
+    developer.log('✅ Persistent call notification shown');
+  } catch (e) {
+    developer.log('❌ Error showing persistent notification: $e');
+  }
+}
+
+void _handleCallNotificationResponse(
+  NotificationResponse response,
+  Map<String, dynamic> data,
+) {
+  try {
+    final actionId = response.actionId ?? '';
+    
+    if (actionId.startsWith('accept_')) {
+      // Accept call
+      developer.log('✅ Accepting call from notification');
+      EnhancedBackgroundCallService().stopAllRinging();
+      
+      // Open app and navigate to call screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.toNamed('/incoming-call', arguments: data);
+      });
+      
+    } else if (actionId.startsWith('decline_')) {
+      // Decline call
+      developer.log('❌ Declining call from notification');
+      EnhancedBackgroundCallService().stopAllRinging();
+      
+      // Update Firebase
+      final callId = data['callId']?.toString() ?? '';
+      if (callId.isNotEmpty) {
+        FirebaseFirestore.instance
+            .collection('calls')
+            .doc(callId)
+            .update({'status': 'rejected'});
+      }
+      
+    } else {
+      // Notification tapped - show incoming call screen
+      EnhancedBackgroundCallService().stopAllRinging();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.toNamed('/incoming-call', arguments: data);
+      });
+    }
+  } catch (e) {
+    developer.log('❌ Error handling call notification response: $e');
+  }
+}
+
+// NEW: Handle background call notifications with ringtone
+Future<void> _handleBackgroundCallNotification(RemoteMessage message) async {
+  try {
+    developer.log('📞 === HANDLING BACKGROUND CALL NOTIFICATION ===');
+    
+    final data = message.data;
+    final callId = data['callId']?.toString() ?? '';
+    final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
+    final isVideoCall = data['isVideoCall']?.toString() == 'true';
+    
+    developer.log('📞 Call ID: $callId');
+    developer.log('📞 Caller: $callerName');
+    developer.log('📞 Video Call: $isVideoCall');
+    
+    // Enable wakelock for incoming call
+    await WakelockPlus.enable();
+    
+    // Start ringtone in background
+    await _startBackgroundRingtone();
+    
+    // Start vibration pattern
+    await _startBackgroundVibration();
+    
+    // Show full-screen call notification
+    await _showFullScreenCallNotification(
+      callId: callId,
+      callerName: callerName,
+      isVideoCall: isVideoCall,
+      data: data,
+    );
+    
+    // Auto-stop ringtone after 45 seconds (like WhatsApp)
+    Timer(const Duration(seconds: 45), () async {
+      await _stopBackgroundRingtone();
+      await _stopBackgroundVibration();
+      await WakelockPlus.disable();
+    });
+    
+    developer.log('✅ Background call notification handled');
+  } catch (e) {
+    developer.log('❌ Error handling background call: $e');
+  }
+}
+
+// NEW: Start ringtone in background
+Future<void> _startBackgroundRingtone() async {
+  try {
+    developer.log('🔔 Starting background ringtone...');
+    
+    // Use FlutterRingtonePlayer for system ringtone
+    await FlutterRingtonePlayer().playRingtone(
+      looping: true,
+      volume: 1.0,
+      asAlarm: false, // Use ringtone, not alarm
+    );
+    
+    developer.log('✅ Background ringtone started');
+  } catch (e) {
+    developer.log('❌ Error starting background ringtone: $e');
+    
+    // Fallback to system sound
+    try {
+      await _playSystemSoundLoop();
+    } catch (fallbackError) {
+      developer.log('❌ Fallback sound also failed: $fallbackError');
+    }
+  }
+}
+
+// Fallback system sound loop
+Future<void> _playSystemSoundLoop() async {
+  Timer.periodic(const Duration(seconds: 2), (timer) async {
+    try {
+      await SystemSound.play(SystemSoundType.click);
+      HapticFeedback.heavyImpact();
+      
+      // Stop after 45 seconds
+      if (timer.tick >= 22) { // 22 * 2 seconds = 44 seconds
+        timer.cancel();
+      }
+    } catch (e) {
+      timer.cancel();
+    }
+  });
+}
+
+// NEW: Start vibration in background
+Future<void> _startBackgroundVibration() async {
+  try {
+    developer.log('📳 Starting background vibration...');
+    
+    // Check if device has vibrator
+    bool? hasVibrator = await Vibration.hasVibrator();
+    if (hasVibrator != true) {
+      developer.log('📳 Device does not support vibration');
+      return;
+    }
+    
+    // WhatsApp-like vibration pattern
+    Timer.periodic(const Duration(seconds: 2), (timer) async {
+      try {
+        await Vibration.vibrate(
+          pattern: [0, 800, 200, 800, 200, 800], // Long, short, long pattern
+          intensities: [0, 255, 0, 255, 0, 255],
+        );
+        
+        // Stop after 45 seconds
+        if (timer.tick >= 22) {
+          timer.cancel();
+        }
+      } catch (e) {
+        timer.cancel();
+      }
+    });
+    
+    developer.log('✅ Background vibration started');
+  } catch (e) {
+    developer.log('❌ Error starting background vibration: $e');
+  }
+}
+
+// NEW: Stop background ringtone
+Future<void> _stopBackgroundRingtone() async {
+  try {
+    await FlutterRingtonePlayer().stop();
+    developer.log('🔇 Background ringtone stopped');
+  } catch (e) {
+    developer.log('❌ Error stopping background ringtone: $e');
+  }
+}
+
+// NEW: Stop background vibration
+Future<void> _stopBackgroundVibration() async {
+  try {
+    await Vibration.cancel();
+    developer.log('📳 Background vibration stopped');
+  } catch (e) {
+    developer.log('❌ Error stopping background vibration: $e');
+  }
+}
+
+// NEW: Show full-screen call notification
+Future<void> _showFullScreenCallNotification({
+  required String callId,
+  required String callerName,
+  required bool isVideoCall,
+  required Map<String, dynamic> data,
+}) async {
+  try {
+    developer.log('📱 Showing full-screen call notification...');
+    
+    // Initialize local notifications
+    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    await _initializeCallNotifications(flutterLocalNotificationsPlugin);
+    
+    // Enhanced call notification details
+    final androidDetails = AndroidNotificationDetails(
+      'call_notifications',
+      'Incoming Calls',
+      channelDescription: 'Notifications for incoming calls',
+      importance: Importance.max,
+      priority: Priority.max,
+      category: AndroidNotificationCategory.call,
+      fullScreenIntent: true, // CRITICAL: Shows over lock screen
+      ongoing: true, // Keep notification until action taken
+      autoCancel: false,
+      showWhen: false,
+      timeoutAfter: 45000, // Auto-dismiss after 45 seconds
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      styleInformation: BigTextStyleInformation(
+        'Tap to answer or decline the ${isVideoCall ? 'video' : 'voice'} call',
+        htmlFormatBigText: true,
+        contentTitle: '${isVideoCall ? 'Video' : 'Voice'} Call',
+        htmlFormatContentTitle: true,
+      ),
+      actions: [
+        AndroidNotificationAction(
+          'accept_call',
+          'Answer',
+          icon: DrawableResourceAndroidBitmap('@drawable/ic_call_accept'),
+          contextual: true,
+          titleColor: Colors.green,
+        ),
+        AndroidNotificationAction(
+          'decline_call',
+          'Decline',
+          icon: DrawableResourceAndroidBitmap('@drawable/ic_call_decline'),
+          contextual: true,
+          titleColor: Colors.red,
+        ),
+      ],
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
+      enableLights: true,
+      ledColor: Colors.blue,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound('call_ringtone'),
+      visibility: NotificationVisibility.public, // Show on lock screen
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'call_ringtone.wav',
+      interruptionLevel: InterruptionLevel.critical, // Critical for calls
+      categoryIdentifier: 'CALL_CATEGORY',
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      callId.hashCode,
+      '${isVideoCall ? 'Video' : 'Voice'} Call',
+      'Incoming ${isVideoCall ? 'video' : 'voice'} call from $callerName',
+      notificationDetails,
+      payload: jsonEncode({
+        ...data,
+        'action': 'incoming_call',
+        'showCallScreen': 'true',
+      }),
+    );
+    
+    developer.log('✅ Full-screen call notification shown');
+  } catch (e) {
+    developer.log('❌ Error showing full-screen call notification: $e');
+  }
+}
+
+// Initialize call-specific notifications
+Future<void> _initializeCallNotifications(FlutterLocalNotificationsPlugin plugin) async {
+  try {
+    const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInitialization = DarwinInitializationSettings();
+    
+    const initializationSettings = InitializationSettings(
+      android: androidInitialization,
+      iOS: iosInitialization,
+    );
+    
+    await plugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: _onCallNotificationTapped,
+    );
+    
+    // Create call notification channel
+    final androidPlugin = plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'call_notifications',
+          'Incoming Calls',
+          description: 'Notifications for incoming calls',
+          importance: Importance.max,
+          enableVibration: true,
+          enableLights: true,
+          ledColor: Colors.blue,
+          showBadge: true,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound('call_ringtone'),
+        ),
+      );
+    }
+    
+    developer.log('✅ Call notifications initialized');
+  } catch (e) {
+    developer.log('❌ Error initializing call notifications: $e');
+  }
+}
+
+// Handle call notification taps
+void _onCallNotificationTapped(NotificationResponse response) {
+  try {
+    developer.log('📞 Call notification tapped: ${response.actionId}');
+    
+    if (response.payload != null) {
+      final data = jsonDecode(response.payload!) as Map<String, dynamic>;
+      
+      switch (response.actionId) {
+        case 'accept_call':
+          _handleCallAcceptFromNotification(data);
+          break;
+        case 'decline_call':
+          _handleCallDeclineFromNotification(data);
+          break;
+        default:
+          _showIncomingCallScreen(data);
+          break;
+      }
+    }
+  } catch (e) {
+    developer.log('❌ Error handling call notification tap: $e');
+  }
+}
+
+// Handle call accept from notification
+void _handleCallAcceptFromNotification(Map<String, dynamic> data) {
+  try {
+    developer.log('✅ Accepting call from notification');
+    
+    // Stop ringtone and vibration
+    _stopBackgroundRingtone();
+    _stopBackgroundVibration();
+    
+    // Navigate to app and accept call
+    _navigateToCallAccept(data);
+    
+  } catch (e) {
+    developer.log('❌ Error accepting call from notification: $e');
+  }
+}
+
+// Handle call decline from notification
+void _handleCallDeclineFromNotification(Map<String, dynamic> data) {
+  try {
+    developer.log('❌ Declining call from notification');
+    
+    // Stop ringtone and vibration
+    _stopBackgroundRingtone();
+    _stopBackgroundVibration();
+    
+    // Decline the call
+    _declineCallDirectly(data);
+    
+  } catch (e) {
+    developer.log('❌ Error declining call from notification: $e');
+  }
+}
+
+// Navigate to app to accept call
+void _navigateToCallAccept(Map<String, dynamic> data) {
+  // Use platform channel or deep link to open app and accept call
+  // This would require additional native code integration
+  _showIncomingCallScreen(data);
+}
+
+// Decline call directly
+void _declineCallDirectly(Map<String, dynamic> data) {
+  // Implement direct call decline logic
+  // This could involve Firebase update or API call
+  final callId = data['callId']?.toString() ?? '';
+  if (callId.isNotEmpty) {
+    // Update call status in Firebase
+    // FirebaseFirestore.instance.collection('calls').doc(callId).update({'status': 'rejected'});
+  }
+}
+
+// Show incoming call screen when app opens
+void _showIncomingCallScreen(Map<String, dynamic> data) {
+  try {
+    developer.log('📱 Showing incoming call screen');
+    
+    // Stop ringtone when screen is shown
+    _stopBackgroundRingtone();
+    
+    // Navigate to incoming call screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.to(
+        () => IncomingCallScreen(callData: data),
+        transition: Transition.fadeIn,
+        fullscreenDialog: true,
+      );
+    });
+    
+  } catch (e) {
+    developer.log('❌ Error showing incoming call screen: $e');
+  }
+}
+
+// Enhanced background chat notification handler
+Future<void> _handleBackgroundChatNotification(RemoteMessage message) async {
+  try {
+    developer.log('💬 === HANDLING BACKGROUND CHAT NOTIFICATION ===');
+    
+    final notification = message.notification;
+    final data = message.data;
+    
+    // Create notification service instance
+    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    
+    // Initialize local notifications
+    await _initializeBackgroundNotifications(flutterLocalNotificationsPlugin);
+    
+    // Extract notification details
+    String title = notification?.title ?? data['senderName'] ?? 'New Message';
+    String body = notification?.body ?? data['message'] ?? 'You have a new message';
+    
+    // Show local notification
+    await _showBackgroundLocalNotification(
+      flutterLocalNotificationsPlugin,
+      title,
+      body,
+      data,
+    );
+    
+    developer.log('✅ Background chat notification handled');
+  } catch (e) {
+    developer.log('❌ Error handling background chat notification: $e');
+  }
+}
+
+// Enhanced background notification handler (existing function - keep as is)
 Future<void> _handleBackgroundNotification(RemoteMessage message) async {
   try {
     final notification = message.notification;
@@ -99,6 +722,7 @@ Future<void> _handleBackgroundNotification(RemoteMessage message) async {
   }
 }
 
+// Rest of your existing functions...
 Future<void> _initializeBackgroundNotifications(FlutterLocalNotificationsPlugin plugin) async {
   try {
     const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -110,7 +734,7 @@ Future<void> _initializeBackgroundNotifications(FlutterLocalNotificationsPlugin 
     
     await plugin.initialize(initializationSettings);
     
-    // Create notification channel for Android
+    // Create notification channels for Android
     final androidPlugin = plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     
@@ -126,6 +750,22 @@ Future<void> _initializeBackgroundNotifications(FlutterLocalNotificationsPlugin 
           ledColor: Color.fromRGBO(244, 135, 6, 1),
           showBadge: true,
           playSound: true,
+        ),
+      );
+      
+      // Call notifications channel
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'call_notifications',
+          'Incoming Calls',
+          description: 'Notifications for incoming calls',
+          importance: Importance.max,
+          enableVibration: true,
+          enableLights: true,
+          ledColor: Colors.blue,
+          showBadge: true,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound('call_ringtone'),
         ),
       );
       
@@ -228,6 +868,9 @@ int _generateNotificationId(Map<String, dynamic> data) {
   }
   return DateTime.now().millisecondsSinceEpoch.remainder(100000);
 }
+
+// Continue with your existing functions...
+// (Keep all your existing connectivity, initialization, and app functions as they are)
 
 // Enhanced connectivity check function
 Future<bool> _checkInternetConnectivity() async {
@@ -475,11 +1118,16 @@ void _setupNotificationListeners() {
       developer.log('📨 Notification: ${message.notification?.toMap()}');
       developer.log('📨 Time: ${DateTime.now()}');
       
-      // Handle foreground messages
-      notificationService.handleForegroundMessage(message);
+      // CRITICAL: Handle call messages in foreground
+      final messageType = message.data['type']?.toString() ?? '';
       
-      // Additional immediate feedback
-      _showImmediateFeedback(message);
+      if (messageType == 'call') {
+        _handleForegroundCallMessage(message);
+      } else {
+        // Handle regular messages
+        notificationService.handleForegroundMessage(message);
+        _showImmediateFeedback(message);
+      }
     });
 
     // Handle notification taps when app is in background
@@ -502,6 +1150,35 @@ void _setupNotificationListeners() {
     developer.log('✅ Notification listeners setup completed');
   } catch (e) {
     developer.log('❌ Error setting up notification listeners: $e');
+  }
+}
+
+// NEW: Handle foreground call messages
+void _handleForegroundCallMessage(RemoteMessage message) {
+  try {
+    developer.log('📞 === HANDLING FOREGROUND CALL MESSAGE ===');
+    
+    final data = message.data;
+    final callId = data['callId']?.toString() ?? '';
+    final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
+    final isVideoCall = data['isVideoCall']?.toString() == 'true';
+    
+    developer.log('📞 Foreground Call ID: $callId');
+    developer.log('📞 Foreground Caller: $callerName');
+    developer.log('📞 Foreground Video: $isVideoCall');
+    
+    // If app is in foreground, directly show incoming call screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.to(
+        () => IncomingCallScreen(callData: data),
+        transition: Transition.fadeIn,
+        fullscreenDialog: true,
+      );
+    });
+    
+    developer.log('✅ Foreground call message handled');
+  } catch (e) {
+    developer.log('❌ Error handling foreground call message: $e');
   }
 }
 
@@ -568,7 +1245,7 @@ void _handleNotificationTap(RemoteMessage message) {
         _navigateToChat(data);
         break;
       case 'call':
-        _handleCallNotification(data);
+        _handleCallNotificationTap(data);
         break;
       default:
         // Navigate to home if no specific action
@@ -614,264 +1291,25 @@ void _navigateToChat(Map<String, dynamic> data) {
   }
 }
 
-void _handleCallNotification(Map<String, dynamic> data) {
-  developer.log('📞 Handling call notification: $data');
-  Get.snackbar(
-    'Incoming Call',
-    'Call feature coming soon!',
-    snackPosition: SnackPosition.TOP,
-    backgroundColor: Colors.blue,
-    colorText: Colors.white,
-  );
-}
-
-// Enhanced Offline-Aware Splash Screen
-class OfflineAwareSplashScreen extends StatefulWidget {
-  const OfflineAwareSplashScreen({Key? key}) : super(key: key);
-
-  @override
-  State<OfflineAwareSplashScreen> createState() => _OfflineAwareSplashScreenState();
-}
-
-class _OfflineAwareSplashScreenState extends State<OfflineAwareSplashScreen> with TickerProviderStateMixin {
-  bool _isOnline = true;
-  bool _isLoading = true;
-  String _loadingText = 'Loading...';
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _setupAnimation();
-    _checkConnectivityAndProceed();
-    _listenToConnectivityChanges();
-  }
-
-  void _setupAnimation() {
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    _animationController.forward();
-  }
-
-  void _listenToConnectivityChanges() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      if (mounted) {
-        // Check if any connection type is available
-        final bool isOnline = results.any((result) => result != ConnectivityResult.none);
-        if (_isOnline != isOnline) {
-          setState(() {
-            _isOnline = isOnline;
-            _loadingText = isOnline ? 'Connecting...' : 'Offline Mode';
-          });
-        }
-      }
-    });
-  }
-
-  Future<void> _checkConnectivityAndProceed() async {
-    try {
-      setState(() {
-        _loadingText = 'Checking connection...';
-      });
-
-      // Check connectivity
-      final hasInternet = await _checkInternetConnectivity();
-      
-      if (mounted) {
-        setState(() {
-          _isOnline = hasInternet;
-          _loadingText = hasInternet ? 'Loading services...' : 'Offline Mode';
-        });
-      }
-      
-      // Wait minimum splash time
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        
-        // Small delay before navigation
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        // Navigate to appropriate screen
-        _navigateToHome();
-      }
-    } catch (e) {
-      developer.log('❌ Splash screen error: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isOnline = false;
-          _loadingText = 'Error occurred';
-        });
-        
-        // Still navigate after error
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) _navigateToHome();
-        });
-      }
-    }
-  }
-
-  void _navigateToHome() {
-    if (mounted) {
-      // Use your original splash screen navigation logic
-      // Replace with your actual home screen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => SplashScreen(), // Use your original SplashScreen here
-        ),
+void _handleCallNotificationTap(Map<String, dynamic> data) {
+  try {
+    developer.log('📞 Handling call notification tap: $data');
+    
+    // Stop any background ringtone
+    _stopBackgroundRingtone();
+    _stopBackgroundVibration();
+    
+    // Show incoming call screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.to(
+        () => IncomingCallScreen(callData: data),
+        transition: Transition.fadeIn,
+        fullscreenDialog: true,
       );
-    }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _connectivitySubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // App logo/icon
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.chat_rounded,
-                  size: 60,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 30),
-              
-              // App name
-              const Text(
-                'Innovator',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 50),
-              
-              // Loading content
-              if (_isLoading) ...[
-                const SizedBox(
-                  width: 30,
-                  height: 30,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 3,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  _loadingText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ] else if (!_isOnline) ...[
-                // Offline indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(
-                        Icons.wifi_off,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Offline Mode',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Some features may be limited',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-              
-              const SizedBox(height: 60),
-              
-              // Connection status
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _isOnline ? Colors.green : Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _isOnline ? 'Online' : 'Offline',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    });
+    
+  } catch (e) {
+    developer.log('❌ Error handling call notification tap: $e');
   }
 }
 
@@ -1038,19 +1476,16 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       title: 'Innovator',
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
-            home: SplashScreen(),
-            builder: (context, child) {
-      return Stack(
-        children: [
-          child!,
-          // Add floating call widget overlay
-          const CallFloatingWidget(),
-        ],
-      );
-    },
- 
-      // Use the enhanced offline-aware splash screen
-      //home: const OfflineAwareSplashScreen(),
+      home: SplashScreen(),
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child!,
+            // Add floating call widget overlay
+            const CallFloatingWidget(),
+          ],
+        );
+      },
       onInit: () {
         // Initialize chat controller globally with error handling
         try {
@@ -1190,109 +1625,6 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
         backgroundColor: Color.fromRGBO(244, 135, 6, 1),
         foregroundColor: Colors.white,
       ),
-    );
-  }
-}
-
-// Enhanced Connectivity Status Widget (optional - can be used in your screens)
-class ConnectivityStatusWidget extends StatefulWidget {
-  final Widget child;
-  
-  const ConnectivityStatusWidget({
-    Key? key,
-    required this.child,
-  }) : super(key: key);
-
-  @override
-  State<ConnectivityStatusWidget> createState() => _ConnectivityStatusWidgetState();
-}
-
-class _ConnectivityStatusWidgetState extends State<ConnectivityStatusWidget> {
-  bool _isOnline = true;
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkInitialConnectivity();
-    _listenToConnectivityChanges();
-  }
-
-  Future<void> _checkInitialConnectivity() async {
-    final isOnline = await _checkInternetConnectivity();
-    if (mounted) {
-      setState(() {
-        _isOnline = isOnline;
-      });
-    }
-  }
-
-  void _listenToConnectivityChanges() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
-      (List<ConnectivityResult> results) async {
-        // Check if any connection type is available
-        final isOnline = results.any((result) => result != ConnectivityResult.none);
-        
-        // Double-check with actual internet access
-        if (isOnline) {
-          final hasInternet = await _checkInternetConnectivity();
-          if (mounted && _isOnline != hasInternet) {
-            setState(() {
-              _isOnline = hasInternet;
-            });
-          }
-        } else {
-          if (mounted && _isOnline) {
-            setState(() {
-              _isOnline = false;
-            });
-          }
-        }
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _connectivitySubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
-        if (!_isOnline)
-          Positioned(
-            top: MediaQuery.of(context).padding.top,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: Colors.red.withOpacity(0.9),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(
-                    Icons.wifi_off,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'No internet connection',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

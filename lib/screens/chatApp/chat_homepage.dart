@@ -22,7 +22,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
       body: Column(
         children: [
           _buildCurrentUserCard(),
-          _buildQuickActions(), // NEW: Quick action buttons
+          //_buildQuickActions(), // NEW: Quick action buttons
           Expanded(child: _buildUsersList()),
         ],
       ),
@@ -58,45 +58,10 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
       backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
       elevation: 0,
       automaticallyImplyLeading: false,
-      // actions: [
-      //   IconButton(
-      //     icon: const Icon(Icons.search, color: Colors.white, size: 24),
-      //     onPressed: () => Get.toNamed('/search'),
-      //     tooltip: 'Search Users',
-      //   ),
-      //   PopupMenuButton<String>(
-      //     icon: const Icon(Icons.more_vert, color: Colors.white),
-      //     onSelected: (value) {
-      //       if (value == 'logout') {
-      //         _showLogoutDialog();
-      //       } else if (value == 'refresh') {
-      //         controller.refreshUsersAndCache();
-      //       }
-      //     },
-      //     itemBuilder: (context) => [
-      //       const PopupMenuItem(
-      //         value: 'refresh',
-      //         child: Row(
-      //           children: [
-      //             Icon(Icons.refresh, color: Colors.blue, size: 20),
-      //             SizedBox(width: 12),
-      //             Text('Refresh', style: TextStyle(fontSize: 14)),
-      //           ],
-      //         ),
-      //       ),
-      //       const PopupMenuItem(
-      //         value: 'logout',
-      //         child: Row(
-      //           children: [
-      //             Icon(Icons.logout, color: Colors.red, size: 20),
-      //             SizedBox(width: 12),
-      //             Text('Logout', style: TextStyle(fontSize: 14)),
-      //           ],
-      //         ),
-      //       ),
-      //     ],
-      //   ),
-      // ],
+     actions: [
+      IconButton(onPressed: () => controller.refreshUsersAndCache(), icon: Icon(Icons.refresh,color: Colors.white,))
+      
+     ],
     );
   }
 
@@ -300,81 +265,141 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     );
   }
 
- Widget _buildUsersList() {
-    return Obx(() {
-      // ENHANCED: Better loading state management
-      if (controller.isLoadingFollowStatus.value && controller.allUsers.isEmpty) {
-        return _buildFollowStatusLoadingState();
-      }
-      
-      if (controller.isLoadingUsers.value && controller.allUsers.isEmpty) {
-        return _buildLoadingState();
-      }
-
-      if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
-        return _buildEmptyState();
-      }
-
-      return RefreshIndicator(
-        onRefresh: () async {
-          // ENHANCED: Force refresh when user pulls down
-          await controller.refreshUsersAndCache();
-        },
-        color: const Color.fromRGBO(244, 135, 6, 1),
-        child: Column(
-          children: [
-            _buildAddToChatStatusBar(),
-            Expanded(
-              child: ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: controller.allUsers.length,
-                itemBuilder: (context, index) {
-                  final user = controller.allUsers[index];
-                  return _buildUserCard(user, index);
-                },
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-
-
-// NEW: Status bar for Add to Chat screen
-Widget _buildAddToChatStatusBar() {
+Widget _buildUsersList() {
   return Obx(() {
-    final totalUsers = controller.allUsers.length;
-    final onlineUsers = controller.allUsers.where((user) => user['isOnline'] == true).length;
+    developer.log('🔄 UI Rebuild - Users count: ${controller.allUsers.length}');
     
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
+    // ENHANCED: Better loading state management with follow status
+    if (controller.isLoadingFollowStatus.value && controller.allUsers.isEmpty) {
+      return _buildFollowStatusLoadingState();
+    }
+    
+    if (controller.isLoadingUsers.value && controller.allUsers.isEmpty) {
+      return _buildLoadingState();
+    }
+
+    if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
+      return _buildEmptyState();
+    }
+
+    // Debug log to verify data is available
+    developer.log('📱 Building list with ${controller.allUsers.length} users');
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        // ENHANCED: Force refresh with follow status check
+        await controller.refreshUsersWithFollowStatus();
+      },
+      color: const Color.fromRGBO(244, 135, 6, 1),
+      child: Column(
         children: [
-          _buildMiniStatCard('Total', '$totalUsers', Icons.people, Colors.blue),
-          const SizedBox(width: 16),
-          _buildMiniStatCard('Online', '$onlineUsers', Icons.circle, Colors.green),
-          const SizedBox(width: 16),
-          _buildMiniStatCard('Mutual', '$totalUsers', Icons.people_outline, const Color.fromRGBO(244, 135, 6, 1)),
+          //_buildAddToChatStatusBar(),
+          // Show follow status info
+          _buildFollowStatusInfoBar(),
+          Expanded(
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: controller.allUsers.length,
+              itemBuilder: (context, index) {
+                final user = controller.allUsers[index];
+                developer.log('Building card for user: ${user['name']}');
+                return _buildUserCard(user, index);
+              },
+            ),
+          ),
         ],
       ),
     );
   });
 }
+
+Widget _buildFollowStatusInfoBar() {
+  return Obx(() {
+    if (controller.isLoadingFollowStatus.value || controller.loadingStatusText.value.isNotEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color.fromRGBO(244, 135, 6, 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color.fromRGBO(244, 135, 6, 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            if (controller.isLoadingFollowStatus.value)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: const Color.fromRGBO(244, 135, 6, 1),
+                ),
+              )
+            else
+              Icon(
+                Icons.verified,
+                size: 16,
+                color: const Color.fromRGBO(244, 135, 6, 1),
+              ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                controller.loadingStatusText.value.isNotEmpty 
+                    ? controller.loadingStatusText.value
+                    : 'Showing only mutual followers',
+                style: const TextStyle(
+                  color: Color.fromRGBO(244, 135, 6, 1),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return const SizedBox.shrink();
+  });
+}
+
+
+// NEW: Status bar for Add to Chat screen
+// Widget _buildAddToChatStatusBar() {
+//   return Obx(() {
+//     final totalUsers = controller.allUsers.length;
+//     final onlineUsers = controller.allUsers.where((user) => user['isOnline'] == true).length;
+    
+//     // return Container(
+//     //   margin: const EdgeInsets.all(16),
+//     //   padding: const EdgeInsets.all(12),
+//     //   decoration: BoxDecoration(
+//     //     color: Colors.white,
+//     //     borderRadius: BorderRadius.circular(12),
+//     //     boxShadow: [
+//     //       BoxShadow(
+//     //         color: Colors.black.withOpacity(0.05),
+//     //         blurRadius: 8,
+//     //         offset: const Offset(0, 2),
+//     //       ),
+//     //     ],
+//     //   ),
+//       // child: Row(
+//       //   children: [
+//       //     _buildMiniStatCard('Total', '$totalUsers', Icons.people, Colors.blue),
+//       //     const SizedBox(width: 16),
+//       //     _buildMiniStatCard('Online', '$onlineUsers', Icons.circle, Colors.green),
+//       //     const SizedBox(width: 16),
+//       //     _buildMiniStatCard('Mutual', '$totalUsers', Icons.people_outline, const Color.fromRGBO(244, 135, 6, 1)),
+//       //   ],
+//       // ),
+    
+//   });
+// }
 
 
 Widget _buildMiniStatCard(String label, String value, IconData icon, Color color) {
@@ -619,8 +644,8 @@ Widget _buildInitialSearchState() {
 }
   Widget _buildUserCard(Map<String, dynamic> user, int index) {
   final isOnline = user['isOnline'] ?? false;
+  final isMutualFollow = user['isMutualFollow'] ?? false;
   
-  // NEW: Check if user is in recent users
   final userId = user['userId']?.toString() ?? 
                 user['_id']?.toString() ?? 
                 user['id']?.toString() ?? '';
@@ -651,8 +676,8 @@ Widget _buildInitialSearchState() {
                 decoration: BoxDecoration(
                   color: Get.theme.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  // NEW: Special border for recent users
-                  border: isRecentUser
+                  // Enhanced border for mutual followers
+                  border: isMutualFollow
                       ? Border.all(
                           color: const Color.fromRGBO(244, 135, 6, 0.3),
                           width: 1,
@@ -660,7 +685,7 @@ Widget _buildInitialSearchState() {
                       : null,
                   boxShadow: [
                     BoxShadow(
-                      color: isRecentUser
+                      color: isMutualFollow
                           ? const Color.fromRGBO(244, 135, 6, 0.1)
                           : Colors.black.withOpacity(0.05),
                       blurRadius: 8,
@@ -688,8 +713,8 @@ Widget _buildInitialSearchState() {
                                   ),
                                 ),
                               ),
-                              // NEW: Recent user indicator
-                              if (isRecentUser)
+                              // Mutual follow indicator
+                              if (isMutualFollow)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 6,
@@ -697,6 +722,38 @@ Widget _buildInitialSearchState() {
                                   ),
                                   decoration: BoxDecoration(
                                     color: const Color.fromRGBO(244, 135, 6, 1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.verified,
+                                        color: Colors.white,
+                                        size: 12,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'Mutual',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              // Recent user indicator
+                              if (isRecentUser)
+                                Container(
+                                  margin: EdgeInsets.only(left: isMutualFollow ? 4 : 0),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Text(
@@ -727,14 +784,14 @@ Widget _buildInitialSearchState() {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isRecentUser
+                        color: isMutualFollow
                             ? const Color.fromRGBO(244, 135, 6, 1)
                             : const Color.fromRGBO(244, 135, 6, 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        Icons.chat_bubble_outline,
-                        color: isRecentUser
+                        isMutualFollow ? Icons.chat : Icons.chat_bubble_outline,
+                        color: isMutualFollow
                             ? Colors.white
                             : const Color.fromRGBO(244, 135, 6, 1),
                         size: 20,

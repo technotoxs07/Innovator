@@ -189,8 +189,17 @@ class _CustomDrawerState extends State<CustomDrawer>
   @override
   void initState() {
     super.initState();
+    _initializeUserController(); // Add this line
     _initializeAnimations();
     _initializeData();
+  }
+
+  // Add this method to ensure UserController is registered
+  void _initializeUserController() {
+    if (!Get.isRegistered<UserController>()) {
+      Get.put(UserController());
+      developer.log('✅ UserController registered in CustomDrawer');
+    }
   }
 
   void _initializeAnimations() {
@@ -234,9 +243,14 @@ class _CustomDrawerState extends State<CustomDrawer>
             'picture': cachedProfile.picturePath,
           };
           AppData().setCurrentUser(_userData!);
-          Get.find<UserController>().updateProfilePicture(
-            cachedProfile.picturePath ?? '',
-          );
+          
+          // Safely update UserController
+          if (Get.isRegistered<UserController>()) {
+            Get.find<UserController>().updateProfilePicture(
+              cachedProfile.picturePath ?? '',
+            );
+          }
+          
           _isLoading = false;
           _isLoadingFromCache = false;
         });
@@ -292,7 +306,11 @@ class _CustomDrawerState extends State<CustomDrawer>
             );
           }
 
-          Get.find<UserController>().updateProfilePicture(userData['picture']);
+          // Safely update UserController
+          if (Get.isRegistered<UserController>()) {
+            Get.find<UserController>().updateProfilePicture(userData['picture']);
+          }
+          
           if (mounted) {
             setState(() {
               _userData = userData;
@@ -395,23 +413,6 @@ class _CustomDrawerState extends State<CustomDrawer>
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                //                _buildAnimatedMenuItem(
-                                //   icon: Icons.notifications_rounded,
-                                //   title: 'Notifications',
-                                //   badge: _unreadCount > 0 ? _unreadCount.toString() : null,
-                                //   onTap: () {
-                                //     Navigator.pushAndRemoveUntil(
-                                //       context,
-                                //       MaterialPageRoute(
-                                //         builder: (_) => ProviderScope(
-                                //           child: NotificationListScreen(),
-                                //         ),
-                                //       ),
-                                //       (route) => false,
-                                //     );
-                                //   },
-                                //   delay: 0,
-                                // ),
                                 _buildAnimatedMenuItem(
                                   icon: Icons.message_rounded,
                                   title: 'Messages',
@@ -475,7 +476,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                                         builder: (_) => Project_HomeScreen(),
                                       ),
                                     );
-                                  }, // ROnit Shrivastav Ronit Shrivastav Ronit Shrivastav
+                                  },
                                   delay: 600,
                                 ),
                                 _buildAnimatedMenuItem(
@@ -664,26 +665,86 @@ class _CustomDrawerState extends State<CustomDrawer>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Obx(() {
-            final picturePath = Get.find<UserController>().profilePicture;
-            return Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 2,
+          // Safe Obx usage with null check
+          Get.isRegistered<UserController>()
+              ? Obx(() {
+                  final picturePath = Get.find<UserController>().profilePicture.value;
+                  return Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 35,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      child:
+                          picturePath != null && picturePath.isNotEmpty
+                              ? CachedNetworkImage(
+                                imageUrl: '$baseUrl$picturePath',
+                                imageBuilder:
+                                    (context, imageProvider) => CircleAvatar(
+                                      radius: 35,
+                                      backgroundImage: imageProvider,
+                                    ),
+                                placeholder:
+                                    (context, url) => const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                errorWidget:
+                                    (context, url, error) => const Icon(
+                                      Icons.person,
+                                      size: 35,
+                                      color: Colors.white,
+                                    ),
+                                cacheManager: CacheManager(
+                                  Config(
+                                    'profilePictureCache',
+                                    stalePeriod: const Duration(days: 30),
+                                    maxNrOfCacheObjects: 20,
+                                    repo: JsonCacheInfoRepository(
+                                      databaseName: 'profilePictureCache',
+                                    ),
+                                  ),
+                                ),
+                                placeholderFadeInDuration: const Duration(
+                                  milliseconds: 200,
+                                ),
+                                fadeOutDuration: const Duration(milliseconds: 200),
+                                fadeInDuration: const Duration(milliseconds: 200),
+                              )
+                              : const Icon(
+                                Icons.person,
+                                size: 35,
+                                color: Colors.white,
+                              ),
+                    ),
+                  );
+                })
+              : // Fallback widget when UserController is not registered
+              Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: 35,
-                backgroundColor: Colors.white.withOpacity(0.2),
-                child:
-                    picturePath != null
+                  child: CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: userData?['picture'] != null
                         ? CachedNetworkImage(
-                          imageUrl: '$baseUrl$picturePath',
+                          imageUrl: '$baseUrl${userData!['picture']}',
                           imageBuilder:
                               (context, imageProvider) => CircleAvatar(
                                 radius: 35,
@@ -700,30 +761,14 @@ class _CustomDrawerState extends State<CustomDrawer>
                                 size: 35,
                                 color: Colors.white,
                               ),
-                          cacheManager: CacheManager(
-                            Config(
-                              'profilePictureCache',
-                              stalePeriod: const Duration(days: 30),
-                              maxNrOfCacheObjects: 20,
-                              repo: JsonCacheInfoRepository(
-                                databaseName: 'profilePictureCache',
-                              ),
-                            ),
-                          ),
-                          placeholderFadeInDuration: const Duration(
-                            milliseconds: 200,
-                          ),
-                          fadeOutDuration: const Duration(milliseconds: 200),
-                          fadeInDuration: const Duration(milliseconds: 200),
                         )
                         : const Icon(
                           Icons.person,
                           size: 35,
                           color: Colors.white,
                         ),
-              ),
-            );
-          }),
+                  ),
+                ),
           const SizedBox(height: 20),
           const Text(
             'Welcome Back',
@@ -1015,9 +1060,6 @@ class _CustomDrawerState extends State<CustomDrawer>
           ),
     );
   }
-
-  // Add this new method to handle the complete logout process:
-  // Replace your _performLogout method with this fixed version:
 
   Future<void> _performLogout(BuildContext dialogContext) async {
     try {

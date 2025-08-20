@@ -1,3 +1,5 @@
+// lib/services/Firebase_Messaging.dart - COMPLETE CORRECTED VERSION
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -113,7 +115,6 @@ class FirebaseNotificationService {
         channelDescription: 'Incoming call notifications',
         importance: Importance.max,
         priority: Priority.max,
-       // sound: const RawResourceAndroidNotificationSound('ringtone'),
         category: AndroidNotificationCategory.call,
         fullScreenIntent: true, // Show as full screen
         ongoing: true, // Keep notification until answered/declined
@@ -131,14 +132,12 @@ class FirebaseNotificationService {
           AndroidNotificationAction(
             'accept_call',
             'Accept',
-            icon: DrawableResourceAndroidBitmap('@drawable/ic_call_accept'),
-            contextual: true,
+            titleColor: Colors.green,
           ),
           AndroidNotificationAction(
             'decline_call',
             'Decline',
-            icon: DrawableResourceAndroidBitmap('@drawable/ic_call_decline'),
-            contextual: true,
+            titleColor: Colors.red,
           ),
         ],
         timeoutAfter: 30000, // 30 seconds timeout
@@ -147,17 +146,16 @@ class FirebaseNotificationService {
         enableLights: true,
         ledColor: Colors.blue,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('ringtone'),
+        sound: const RawResourceAndroidNotificationSound('default'),
       );
 
-      final iosDetails = DarwinNotificationDetails(
+      const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        sound: 'call_ringtone.wav',
+        sound: 'default',
         interruptionLevel: InterruptionLevel.critical, // Critical for calls
         categoryIdentifier: 'CALL_CATEGORY',
-        threadIdentifier: callId,
       );
 
       final notificationDetails = NotificationDetails(
@@ -192,7 +190,7 @@ class FirebaseNotificationService {
     
     switch (action) {
       case 'accept_call':
-        _acceptCallFromNotification(callId);
+        _acceptCallFromNotification(callId, data);
         break;
       case 'decline_call':
         _declineCallFromNotification(callId);
@@ -204,7 +202,7 @@ class FirebaseNotificationService {
     }
   }
 
-  void _acceptCallFromNotification(String callId) {
+  void _acceptCallFromNotification(String callId, Map<String, dynamic> data) {
     try {
       if (Get.isRegistered<WebRTCCallService>()) {
         final callService = WebRTCCallService.instance;
@@ -215,9 +213,13 @@ class FirebaseNotificationService {
         
         // Clear notification
         clearNotification(callId.hashCode);
+      } else {
+        // Show incoming call screen if service not ready
+        _showIncomingCallFromNotification(data);
       }
     } catch (e) {
       developer.log('❌ Error accepting call from notification: $e');
+      _showIncomingCallFromNotification(data);
     }
   }
 
@@ -306,7 +308,7 @@ class FirebaseNotificationService {
             ledColor: Color.fromRGBO(244, 135, 6, 1),
             showBadge: true,
             playSound: true,
-            sound: RawResourceAndroidNotificationSound('notification_sound'),
+            sound: RawResourceAndroidNotificationSound('default'),
           ),
         );
 
@@ -334,7 +336,7 @@ class FirebaseNotificationService {
             enableLights: true,
             showBadge: true,
             playSound: true,
-            sound: RawResourceAndroidNotificationSound('call_ringtone'),
+            sound: RawResourceAndroidNotificationSound('default'),
           ),
         );
 
@@ -733,7 +735,7 @@ class FirebaseNotificationService {
         ledOnMs: 1000,
         ledOffMs: 500,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('notification_sound'),
+        sound: const RawResourceAndroidNotificationSound('default'),
         category: AndroidNotificationCategory.message,
         fullScreenIntent: false,
         timeoutAfter: null,
@@ -798,13 +800,30 @@ class FirebaseNotificationService {
           'Mark as Read',
         ),
       ];
+    } else if (data['type'] == 'call') {
+      return [
+        const AndroidNotificationAction(
+          'accept_call',
+          'Answer',
+          titleColor: Colors.green,
+        ),
+        const AndroidNotificationAction(
+          'decline_call',
+          'Decline',
+          titleColor: Colors.red,
+        ),
+      ];
     }
     return [];
   }
 
   int _generateNotificationId(Map<String, dynamic> data) {
     final chatId = data['chatId']?.toString() ?? '';
-    if (chatId.isNotEmpty) {
+    final callId = data['callId']?.toString() ?? '';
+    
+    if (callId.isNotEmpty) {
+      return callId.hashCode.abs();
+    } else if (chatId.isNotEmpty) {
       return chatId.hashCode.abs();
     }
     return DateTime.now().millisecondsSinceEpoch.remainder(100000);
@@ -816,8 +835,10 @@ class FirebaseNotificationService {
         return 'Chat Messages';
       case _callChannelId:
         return 'Calls';
-      default:
+      case _generalChannelId:
         return 'General Notifications';
+      default:
+        return 'Notifications';
     }
   }
 
@@ -827,8 +848,10 @@ class FirebaseNotificationService {
         return 'Notifications for new chat messages';
       case _callChannelId:
         return 'Incoming call notifications';
-      default:
+      case _generalChannelId:
         return 'General app notifications';
+      default:
+        return 'App notifications';
     }
   }
 

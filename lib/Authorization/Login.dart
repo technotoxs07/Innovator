@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Forget_PWD.dart';
@@ -13,6 +14,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:innovator/helper/dialogs.dart';
 import 'package:innovator/innovator_home.dart';
+import 'package:innovator/screens/chatApp/FollowStatusManager.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/services/firebase_services.dart';
 import 'package:lottie/lottie.dart';
@@ -126,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
+ Future<void> _handleGoogleSignIn() async {
   // Check platform support first
   if (!CrossPlatformAuth.isGoogleSignInSupported) {
     Dialogs.showSnackbar(
@@ -144,7 +146,6 @@ class _LoginPageState extends State<LoginPage> {
     final UserCredential? userCredential = await CrossPlatformAuth.signInWithGoogle();
     
     if (userCredential == null) {
-      // User cancelled the sign-in
       setState(() {
         _isGoogleLoading = false;
       });
@@ -156,40 +157,14 @@ class _LoginPageState extends State<LoginPage> {
       // Get the ID token for API authentication
       final String? idToken = await user.getIdToken(true);
 
-      developer.log('Google Sign-In successful for user: ${user.email}');
-      developer.log('User display name: ${user.displayName}');
-      developer.log('User photo URL: ${user.photoURL}');
-      developer.log('Firebase ID Token length: ${idToken?.length ?? 0}');
-
       if (idToken == null || idToken.isEmpty) {
         Dialogs.showSnackbar(context, 'Failed to get authentication token from Google');
         return;
       }
 
-      // Try to login first, if fails then register
-      bool loginSuccess = await _attemptGoogleLogin(user, idToken);
-
-      if (!loginSuccess) {
-        // If login fails, try to register the user
-        bool registrationSuccess = await _attemptGoogleRegister(user, idToken);
-
-        // If registration fails due to existing email, try login again with Firebase token
-        if (!registrationSuccess) {
-          developer.log('Registration failed, attempting login with Firebase token for existing user');
-          bool retryLoginSuccess = await _attemptGoogleLoginForExistingUser(user, idToken);
-
-          if (!retryLoginSuccess) {
-            Dialogs.showSnackbar(
-              context,
-              'Unable to sign in. Please try again or contact support.',
-            );
-          }
-        }
-      }
+      // Single optimized login/register attempt
+      await _handleGoogleAuthOptimized(user, idToken);
     }
-  } on UnsupportedError catch (e) {
-    developer.log('Platform not supported: $e');
-   // Dialogs.showSnackbar(context, e.message);
   } catch (error) {
     developer.log('Google Sign-In error: $error');
     
@@ -207,6 +182,249 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 }
+
+
+Future<void> _handleGoogleAuthOptimized(User user, String idToken) async {
+  try {
+    developer.log('🚀 Starting optimized Google authentication for: ${user.email}');
+    
+    // STEP 1: Try login first with the most likely to succeed format
+    final loginSuccess = await _attemptOptimizedGoogleLogin(user, idToken);
+    
+    if (loginSuccess) {
+      developer.log('✅ Google login successful');
+      return;
+    }
+    
+    // STEP 2: If login fails, try registration
+    developer.log('🔄 Login failed, attempting registration...');
+    final registerSuccess = await _attemptOptimizedGoogleRegister(user, idToken);
+    
+    if (registerSuccess) {
+      developer.log('✅ Google registration successful');
+      return;
+    }
+    
+    // STEP 3: Fallback to Firebase-only authentication
+    developer.log('🔄 API methods failed, using Firebase fallback...');
+    await _handleFirebaseFallback(user, idToken);
+    
+  } catch (e) {
+    developer.log('❌ Error in optimized Google auth: $e');
+    Dialogs.showSnackbar(context, 'Authentication failed. Please try again.');
+  }
+}
+
+// Firebase-only fallback (fastest option)
+Future<void> _handleFirebaseFallback(User user, String idToken) async {
+  try {
+    developer.log('🔥 Using Firebase-only authentication...');
+    
+    // Create minimal user data
+    Map<String, dynamic> userData = {
+      '_id': user.uid,
+      'id': user.uid,
+      'userId': user.uid,
+      'uid': user.uid,
+      'email': user.email,
+      'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
+      'photoURL': user.photoURL,
+      'isEmailVerified': user.emailVerified,
+      'provider': 'google',
+      'firebaseUser': true,
+      'fcmTokens': [],
+    };
+
+    // FAST parallel operations
+    await Future.wait([
+      AppData().setAuthToken(idToken),
+      AppData().setCurrentUser(userData),
+      FirebaseService.verifyAndCreateUser(
+        userId: user.uid,
+        name: userData['name'],
+        email: user.email ?? '',
+        photoURL: user.photoURL,
+        provider: 'google',
+      ),
+    ]);
+
+    // Initialize FCM in background
+    _initializeFcmInBackground();
+
+    // Navigate immediately
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => Homepage()),
+      (route) => false,
+    );
+
+    Dialogs.showSnackbar(context, 'Welcome! Signed in with Google.');
+    developer.log('✅ Firebase fallback authentication completed');
+    
+  } catch (e) {
+    developer.log('❌ Firebase fallback error: $e');
+    rethrow;
+  }
+}
+
+Future<bool> _attemptOptimizedGoogleLogin(User user, String idToken) async {
+  try {
+    final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
+    
+    // Use the most comprehensive format that's most likely to work
+    final body = jsonEncode({
+      'email': user.email,
+      'firebaseToken': idToken,
+      'isGoogleLogin': true,
+      'provider': 'google'
+    });
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $idToken'
+    };
+
+    developer.log('🔑 Attempting optimized Google login...');
+    
+    final response = await http.post(url, headers: headers, body: body)
+        .timeout(const Duration(seconds: 10)); // Add timeout
+
+    if (response.statusCode == 200) {
+      await _handleOptimizedSuccessfulAuth(response.body, user, isNewUser: false);
+      return true;
+    }
+    
+    developer.log('⚠️ Login failed with status: ${response.statusCode}');
+    return false;
+  } catch (e) {
+    developer.log('❌ Optimized Google login error: $e');
+    return false;
+  }
+}
+
+Future<bool> _attemptOptimizedGoogleRegister(User user, String idToken) async {
+  try {
+    final url = Uri.parse('http://182.93.94.210:3066/api/v1/register-user');
+
+    final body = jsonEncode({
+      'email': user.email,
+      'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
+      'firebaseToken': idToken,
+      'isGoogleSignup': true,
+      'isEmailVerified': user.emailVerified,
+      'uid': user.uid,
+      'photoURL': user.photoURL,
+      'provider': 'google'
+    });
+
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $idToken'
+    };
+
+    developer.log('📝 Attempting optimized Google registration...');
+    
+    final response = await http.post(url, headers: headers, body: body)
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      await _handleOptimizedSuccessfulAuth(response.body, user, isNewUser: true);
+      return true;
+    }
+    
+    developer.log('⚠️ Registration failed with status: ${response.statusCode}');
+    return false;
+  } catch (e) {
+    developer.log('❌ Optimized Google registration error: $e');
+    return false;
+  }
+}
+
+// Streamlined success handler
+Future<void> _handleOptimizedSuccessfulAuth(String responseBody, User user, {required bool isNewUser}) async {
+  try {
+    developer.log('🎯 Processing successful authentication...');
+    
+    // Parse response once
+    final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
+    
+    // Extract data
+    final token = _extractToken(responseData);
+    final userData = _extractUserData(responseData) ?? {};
+    
+    // Ensure proper ID consistency
+    final userId = userData['_id']?.toString() ?? 
+                   userData['id']?.toString() ?? 
+                   user.uid;
+    
+    userData['_id'] = userId;
+    userData['id'] = userId;
+    userData['userId'] = userId;
+    userData['uid'] = userId;
+    userData['fcmTokens'] = userData['fcmTokens'] ?? [];
+    
+    // BATCH OPERATIONS for speed
+    await Future.wait([
+      // Save token and user data in parallel
+      if (token != null) AppData().setAuthToken(token),
+      AppData().setCurrentUser(userData),
+      
+      // Create/verify user in Firestore (in background)
+      FirebaseService.verifyAndCreateUser(
+        userId: userId,
+        name: user.displayName ?? userData['name'] ?? 'User',
+        email: user.email ?? '',
+        photoURL: user.photoURL,
+        provider: 'google',
+      ),
+    ]);
+
+    // Initialize FCM in background (don't wait)
+    _initializeFcmInBackground();
+    
+    // Navigate immediately
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => Homepage()),
+      (route) => false,
+    );
+    
+    final message = isNewUser 
+        ? 'Account created successfully with Google!' 
+        : 'Welcome back! Signed in with Google.';
+    Dialogs.showSnackbar(context, message);
+    
+    developer.log('✅ Optimized auth completed successfully');
+    
+  } catch (e) {
+    developer.log('❌ Error in optimized success handler: $e');
+    rethrow;
+  }
+}
+
+void _initializeFcmInBackground() {
+  Future.delayed(const Duration(milliseconds: 100), () async {
+    try {
+      developer.log('🔥 Initializing FCM in background...');
+      
+      final fcmToken = await _firebaseMessaging.getToken();
+      if (fcmToken != null) {
+        await AppData().saveFcmToken(fcmToken);
+        developer.log('🔥 FCM token saved in background');
+      }
+      
+      // Subscribe to user topic
+      if (AppData().currentUserId != null) {
+        await _firebaseMessaging.subscribeToTopic('user_${AppData().currentUserId}');
+        developer.log('🔥 Subscribed to user topic in background');
+      }
+    } catch (e) {
+      developer.log('⚠️ Background FCM initialization error: $e');
+    }
+  });
+}
+
+
   Future<bool> _attemptGoogleLoginForExistingUser(User user, String? idToken) async {
   try {
     developer.log('Attempting to login existing Google user with Firebase token');
@@ -424,50 +642,15 @@ class _LoginPageState extends State<LoginPage> {
 }
 
   Future<void> _handleSuccessfulLogin(String responseBody) async {
-  Map<String, dynamic>? responseData;
   try {
-    responseData = jsonDecode(responseBody) as Map<String, dynamic>?;
-  } catch (e) {
-    developer.log('Error parsing response: $e');
-    Dialogs.showSnackbar(context, 'Invalid response from server');
-    return;
-  }
-
-  if (responseData == null) {
-    Dialogs.showSnackbar(context, 'Empty response from server');
-    return;
-  }
-
-  // STEP 1: Clear any existing chat controller and data
-  await _clearExistingSession();
-
-  // Extract token
-  String? token = _extractToken(responseData);
-  developer.log('Extracted token: ${token?.substring(0, 20)}...');
-
-  // Extract user data
-  Map<String, dynamic>? userData = _extractUserData(responseData);
-
-  // STEP 2: Save token first
-  if (token != null && token.isNotEmpty) {
-    try {
-      await AppData().setAuthToken(token);
-      final savedToken = AppData().authToken;
-      developer.log('Token saved verification: ${savedToken != null ? "Success" : "Failed"}');
-      if (savedToken == null) {
-        Dialogs.showSnackbar(context, 'Failed to persist authentication token');
-        return;
-      }
-    } catch (e) {
-      developer.log('Error saving token: $e');
-      Dialogs.showSnackbar(context, 'Error saving authentication token');
-      return;
-    }
-  }
-
-  // STEP 3: Save user data with proper ID mapping
-  if (userData != null) {
-    try {
+    developer.log('🚀 Processing successful login with follow status...');
+    
+    final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
+    
+    final token = _extractToken(responseData);
+    final userData = _extractUserData(responseData);
+    
+    if (userData != null) {
       // Ensure proper ID consistency
       String? userId = userData['_id']?.toString() ?? 
                       userData['id']?.toString() ?? 
@@ -479,18 +662,32 @@ class _LoginPageState extends State<LoginPage> {
         userData['id'] = userId;
         userData['userId'] = userId;
         userData['uid'] = userId;
-      } else {
-        developer.log('Warning: User data missing all ID fields');
       }
-
-      // Ensure fcmTokens is initialized
-      userData['fcmTokens'] ??= [];
       
-      await AppData().setCurrentUser(userData);
-      developer.log('User data saved successfully: $userData');
+      userData['fcmTokens'] ??= [];
+    }
+    
+    // BATCH save operations
+    await Future.wait([
+      if (token != null) AppData().setAuthToken(token),
+      if (userData != null) AppData().setCurrentUser(userData),
+    ]);
 
-      // STEP 4: Create/verify user in Firestore
-      if (userData['_id'] != null) {
+    // 🔥 STEP 1: Create Firebase Auth session for Firestore access
+    developer.log('🔥 Creating Firebase Auth session...');
+    await _createFirebaseAuthSession(userData);
+    
+    // 🔥 STEP 2: Initialize Follow Status Manager and preload statuses
+    developer.log('👥 Initializing Follow Status Manager...');
+    await _initializeFollowStatusManager();
+    
+    // Initialize FCM in background
+    _initializeFcmInBackground();
+    
+    // Create/verify user in Firestore
+    if (userData != null && userData['_id'] != null) {
+      developer.log('👤 Creating/verifying user in Firestore...');
+      try {
         await FirebaseService.verifyAndCreateUser(
           userId: userData['_id'],
           name: userData['name']?.toString() ?? '',
@@ -500,35 +697,266 @@ class _LoginPageState extends State<LoginPage> {
           photoURL: userData['photoURL']?.toString(),
           provider: userData['provider']?.toString() ?? 'email',
         );
-        developer.log('User verified/created in Firestore successfully');
+        developer.log('✅ User created/verified in Firestore');
+      } catch (e) {
+        developer.log('⚠️ Firestore user creation failed: $e');
       }
-    } catch (e) {
-      developer.log('Error saving user data: $e');
-      //Dialogs.showSnackbar(context, 'Error saving user data');
     }
-  }
-
-  // STEP 5: Initialize FCM and save token
-  await _initializeAndSaveFcmToken();
-
-  await _forceFreshFCMToken();
-
-  // STEP 6: Initialize chat controller with fresh data
-  await _initializeChatController();
-
-  // STEP 7: Navigate to homepage
-  if ((token != null && token.isNotEmpty) || userData != null) {
-    TextInput.finishAutofillContext(shouldSave: true);
     
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => Homepage()),
-      (route) => false, // Clear entire navigation stack
-    );
-  } else {
-    Dialogs.showSnackbar(context, 'Login response missing required data');
+    // 🔥 STEP 3: Initialize chat controller with follow status integration
+    developer.log('💬 Initializing chat controller with follow status...');
+    await _initializeChatControllerWithFollowStatus();
+    
+    // Navigate immediately
+    if ((token != null && token.isNotEmpty) || userData != null) {
+      TextInput.finishAutofillContext(shouldSave: true);
+      
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => Homepage()),
+        (route) => false,
+      );
+    } else {
+      Dialogs.showSnackbar(context, 'Login response missing required data');
+    }
+  } catch (e) {
+    developer.log('❌ Error in login handler: $e');
+    Dialogs.showSnackbar(context, 'Login processing failed: $e');
   }
 }
+
+Future<void> _initializeFollowStatusManager() async {
+  try {
+    developer.log('👥 Setting up Follow Status Manager...');
+    
+    // Ensure FollowStatusManager is registered
+    if (!Get.isRegistered<FollowStatusManager>()) {
+      Get.put(FollowStatusManager(), permanent: true);
+    }
+    
+    final followStatusManager = Get.find<FollowStatusManager>();
+    
+    // Get all users from Firestore to preload follow statuses
+    final usersSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .get()
+        .timeout(const Duration(seconds: 10));
+    
+    final emails = usersSnapshot.docs
+        .map((doc) => doc.data()['email']?.toString())
+        .where((email) => email != null && email.isNotEmpty)
+        .cast<String>()
+        .toList();
+    
+    if (emails.isNotEmpty) {
+      developer.log('👥 Preloading follow statuses for ${emails.length} users...');
+      await followStatusManager.preloadFollowStatuses(emails);
+      developer.log('✅ Follow statuses preloaded successfully');
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error initializing Follow Status Manager: $e');
+    // Don't throw - let the app continue with limited functionality
+  }
+}
+
+// 🔥 NEW: Initialize chat controller with follow status integration
+Future<void> _initializeChatControllerWithFollowStatus() async {
+  try {
+    developer.log('💬 Initializing chat controller with follow status...');
+    
+    // Wait for Firebase Auth to be fully ready
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    // Register chat controller if not already registered
+    if (!Get.isRegistered<FireChatController>()) {
+      Get.put(FireChatController(), permanent: true);
+      developer.log('💬 Chat controller registered');
+    }
+    
+    final chatController = Get.find<FireChatController>();
+    
+    // Initialize user data
+    chatController.initializeUser();
+    developer.log('💬 Chat controller user initialized');
+    
+    // 🔥 IMPORTANT: Load users with follow status filter
+    await Future.wait([
+      chatController.loadAllUsersWithFollowFilter(), // Load only mutual followers
+      chatController.loadUserChatsWithEnhancedProfiles(), // Load chats with API profile data
+    ]);
+    
+    developer.log('✅ Chat controller fully initialized with follow status filtering');
+    
+  } catch (e) {
+    developer.log('❌ Error initializing chat controller with follow status: $e');
+    // Don't throw - let the app continue even if chat has issues
+  }
+}
+
+Future<void> _createFirebaseAuthSession(Map<String, dynamic>? userData) async {
+  try {
+    developer.log('🔥 Creating Firebase Auth session...');
+    
+    // Check if already signed in
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      developer.log('✅ Firebase user already signed in: ${currentUser.uid}');
+      return;
+    }
+    
+    // Try anonymous sign-in first
+    try {
+      developer.log('🔄 Attempting anonymous Firebase Auth...');
+      final anonCredential = await FirebaseAuth.instance.signInAnonymously();
+      developer.log('✅ Firebase Auth anonymous session: ${anonCredential.user?.uid}');
+      
+      // Update user document with Firebase UID
+      if (userData != null && userData['_id'] != null) {
+        await _updateFirestoreUserDocument(userData, anonCredential.user?.uid);
+      }
+      return;
+      
+    } catch (anonymousError) {
+      if (anonymousError.toString().contains('admin-restricted-operation')) {
+        developer.log('⚠️ Anonymous auth disabled, trying email/password method...');
+        
+        // Try email/password method
+        if (userData != null && userData['email'] != null) {
+          await _tryEmailPasswordAuth(userData);
+          return;
+        }
+      }
+      
+      throw anonymousError;
+    }
+    
+  } catch (e) {
+    developer.log('❌ All Firebase Auth methods failed: $e');
+    
+    // Fallback: Just update Firestore and use permissive rules
+    if (userData != null) {
+      await _updateFirestoreUserDocument(userData, null);
+      developer.log('⚠️ Using Firestore-only mode. Some features may be limited.');
+    }
+  }
+}
+
+Future<void> _tryEmailPasswordAuth(Map<String, dynamic> userData) async {
+  try {
+    final email = userData['email'].toString();
+    final userId = userData['_id'].toString();
+    final dummyPassword = 'temp_${userId}_password123';
+    
+    try {
+      // Try to sign in first
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: dummyPassword,
+      );
+      developer.log('✅ Firebase Auth email sign-in successful');
+    } catch (signInError) {
+      // If sign-in fails, try to create account
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: dummyPassword,
+      );
+      developer.log('✅ Firebase Auth account created: ${credential.user?.uid}');
+      
+      // Update display name
+      if (userData['name'] != null) {
+        await credential.user?.updateDisplayName(userData['name'].toString());
+      }
+    }
+    
+    // Update Firestore with Firebase UID
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    await _updateFirestoreUserDocument(userData, firebaseUser?.uid);
+    
+  } catch (e) {
+    developer.log('❌ Email/password auth failed: $e');
+    throw e;
+  }
+}
+
+Future<void> _updateFirestoreUserDocument(Map<String, dynamic> userData, String? firebaseUID) async {
+  try {
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    final docData = {
+      'userId': userData['_id'],
+      '_id': userData['_id'],
+      'id': userData['_id'],
+      'uid': userData['_id'],
+      'authMethod': firebaseUID != null ? 'firebase_auth' : 'custom_auth',
+      'lastUpdate': FieldValue.serverTimestamp(),
+      'name': userData['name'] ?? 'User',
+      'email': userData['email'] ?? '',
+      'phone': userData['phone'] ?? '',
+      'dob': userData['dob'] ?? '',
+      'photoURL': userData['photoURL'] ?? '',
+      'provider': userData['provider'] ?? 'email',
+      'isOnline': true,
+      'lastSeen': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'nameSearchable': (userData['name'] ?? '').toLowerCase(),
+      'emailSearchable': (userData['email'] ?? '').toLowerCase(),
+      'notificationsEnabled': true,
+    };
+    
+    // Add Firebase UID if available
+    if (firebaseUID != null) {
+      docData['firebaseUID'] = firebaseUID;
+    }
+    
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userData['_id'])
+        .set(docData, SetOptions(merge: true));
+    
+    developer.log('✅ User document updated in Firestore with follow status support');
+  } catch (e) {
+    developer.log('❌ Error updating Firestore user document: $e');
+    throw e;
+  }
+}
+
+Future<String?> _getCustomTokenFromBackend() async {
+  try {
+    developer.log('🔑 Attempting to get custom token from backend...');
+    
+    final currentUser = AppData().currentUser;
+    if (currentUser == null || currentUser['_id'] == null) {
+      return null;
+    }
+    
+    final url = Uri.parse('http://182.93.94.210:3066/api/v1/firebase-custom-token');
+    final body = jsonEncode({'userId': currentUser['_id']});
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${AppData().authToken}',
+    };
+    
+    final response = await http.post(url, headers: headers, body: body)
+        .timeout(const Duration(seconds: 5));
+    
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      final customToken = responseData['customToken'];
+      developer.log('✅ Custom token received from backend');
+      return customToken;
+    }
+    
+    developer.log('⚠️ Custom token not available: ${response.statusCode}');
+    return null;
+    
+  } catch (e) {
+    developer.log('⚠️ Error getting custom token: $e');
+    return null;
+  }
+}
+
 
 Future<void> _forceFreshFCMToken() async {
   try {
@@ -641,29 +1069,34 @@ Future<void> _initializeAndSaveFcmToken() async {
 // Initialize chat controller with fresh data
 Future<void> _initializeChatController() async {
   try {
-    developer.log('💬 Initializing fresh chat controller...');
+    developer.log('💬 Initializing chat controller...');
     
-    // Wait a moment for data to settle
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Wait for Firebase Auth to be fully ready
+    await Future.delayed(const Duration(milliseconds: 1000));
     
-    // Create fresh chat controller
+    // Import and initialize the chat controller
     if (!Get.isRegistered<FireChatController>()) {
       Get.put(FireChatController(), permanent: true);
+      developer.log('💬 Chat controller registered');
     }
     
     final chatController = Get.find<FireChatController>();
     
-    // Initialize with current user data
+    // Initialize user data
     chatController.initializeUser();
+    developer.log('💬 Chat controller user initialized');
     
-    // Trigger initial data load
-    await Future.delayed(const Duration(milliseconds: 1000));
-    await chatController.loadAllUsersWithSmartCaching();
-    await chatController.loadUserChats();
+    // Load users and chats
+    await Future.wait([
+      chatController.loadAllUsersWithSmartCaching(),
+      chatController.loadUserChats(),
+    ]);
     
-    developer.log('✅ Chat controller initialized successfully');
+    developer.log('✅ Chat controller fully initialized');
+    
   } catch (e) {
     developer.log('❌ Error initializing chat controller: $e');
+    // Don't throw - let the app continue even if chat has issues
   }
 }
 

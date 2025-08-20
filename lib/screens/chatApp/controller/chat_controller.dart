@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -83,12 +84,34 @@ class FireChatController extends GetxController {
   _startGlobalMessageListener(); // This also needs to use badge handlers
   _initializeNotificationService();
   _loadRecentUsersFromStorage();
-
+setupFirebaseAuthListener();
   // IMPORTANT: Initialize badge system
   chatBadges.clear();
   totalUnreadBadges.value = 0;
   developer.log('✅ Badge system initialized');
+   WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initializeData();
+  });
   }
+
+  Future<void> _initializeData() async {
+  try {
+    developer.log('🚀 Initializing data on ready...');
+    
+    // Only load if not already loaded
+    if (allUsers.isEmpty && !isLoadingUsers.value) {
+      await loadAllUsersWithSmartCaching();
+    }
+    
+    // Load chats after users
+    if (chatList.isEmpty && !isLoadingChats.value) {
+      await loadUserChatsWithEnhancedProfiles();
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error in initialization: $e');
+  }
+}
 
   // Add these methods to your FireChatController class
 
@@ -982,56 +1005,105 @@ Future<void> markMessagesAsRead(String chatId) async {
   }
 
   Future<void> loadAllUsersWithFollowFilter() async {
-    if (isLoadingUsers.value) return;
+  if (isLoadingUsers.value) return;
 
-    isLoadingUsers.value = true;
-    try {
-      developer.log('📱 Loading users with follow status filter...');
-
-      // Get filtered users from API
-      final filteredUsers =
-          await FirebaseService.getFilteredUsersWithFollowStatus();
-
-      // Filter out current user
-      final currentUserId = getCurrentUserId();
-      final finalUsers =
-          filteredUsers.where((user) {
-            final userId =
-                user['userId']?.toString() ??
-                user['_id']?.toString() ??
-                user['id']?.toString() ??
-                '';
-            return userId != currentUserId;
-          }).toList();
-
-      // Update cache and reactive list
-      for (final user in finalUsers) {
-        final userId =
-            user['userId']?.toString() ??
-            user['_id']?.toString() ??
-            user['id']?.toString() ??
-            '';
-        if (userId.isNotEmpty) {
-          userCache[userId] = user;
+  isLoadingUsers.value = true;
+  isLoadingFollowStatus.value = true;
+  loadingStatusText.value = 'Loading mutual followers...';
+  
+  try {
+    developer.log('📱 Loading users with follow status filter...');
+    
+    // Step 1: Get all users from Firestore first
+    final usersSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .orderBy('name')
+        .get()
+        .timeout(const Duration(seconds: 30));
+    
+    developer.log('📱 Got ${usersSnapshot.docs.length} users from Firestore');
+    loadingStatusText.value = 'Checking follow status...';
+    
+    // Step 2: Get all emails for batch follow status check
+    final allUsers = <Map<String, dynamic>>[];
+    final emails = <String>[];
+    
+    for (var doc in usersSnapshot.docs) {
+      if (doc.id != currentUserId.value) {
+        final userData = Map<String, dynamic>.from(doc.data());
+        userData['id'] = doc.id;
+        userData['userId'] = doc.id;
+        userData['_id'] = doc.id;
+        
+        allUsers.add(userData);
+        
+        final email = userData['email']?.toString();
+        if (email != null && email.isNotEmpty) {
+          emails.add(email);
         }
       }
-
-      allUsers.assignAll(finalUsers);
-
-      developer.log('✅ Loaded ${finalUsers.length} mutual followers');
-    } catch (e) {
-      developer.log('❌ Error loading users with follow filter: $e');
-      // Get.snackbar(
-      //   'Error',
-      //   'Failed to load users. Please try again.',
-      //   snackPosition: SnackPosition.BOTTOM,
-      //   backgroundColor: Colors.red.withOpacity(0.8),
-      //   colorText: Colors.white,
-      // );
-    } finally {
-      isLoadingUsers.value = false;
     }
+    
+    // Step 3: Batch check follow statuses
+    developer.log('👥 Batch checking follow status for ${emails.length} users...');
+    final followResults = await followStatusManager.batchCheckFollowStatus(emails);
+    
+    // Step 4: Filter and enhance users with mutual follow status
+    final mutualFollowers = <Map<String, dynamic>>[];
+    
+    for (final user in allUsers) {
+      final email = user['email']?.toString();
+      if (email != null) {
+        final followStatus = followResults[email];
+        if (followStatus != null && followStatus['isMutualFollow'] == true) {
+          // Enhance user data with API info
+          final apiUserData = followStatus['user'] as Map<String, dynamic>;
+          final enhancedUser = {
+            ...user, // Keep Firestore data (for chat functionality)
+            'name': apiUserData['name'], // Use API name
+            'picture': apiUserData['picture'], // Use API picture
+            'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}', // Full picture URL
+            'isFollowing': followStatus['isFollowing'],
+            'isFollowedBy': followStatus['isFollowedBy'],
+            'isMutualFollow': true,
+          };
+          
+          mutualFollowers.add(enhancedUser);
+          
+          // Update cache
+          userCache[user['_id']] = enhancedUser;
+        }
+      }
+    }
+    
+    // Step 5: Update users list
+    allUsers.assignAll(mutualFollowers);
+    _usersInitialized.value = true; // Mark as initialized to prevent Firestore overrides
+    
+    developer.log('✅ Loaded ${mutualFollowers.length} mutual followers');
+    loadingStatusText.value = 'Complete!';
+    
+  } catch (e) {
+    developer.log('❌ Error loading users with follow filter: $e');
+    loadingStatusText.value = 'Error loading users';
+    
+    // Fallback: Load from Firestore without follow filter
+    try {
+      await loadAllUsersWithSmartCaching();
+    } catch (fallbackError) {
+      developer.log('❌ Fallback loading also failed: $fallbackError');
+    }
+  } finally {
+    isLoadingUsers.value = false;
+    isLoadingFollowStatus.value = false;
+    
+    // Clear loading text after delay
+    Future.delayed(const Duration(seconds: 1), () {
+      loadingStatusText.value = '';
+    });
   }
+}
+
 
   // NEW: Enhanced search users with follow status
   Future<void> searchUsersWithFollowFilter(String query) async {
@@ -1090,82 +1162,211 @@ Future<void> markMessagesAsRead(String chatId) async {
 
   // NEW: Enhanced load user chats with API profile data
   Future<void> loadUserChatsWithEnhancedProfiles() async {
-    if (isLoadingChats.value || currentUserId.value.isEmpty) return;
+  if (isLoadingChats.value || currentUserId.value.isEmpty) return;
 
-    isLoadingChats.value = true;
-    try {
-      developer.log('💬 Loading chats with enhanced profiles...');
+  isLoadingChats.value = true;
+  try {
+    developer.log('💬 Loading chats with enhanced profiles and follow validation...');
 
-      FirebaseService.getUserChats(currentUserId.value).listen((
-        snapshot,
-      ) async {
-        final chats = <Map<String, dynamic>>[];
+    FirebaseService.getUserChats(currentUserId.value).listen((snapshot) async {
+      final chats = <Map<String, dynamic>>[];
 
-        for (var doc in snapshot.docs) {
-          final chatData = Map<String, dynamic>.from(
-            doc.data() as Map<String, dynamic>,
-          );
-          chatData['id'] = doc.id;
+      for (var doc in snapshot.docs) {
+        final chatData = Map<String, dynamic>.from(
+          doc.data() as Map<String, dynamic>,
+        );
+        chatData['id'] = doc.id;
 
-          final participants = List<String>.from(
-            chatData['participants'] ?? [],
-          );
-          final otherUserId = participants.firstWhere(
-            (id) => id != currentUserId.value,
-            orElse: () => '',
-          );
+        final participants = List<String>.from(chatData['participants'] ?? []);
+        final otherUserId = participants.firstWhere(
+          (id) => id != currentUserId.value,
+          orElse: () => '',
+        );
 
-          if (otherUserId.isNotEmpty) {
-            // Get enhanced user profile with API data
-            Map<String, dynamic>? otherUser =
-                await FirebaseService.getEnhancedUserProfile(otherUserId);
-
-            // Only include chats with mutual followers
-            if (otherUser != null && otherUser['isMutualFollow'] == true) {
-              // Ensure proper ID mapping
-              otherUser['id'] = otherUserId;
-              otherUser['userId'] = otherUserId;
-              if (!otherUser.containsKey('_id')) {
+        if (otherUserId.isNotEmpty) {
+          // Get user from cache first (which includes follow status)
+          Map<String, dynamic>? otherUser = userCache[otherUserId];
+          
+          if (otherUser == null) {
+            // Get from Firestore if not in cache
+            try {
+              final userDoc = await FirebaseService.getUserById(otherUserId);
+              if (userDoc.exists) {
+                otherUser = Map<String, dynamic>.from(
+                  userDoc.data() as Map<String, dynamic>,
+                );
+                otherUser['id'] = otherUserId;
+                otherUser['userId'] = otherUserId;
                 otherUser['_id'] = otherUserId;
+                
+                // Check follow status for this user
+                final email = otherUser['email']?.toString();
+                if (email != null) {
+                  final followStatus = await followStatusManager.checkFollowStatus(email);
+                  if (followStatus != null && followStatus['isMutualFollow'] == true) {
+                    // Enhance with API data
+                    final apiUserData = followStatus['user'] as Map<String, dynamic>;
+                    otherUser = {
+                      ...otherUser,
+                      'name': apiUserData['name'],
+                      'picture': apiUserData['picture'],
+                      'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}',
+                      'isMutualFollow': true,
+                    };
+                    userCache[otherUserId] = otherUser;
+                  } else {
+                    // Not a mutual follower, skip this chat
+                    continue;
+                  }
+                }
               }
-
-              chatData['otherUser'] = otherUser;
-              chats.add(chatData);
-
-              final chatId = chatData['chatId'] ?? '';
-              _updateUnreadCount(chatId, otherUserId);
-
-              if (!badgeCounts.containsKey(chatId)) {
-                badgeCounts[chatId] = 0.obs;
-              }
-
-              // Update user cache
-              userCache[otherUserId] = otherUser;
+            } catch (e) {
+              developer.log('Error loading user $otherUserId: $e');
+              continue;
             }
           }
+
+          // Only include chats with mutual followers
+          if (otherUser != null && (otherUser['isMutualFollow'] == true || isMutualFollower(otherUser))) {
+            chatData['otherUser'] = otherUser;
+            chats.add(chatData);
+
+            final chatId = chatData['chatId'] ?? '';
+            
+            // Initialize badge system for this chat
+            initializeBadgeForChat(chatId);
+            _updateUnreadCountWithBadge(chatId, otherUserId);
+          }
         }
+      }
 
-        // Sort chats by last message time (newest first)
-        chats.sort((a, b) {
-          final aTime = a['lastMessageTime'] as Timestamp?;
-          final bTime = b['lastMessageTime'] as Timestamp?;
+      // Sort chats by last message time (newest first)
+      chats.sort((a, b) {
+        final aTime = a['lastMessageTime'] as Timestamp?;
+        final bTime = b['lastMessageTime'] as Timestamp?;
 
-          if (aTime == null && bTime == null) return 0;
-          if (aTime == null) return 1;
-          if (bTime == null) return -1;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
 
-          return bTime.compareTo(aTime);
-        });
-
-        chatList.assignAll(chats);
-        isLoadingChats.value = false;
-        developer.log('✅ Loaded ${chats.length} chats with mutual followers');
+        return bTime.compareTo(aTime);
       });
-    } catch (e) {
+
+      chatList.assignAll(chats);
       isLoadingChats.value = false;
-      developer.log('❌ Error loading chats with enhanced profiles: $e');
-    }
+      
+      // Update total badges
+      updateTotalUnreadBadges();
+      
+      developer.log('✅ Loaded ${chats.length} chats (mutual followers only)');
+    });
+  } catch (e) {
+    isLoadingChats.value = false;
+    developer.log('❌ Error loading chats with enhanced profiles: $e');
   }
+}
+
+
+Future<void> searchUsersWithFollowValidation(String query) async {
+  if (query.trim().isEmpty) {
+    searchResults.clear();
+    return;
+  }
+
+  isSearching.value = true;
+  try {
+    developer.log('🔍 Searching users with follow validation: $query');
+
+    // Search in cached mutual followers first
+    final cachedResults = _searchInMutualFollowers(query);
+    
+    if (cachedResults.isNotEmpty) {
+      searchResults.assignAll(cachedResults);
+      developer.log('✅ Found ${cachedResults.length} mutual followers in cache');
+    } else {
+      // Perform broader search and validate follow status
+      await _performSearchWithFollowCheck(query);
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error searching with follow validation: $e');
+    Get.snackbar(
+      'Search Error',
+      'Failed to search users. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+    );
+  } finally {
+    isSearching.value = false;
+  }
+}
+
+List<Map<String, dynamic>> _searchInMutualFollowers(String query) {
+  final queryLower = query.toLowerCase();
+  return allUsers.where((user) {
+    final name = user['name']?.toString().toLowerCase() ?? '';
+    final email = user['email']?.toString().toLowerCase() ?? '';
+    return (name.contains(queryLower) || email.contains(queryLower)) && 
+           (user['isMutualFollow'] == true);
+  }).toList();
+}
+
+// Perform search with follow status check
+Future<void> _performSearchWithFollowCheck(String query) async {
+  try {
+    final results = await FirebaseService.searchUsers(query);
+    final users = <Map<String, dynamic>>[];
+    final emails = <String>[];
+
+    for (var doc in results.docs) {
+      if (doc.id != currentUserId.value) {
+        final userData = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
+        userData['id'] = doc.id;
+        userData['userId'] = doc.id;
+        userData['_id'] = doc.id;
+        
+        users.add(userData);
+        
+        final email = userData['email']?.toString();
+        if (email != null && email.isNotEmpty) {
+          emails.add(email);
+        }
+      }
+    }
+
+    // Batch check follow status
+    if (emails.isNotEmpty) {
+      final followResults = await followStatusManager.batchCheckFollowStatus(emails);
+      
+      final mutualFollowers = <Map<String, dynamic>>[];
+      for (final user in users) {
+        final email = user['email']?.toString();
+        if (email != null) {
+          final followStatus = followResults[email];
+          if (followStatus != null && followStatus['isMutualFollow'] == true) {
+            // Enhance with API data
+            final apiUserData = followStatus['user'] as Map<String, dynamic>;
+            final enhancedUser = {
+              ...user,
+              'name': apiUserData['name'],
+              'picture': apiUserData['picture'],
+              'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}',
+              'isMutualFollow': true,
+            };
+            mutualFollowers.add(enhancedUser);
+          }
+        }
+      }
+      
+      searchResults.assignAll(mutualFollowers);
+      developer.log('✅ Search found ${mutualFollowers.length} mutual followers');
+    }
+  } catch (e) {
+    developer.log('❌ Error in search with follow check: $e');
+  }
+}
+
 
   // NEW: Get profile picture URL with fallback
   String? getProfilePictureUrl(Map<String, dynamic>? user) {
@@ -1281,38 +1482,30 @@ void _clearAllReactiveVariables() {
   }
 
   // ENHANCED: Initialize user with proper stream management
-  void initializeUser() {
-    try {
-      final userData = AppData().currentUser;
-      if (userData != null && userData.isNotEmpty) {
-        currentUser.value = Map<String, dynamic>.from(userData);
-        currentUserId.value =
-            userData['_id']?.toString() ??
-            userData['uid']?.toString() ??
-            userData['userId']?.toString() ??
-            '';
-        developer.log(
-          'ChatController initialized with user: ${currentUserId.value}',
-        );
-
-        if (currentUserId.value.isNotEmpty) {
-          updateUserStatus(true);
-
-          _verifyUserInFirestore().then((_) {
-            _setupManagedStreams(); // Use managed streams
-          });
-        }
-      } else {
-        developer.log('No current user data available');
-        currentUser.value = null;
-        currentUserId.value = '';
+  Future<void> initializeUser() async {
+  try {
+    developer.log('👤 Initializing chat controller user...');
+    
+    final userData = AppData().currentUser;
+    if (userData != null) {
+      currentUser.value = userData;
+      currentUserId.value = userData['_id']?.toString() ?? 
+                           userData['uid']?.toString() ?? '';
+      
+      developer.log('👤 Current user set: ${currentUserId.value}');
+      
+      // Update user status to online
+      if (currentUserId.value.isNotEmpty) {
+        await updateUserStatus(true);
+        developer.log('👤 User status updated to online');
       }
-    } catch (e) {
-      developer.log('Error initializing user: $e');
-      currentUser.value = null;
-      currentUserId.value = '';
+    } else {
+      developer.log('⚠️ No user data found in AppData');
     }
+  } catch (e) {
+    developer.log('❌ Error initializing user: $e');
   }
+}
 
   // Setup managed streams with proper cleanup
   void _setupManagedStreams() {
@@ -2349,39 +2542,56 @@ void _clearAllReactiveVariables() {
 
   @override
   void navigateToChat(Map<String, dynamic> user) async {
-    try {
-      // Quick fix: Always do a fresh API check if cache check fails
-      bool canChat = isMutualFollower(user);
+  try {
+    // Check if user is mutual follower
+    bool canChat = isMutualFollower(user);
 
-      if (!canChat) {
-        final email = user['email']?.toString();
-        if (email != null) {
-          developer.log('🔄 Cache check failed, trying fresh API check...');
-          final freshStatus = await followStatusManager.checkFollowStatus(
-            email,
-          );
-          canChat = freshStatus?['isMutualFollow'] == true;
+    if (!canChat) {
+      // Try fresh API check if cache check fails
+      final email = user['email']?.toString();
+      if (email != null) {
+        developer.log('🔄 Verifying follow status with fresh API check...');
+        final freshStatus = await followStatusManager.checkFollowStatus(email);
+        canChat = freshStatus?['isMutualFollow'] == true;
+        
+        if (canChat) {
+          // Update user data with fresh API data
+          final apiUserData = freshStatus!['user'] as Map<String, dynamic>;
+          user['name'] = apiUserData['name'];
+          user['picture'] = apiUserData['picture'];
+          user['apiPictureUrl'] = 'http://182.93.94.210:3066${apiUserData['picture']}';
+          user['isMutualFollow'] = true;
         }
       }
-
-      if (!canChat) {
-        Get.snackbar(
-          'Access Denied',
-          'You can only chat with users you mutually follow',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange.withOpacity(0.8),
-          colorText: Colors.white,
-          duration: const Duration(milliseconds: 800),
-        );
-        return;
-      }
-
-      navigateToChatEnhanced(user);
-    } catch (e) {
-      developer.log('❌ Error in navigation: $e');
-      // Show error but don't crash
     }
+
+    if (!canChat) {
+      Get.snackbar(
+        'Cannot Chat',
+        'You can only chat with users you mutually follow',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        icon: const Icon(Icons.people_outline, color: Colors.white),
+      );
+      return;
+    }
+
+    // Proceed with navigation
+    navigateToChatEnhanced(user);
+    
+  } catch (e) {
+    developer.log('❌ Error in navigation with follow validation: $e');
+    Get.snackbar(
+      'Error',
+      'Unable to verify user status. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+    );
   }
+}
 
   void setTyping(bool typing) {
     isTyping.value = typing;
@@ -2418,122 +2628,184 @@ void _clearAllReactiveVariables() {
       return 'Just now';
     }
   }
-
-  Future<void> loadAllUsersWithSmartCaching() async {
-    if (isLoadingUsers.value) return;
-
-    // IMPORTANT: If users are already loaded and filtered, don't reload
-    if (_usersInitialized.value && allUsers.isNotEmpty) {
-      developer.log('✅ Users already loaded and filtered, skipping reload');
-      return;
+  void setupFirebaseAuthListener() {
+  FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    if (user != null) {
+      developer.log('🔥 Firebase Auth state changed: ${user.uid}');
+      // Reload users when auth state changes
+      if (allUsers.isEmpty) {
+        loadAllUsersWithSmartCaching();
+      }
+    } else {
+      developer.log('🔥 Firebase Auth signed out');
     }
+  });
+}
 
+Future<void> loadAllUsersWithSmartCaching() async {
+  try {
+    developer.log('📱 Loading all users with smart caching and follow status filtering...');
     isLoadingUsers.value = true;
     isLoadingFollowStatus.value = true;
-    loadingStatusText.value = 'Loading users...';
-
-    try {
-      developer.log('📱 Smart loading users with caching...');
-
-      // Step 1: Get all users from Firestore first
-      final usersSnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
-      final allFirestoreUsers = <Map<String, dynamic>>[];
-
-      for (var doc in usersSnapshot.docs) {
+    loadingStatusText.value = 'Loading mutual followers...';
+    
+    // Check Firebase Auth status
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) {
+      developer.log('⚠️ No Firebase Auth user - some features may be limited');
+    } else {
+      developer.log('✅ Firebase Auth user: ${firebaseUser.uid}');
+    }
+    
+    // Step 1: Load users from Firestore
+    final usersSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .orderBy('name')
+        .get()
+        .timeout(const Duration(seconds: 30));
+    
+    developer.log('📱 Firestore query completed: ${usersSnapshot.docs.length} users found');
+    loadingStatusText.value = 'Checking follow status...';
+    
+    // Step 2: Prepare user list and emails for follow status check
+    final firestoreUsers = <Map<String, dynamic>>[];
+    final emails = <String>[];
+    
+    for (var doc in usersSnapshot.docs) {
+      if (doc.id != currentUserId.value) {
         final userData = Map<String, dynamic>.from(doc.data());
         userData['id'] = doc.id;
         userData['userId'] = doc.id;
         userData['_id'] = doc.id;
-        allFirestoreUsers.add(userData);
-      }
-
-      developer.log('📱 Got ${allFirestoreUsers.length} users from Firestore');
-
-      // Step 2: Show cached mutual followers immediately (if any)
-      loadingStatusText.value = 'Checking follow status...';
-      final cachedMutualFollowers = followStatusManager.filterMutualFollowers(
-        allFirestoreUsers,
-      );
-
-      if (cachedMutualFollowers.isNotEmpty) {
-        // Filter out current user
-        final currentUserId = getCurrentUserId();
-        final displayUsers =
-            cachedMutualFollowers.where((user) {
-              final userId = user['userId']?.toString() ?? '';
-              return userId != currentUserId;
-            }).toList();
-
-        // Show cached data immediately
-        allUsers.assignAll(displayUsers);
-        _usersInitialized.value = true; // Mark as initialized
-        developer.log(
-          '✅ Showing ${displayUsers.length} cached mutual followers',
-        );
-
-        // Update cache
-        for (final user in displayUsers) {
-          final userId = user['userId']?.toString() ?? '';
-          if (userId.isNotEmpty) {
-            userCache[userId] = user;
-          }
+        
+        firestoreUsers.add(userData);
+        
+        final email = userData['email']?.toString();
+        if (email != null && email.isNotEmpty) {
+          emails.add(email);
         }
       }
-
-      // Step 3: Get emails that need follow status checking
-      final emailsToCheck =
-          allFirestoreUsers
-              .map((user) => user['email']?.toString())
-              .where((email) => email != null && email.isNotEmpty)
-              .cast<String>()
-              .toList();
-
-      // Step 4: Batch check follow statuses for uncached users
-      if (emailsToCheck.isNotEmpty) {
-        loadingStatusText.value = 'Updating follow status...';
-
-        await followStatusManager.batchCheckFollowStatus(emailsToCheck);
-
-        // Step 5: Update with fresh data
-        final updatedMutualFollowers = followStatusManager
-            .filterMutualFollowers(allFirestoreUsers);
-        final currentUserId = getCurrentUserId();
-        final finalUsers =
-            updatedMutualFollowers.where((user) {
-              final userId = user['userId']?.toString() ?? '';
-              return userId != currentUserId;
-            }).toList();
-
-        // Update reactive list
-        allUsers.assignAll(finalUsers);
-        _usersInitialized.value = true; // Mark as initialized
-
-        // Update cache
-        for (final user in finalUsers) {
-          final userId = user['userId']?.toString() ?? '';
-          if (userId.isNotEmpty) {
-            userCache[userId] = user;
-          }
+    }
+    
+    // Step 3: Batch check follow statuses
+    developer.log('👥 Batch checking follow status for ${emails.length} users...');
+    final followResults = await followStatusManager.batchCheckFollowStatus(emails);
+    
+    // Step 4: Filter and enhance users with mutual follow status
+    final mutualFollowers = <Map<String, dynamic>>[];
+    
+    for (final user in firestoreUsers) {
+      final email = user['email']?.toString();
+      if (email != null) {
+        final followStatus = followResults[email];
+        if (followStatus != null && followStatus['isMutualFollow'] == true) {
+          // Enhance user data with API info
+          final apiUserData = followStatus['user'] as Map<String, dynamic>;
+          final enhancedUser = {
+            ...user, // Keep Firestore data (for chat functionality)
+            'name': apiUserData['name'] ?? user['name'], // Use API name if available
+            'picture': apiUserData['picture'],
+            'apiPictureUrl': apiUserData['picture'] != null 
+                ? 'http://182.93.94.210:3066${apiUserData['picture']}' 
+                : null,
+            'isFollowing': followStatus['isFollowing'],
+            'isFollowedBy': followStatus['isFollowedBy'],
+            'isMutualFollow': true,
+          };
+          
+          mutualFollowers.add(enhancedUser);
+          
+          // Update cache
+          userCache[user['_id']] = enhancedUser;
         }
-
-        developer.log('✅ Updated with ${finalUsers.length} mutual followers');
       }
-    } catch (e) {
-      developer.log('❌ Error in smart loading: $e');
+    }
+    
+    // Step 5: CRITICAL FIX - Update users list properly
+    developer.log('📊 Before assignment - allUsers length: ${allUsers.length}');
+    
+    // Clear and reassign to trigger UI update
+    allUsers.clear();
+    allUsers.addAll(mutualFollowers);
+    
+    // Force refresh the reactive list
+    allUsers.refresh();
+    
+    _usersInitialized.value = true; // Mark as initialized
+    
+    developer.log('✅ After assignment - allUsers length: ${allUsers.length}');
+    developer.log('✅ Loaded ${mutualFollowers.length} mutual followers (filtered from ${firestoreUsers.length} total users)');
+    loadingStatusText.value = 'Complete!';
+    
+    // Debug: Log first few users to verify data
+    if (allUsers.isNotEmpty) {
+      developer.log('🔍 Sample user data:');
+      for (int i = 0; i < (allUsers.length > 3 ? 3 : allUsers.length); i++) {
+        developer.log('User ${i + 1}: ${allUsers[i]['name']} - ${allUsers[i]['email']}');
+      }
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error loading users with smart caching and follow filter: $e');
+    loadingStatusText.value = 'Error loading users';
+    
+    // Fallback: Try to load without follow filter (emergency fallback)
+    try {
+      await _loadUsersWithoutFollowFilter();
+    } catch (fallbackError) {
+      developer.log('❌ Fallback loading also failed: $fallbackError');
+      
+      // Show user-friendly error
       // Get.snackbar(
-      //   'Error',
-      //   'Failed to load users. Please try again.',
+      //   'Loading Error', 
+      //   'Failed to load users. Please check your connection and try again.',
       //   snackPosition: SnackPosition.BOTTOM,
       //   backgroundColor: Colors.red.withOpacity(0.8),
       //   colorText: Colors.white,
+      //   duration: const Duration(seconds: 3),
       // );
-    } finally {
-      isLoadingUsers.value = false;
-      isLoadingFollowStatus.value = false;
-      loadingStatusText.value = '';
     }
+  } finally {
+    isLoadingUsers.value = false;
+    isLoadingFollowStatus.value = false;
+    
+    // Clear loading text after delay
+    Future.delayed(const Duration(seconds: 1), () {
+      loadingStatusText.value = '';
+    });
   }
+}
+
+Future<void> _loadUsersWithoutFollowFilter() async {
+  try {
+    developer.log('⚠️ Loading users without follow filter (emergency fallback)...');
+    
+    final usersSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .orderBy('name')
+        .get()
+        .timeout(const Duration(seconds: 15));
+    
+    final users = <Map<String, dynamic>>[];
+    for (var doc in usersSnapshot.docs) {
+      if (doc.id != currentUserId.value) {
+        final userData = Map<String, dynamic>.from(doc.data());
+        userData['id'] = doc.id;
+        userData['userId'] = doc.id;
+        userData['_id'] = doc.id;
+        
+        users.add(userData);
+        userCache[doc.id] = userData;
+      }
+    }
+    
+    allUsers.assignAll(users);
+    developer.log('⚠️ Emergency fallback: Loaded ${users.length} users without follow filtering');
+  } catch (e) {
+    developer.log('❌ Emergency fallback failed: $e');
+    throw e;
+  }
+}
 
   // ENHANCED: Fast search with cached data
   Future<void> searchUsersWithSmartCaching(String query) async {
@@ -2762,32 +3034,77 @@ void _clearAllReactiveVariables() {
 
   @override
   Future<void> searchUsers(String query) async {
-    await searchUsersWithSmartCaching(query);
+  if (query.trim().isEmpty) {
+    searchResults.clear();
+    return;
   }
+
+  isSearching.value = true;
+  try {
+    developer.log('🔍 Searching users with follow status validation: $query');
+
+    // First, search in cached mutual followers
+    final cachedResults = _searchInMutualFollowers(query);
+    
+    if (cachedResults.isNotEmpty) {
+      searchResults.assignAll(cachedResults);
+      developer.log('✅ Found ${cachedResults.length} mutual followers in cache');
+    } else {
+      // Perform broader search and validate follow status
+      await _performSearchWithFollowCheck(query);
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error searching with follow validation: $e');
+    Get.snackbar(
+      'Search Error',
+      'Failed to search users. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+    );
+  } finally {
+    isSearching.value = false;
+  }
+}
+
+// Search in cached mutual followers
+Future<void> refreshUsersWithFollowStatus() async {
+  try {
+    developer.log('🔄 Refreshing users with follow status...');
+    
+    // Clear caches to force fresh data
+    userCache.clear();
+    followStatusManager.clearCache();
+    
+    // Reset initialization flag to allow reload
+    _usersInitialized.value = false;
+    
+    // Clear current list to show loading state
+    allUsers.clear();
+    
+    // Reload with fresh data
+    await loadAllUsersWithSmartCaching();
+    
+    developer.log('✅ Users refreshed with follow status');
+  } catch (e) {
+    developer.log('❌ Error refreshing users with follow status: $e');
+    
+    Get.snackbar(
+      'Refresh Failed',
+      'Unable to refresh users. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+    );
+  }
+}
 
   // Enhanced refresh with cache clearing
   @override
   Future<void> refreshUsersAndCache() async {
-    try {
-      developer.log('🔄 Refreshing users and clearing cache...');
-
-      // Reset initialization flag to allow fresh loading
-      _usersInitialized.value = false;
-
-      // Clear caches
-      userCache.clear();
-      allUsers.clear();
-      searchResults.clear();
-      followStatusManager.clearCache();
-
-      // Reload with fresh data
-      await loadAllUsersWithSmartCaching();
-
-      developer.log('✅ Refresh completed');
-    } catch (e) {
-      developer.log('❌ Error refreshing: $e');
-    }
-  }
+  await refreshUsersWithFollowStatus();
+}
 
   // NEW: Initialize with preloading
   Future<void> initializeWithPreloading() async {
@@ -2807,9 +3124,16 @@ void _clearAllReactiveVariables() {
   // Check if user is mutual follower (fast cached check)
   @override
   bool isMutualFollower(Map<String, dynamic>? user) {
-    if (user == null) return false;
-    return followStatusManager.isMutualFollower(user);
+  if (user == null) return false;
+  
+  // First check if user data already has follow status
+  if (user['isMutualFollow'] == true) {
+    return true;
   }
+  
+  // Fallback to followStatusManager
+  return followStatusManager.isMutualFollower(user);
+}
 
   String formatMessageTime(Timestamp? timestamp) {
     if (timestamp == null) return '';

@@ -218,151 +218,171 @@ class AddToChatScreen extends GetView<FireChatController> {
     });
   }
 
-  Widget _buildUserCard(Map<String, dynamic> user, int index) {
-    final isOnline = user['isOnline'] ?? false;
-    final lastSeen = user['lastSeen'];
-    final userName = user['name']?.toString() ?? 'Unknown User';
-    final userEmail = user['email']?.toString() ?? '';
-    final userPhoto = user['photoURL']?.toString();
-    
-    // Check if user is already in chat list
-    final isInChatList = controller.chatList.any((chat) {
-      final otherUser = chat['otherUser'] as Map<String, dynamic>?;
-      return otherUser?['userId'] == user['userId'] || 
-             otherUser?['_id'] == user['_id'] || 
-             otherUser?['id'] == user['id'];
-    });
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 300 + (index * 50)),
-      curve: Curves.elasticOut,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _handleUserSelection(user, isInChatList),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isInChatList 
-                        ? const Color.fromRGBO(244, 135, 6, 0.1)
-                        : Get.theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: isInChatList
-                        ? Border.all(
-                            color: const Color.fromRGBO(244, 135, 6, 0.3),
-                            width: 2,
-                          )
-                        : null,
-                    boxShadow: [
-                      BoxShadow(
-                        color: isInChatList
-                            ? const Color.fromRGBO(244, 135, 6, 0.1)
-                            : Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      _buildUserAvatar(user, isOnline),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    userName,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Get.theme.textTheme.bodyLarge?.color,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+ Widget _buildUserCard(Map<String, dynamic> user, int index) {
+  final isOnline = user['isOnline'] ?? false;
+  final isMutualFollow = user['isMutualFollow'] ?? false;
+  
+  final userId = user['userId']?.toString() ?? 
+                user['_id']?.toString() ?? 
+                user['id']?.toString() ?? '';
+  
+  final isRecentUser = controller.recentUsers.any((recentUser) {
+    final recentUserId = recentUser['userId']?.toString() ?? 
+                        recentUser['_id']?.toString() ?? 
+                        recentUser['id']?.toString() ?? '';
+    return recentUserId == userId;
+  });
+  
+  return TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0.0, end: 1.0),
+    duration: Duration(milliseconds: 300 + (index * 50)),
+    curve: Curves.elasticOut,
+    builder: (context, value, child) {
+      return Transform.scale(
+        scale: value,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => controller.navigateToChat(user),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Get.theme.cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  // Enhanced border for mutual followers
+                  border: isMutualFollow
+                      ? Border.all(
+                          color: const Color.fromRGBO(244, 135, 6, 0.3),
+                          width: 1,
+                        )
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: isMutualFollow
+                          ? const Color.fromRGBO(244, 135, 6, 0.1)
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    _buildUserAvatar(user, isOnline),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  user['name'] ?? 'Unknown User',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: Get.theme.textTheme.bodyLarge?.color,
                                   ),
                                 ),
-                                if (isInChatList)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromRGBO(244, 135, 6, 1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Text(
-                                      'In Chat',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              userEmail,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 14,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
+                              // Mutual follow indicator
+                              if (isMutualFollow)
                                 Container(
-                                  width: 8,
-                                  height: 8,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isOnline ? Colors.green : Colors.grey,
-                                    shape: BoxShape.circle,
+                                    color: const Color.fromRGBO(244, 135, 6, 1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.verified,
+                                        color: Colors.white,
+                                        size: 12,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'Mutual',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    isOnline
-                                        ? 'Online'
-                                        : 'Last seen ${controller.formatLastSeen(lastSeen)}',
+                              // Recent user indicator
+                              if (isRecentUser)
+                                Container(
+                                  margin: EdgeInsets.only(left: isMutualFollow ? 4 : 0),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'Recent',
                                     style: TextStyle(
-                                      color: isOnline ? Colors.green : Colors.grey,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isOnline
+                                ? 'Online'
+                                : 'Last seen ${controller.formatLastSeen(user['lastSeen'])}',
+                            style: TextStyle(
+                              color: isOnline ? Colors.green : Colors.grey,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      _buildActionButton(user, isInChatList),
-                    ],
-                  ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isMutualFollow
+                            ? const Color.fromRGBO(244, 135, 6, 1)
+                            : const Color.fromRGBO(244, 135, 6, 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isMutualFollow ? Icons.chat : Icons.chat_bubble_outline,
+                        color: isMutualFollow
+                            ? Colors.white
+                            : const Color.fromRGBO(244, 135, 6, 1),
+                        size: 20,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildUserAvatar(Map<String, dynamic> user, bool isOnline) {
   return EnhancedUserAvatar(

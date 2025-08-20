@@ -1,4 +1,4 @@
-// lib/services/webrtc_call_service.dart - FIXED VERSION
+// lib/services/webrtc_call_service.dart - ENHANCED VERSION WITH VIDEO FIX
 
 import 'dart:async';
 import 'dart:convert';
@@ -10,6 +10,7 @@ import 'package:innovator/screens/Call/Incoming_Call_screen.dart';
 import 'package:innovator/services/Firebase_Messaging.dart';
 import 'package:innovator/services/call_notification_service.dart';
 import 'package:innovator/App_data/App_data.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
 
 class WebRTCCallService extends GetxService {
@@ -20,6 +21,10 @@ class WebRTCCallService extends GetxService {
   webrtc.MediaStream? _localStream;
   webrtc.MediaStream? _remoteStream;
   
+  // Video renderers
+  webrtc.RTCVideoRenderer? _localRenderer;
+  webrtc.RTCVideoRenderer? _remoteRenderer;
+  
   // Firebase Firestore for signaling
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
@@ -29,6 +34,8 @@ class WebRTCCallService extends GetxService {
   final RxBool isAudioEnabled = true.obs;
   final RxBool isIncomingCall = false.obs;
   final RxBool isOutgoingCall = false.obs;
+  final RxBool isSpeakerOn = false.obs;
+  final RxBool isCameraFront = true.obs;
   final RxString callStatus = ''.obs;
   final RxString currentCallId = ''.obs;
   final RxMap<String, dynamic> currentCallData = <String, dynamic>{}.obs;
@@ -42,13 +49,18 @@ class WebRTCCallService extends GetxService {
   Stream<webrtc.MediaStream?> get localStream => _localStreamController.stream;
   Stream<webrtc.MediaStream?> get remoteStream => _remoteStreamController.stream;
   
-  // ICE servers (STUN/TURN) - Free Google STUN servers
+  // Video renderer getters
+  webrtc.RTCVideoRenderer? get localRenderer => _localRenderer;
+  webrtc.RTCVideoRenderer? get remoteRenderer => _remoteRenderer;
+  
+  // Enhanced ICE servers with multiple STUN/TURN servers
   final List<Map<String, String>> _iceServers = [
     {'urls': 'stun:stun.l.google.com:19302'},
     {'urls': 'stun:stun1.l.google.com:19302'},
     {'urls': 'stun:stun2.l.google.com:19302'},
     {'urls': 'stun:stun3.l.google.com:19302'},
     {'urls': 'stun:stun4.l.google.com:19302'},
+    // Add more TURN servers here if needed for production
   ];
   
   // Stream subscriptions
@@ -59,6 +71,7 @@ class WebRTCCallService extends GetxService {
   void onInit() {
     super.onInit();
     developer.log('🎥 WebRTC Call Service initialized');
+    _initializeVideoRenderers();
     _setupIncomingCallListener();
   }
   
@@ -69,7 +82,37 @@ class WebRTCCallService extends GetxService {
     _incomingCallSubscription?.cancel();
     _localStreamController.close();
     _remoteStreamController.close();
+    _disposeVideoRenderers();
     super.onClose();
+  }
+  
+  // FIXED: Initialize video renderers on service start
+  Future<void> _initializeVideoRenderers() async {
+    try {
+      developer.log('📹 Initializing video renderers...');
+      
+      _localRenderer = webrtc.RTCVideoRenderer();
+      _remoteRenderer = webrtc.RTCVideoRenderer();
+      
+      await _localRenderer!.initialize();
+      await _remoteRenderer!.initialize();
+      
+      developer.log('✅ Video renderers initialized successfully');
+    } catch (e) {
+      developer.log('❌ Error initializing video renderers: $e');
+    }
+  }
+  
+  void _disposeVideoRenderers() {
+    try {
+      _localRenderer?.dispose();
+      _remoteRenderer?.dispose();
+      _localRenderer = null;
+      _remoteRenderer = null;
+      developer.log('✅ Video renderers disposed');
+    } catch (e) {
+      developer.log('❌ Error disposing video renderers: $e');
+    }
   }
   
   // FIXED: Setup proper incoming call listener
@@ -141,7 +184,7 @@ class WebRTCCallService extends GetxService {
         () => IncomingCallScreen(callData: callData),
         transition: Transition.fadeIn,
         fullscreenDialog: true,
-        preventDuplicates: false, // Allow multiple call screens if needed
+        preventDuplicates: false,
       );
       
     } catch (e) {
@@ -159,7 +202,7 @@ class WebRTCCallService extends GetxService {
       // Use the Firebase notification service to show local notification
       final notificationService = Get.find<FirebaseNotificationService>();
       notificationService.sendCallNotification(
-        token: '', // Empty token for local notification
+        token: '',
         callId: callId,
         callerName: callerName,
         isVideoCall: isVideoCall,
@@ -172,7 +215,34 @@ class WebRTCCallService extends GetxService {
     }
   }
   
-  // Initialize WebRTC peer connection - FIXED VERSION
+  // ENHANCED: Request permissions before starting call
+  Future<bool> _requestPermissions({required bool isVideoCall}) async {
+    try {
+      developer.log('📱 Requesting call permissions...');
+      
+      List<Permission> permissions = [Permission.microphone];
+      if (isVideoCall) {
+        permissions.add(Permission.camera);
+      }
+      
+      Map<Permission, PermissionStatus> statuses = await permissions.request();
+      
+      bool allGranted = true;
+      for (var permission in permissions) {
+        if (statuses[permission] != PermissionStatus.granted) {
+          allGranted = false;
+          developer.log('❌ Permission ${permission.toString()} denied');
+        }
+      }
+      
+      return allGranted;
+    } catch (e) {
+      developer.log('❌ Error requesting permissions: $e');
+      return false;
+    }
+  }
+  
+  // Initialize WebRTC peer connection - ENHANCED VERSION
   Future<void> _createPeerConnection() async {
     try {
       developer.log('🔗 Creating peer connection...');
@@ -180,6 +250,7 @@ class WebRTCCallService extends GetxService {
       final configuration = <String, dynamic>{
         'iceServers': _iceServers,
         'sdpSemantics': 'unified-plan',
+        'iceCandidatePoolSize': 10,
       };
       
       final constraints = <String, dynamic>{
@@ -199,6 +270,9 @@ class WebRTCCallService extends GetxService {
         developer.log('📺 Remote track received: ${event.track.kind}');
         if (event.streams.isNotEmpty) {
           _remoteStream = event.streams.first;
+          if (_remoteRenderer != null) {
+            _remoteRenderer!.srcObject = _remoteStream;
+          }
           _remoteStreamController.add(_remoteStream);
         }
       };
@@ -215,32 +289,7 @@ class WebRTCCallService extends GetxService {
     }
   }
   
-  // FIXED: Add tracks individually instead of adding stream
-  Future<void> _addLocalStreamToPeerConnection() async {
-    if (_localStream == null || _peerConnection == null) return;
-    
-    try {
-      // Add each track individually for Unified Plan
-      for (var track in _localStream!.getTracks()) {
-        developer.log('➕ Adding ${track.kind} track to peer connection');
-        await _peerConnection!.addTrack(track, _localStream!);
-      }
-      
-      developer.log('✅ All tracks added to peer connection');
-    } catch (e) {
-      developer.log('❌ Error adding tracks to peer connection: $e');
-      // Fallback to addStream for Plan B compatibility
-      try {
-        await _peerConnection!.addStream(_localStream!);
-        developer.log('✅ Stream added using fallback method');
-      } catch (fallbackError) {
-        developer.log('❌ Fallback addStream also failed: $fallbackError');
-        throw Exception('Failed to add media to peer connection: $e');
-      }
-    }
-  }
-  
-  // Get user media (camera/microphone)
+  // ENHANCED: Get user media with proper constraints
   Future<webrtc.MediaStream> _getUserMedia({bool video = true, bool audio = true}) async {
     try {
       developer.log('📱 Getting user media - Video: $video, Audio: $audio');
@@ -250,16 +299,23 @@ class WebRTCCallService extends GetxService {
           'echoCancellation': true,
           'noiseSuppression': true,
           'autoGainControl': true,
+          'sampleRate': 44100,
         } : false,
         'video': video ? {
-          'width': {'ideal': 640},
-          'height': {'ideal': 480},
-          'frameRate': {'ideal': 30},
-          'facingMode': 'user',
+          'width': {'min': 320, 'ideal': 640, 'max': 1280},
+          'height': {'min': 240, 'ideal': 480, 'max': 720},
+          'frameRate': {'min': 10, 'ideal': 30, 'max': 30},
+          'facingMode': isCameraFront.value ? 'user' : 'environment',
         } : false,
       };
       
       final stream = await webrtc.navigator.mediaDevices.getUserMedia(constraints);
+      
+      // CRITICAL: Set video renderer source immediately after getting stream
+      if (video && _localRenderer != null) {
+        _localRenderer!.srcObject = stream;
+        developer.log('✅ Local video renderer source set');
+      }
       
       developer.log('✅ User media obtained successfully');
       return stream;
@@ -269,7 +325,34 @@ class WebRTCCallService extends GetxService {
     }
   }
   
-  // Start outgoing call - FIXED VERSION
+  // ENHANCED: Add tracks with proper error handling
+  Future<void> _addLocalStreamToPeerConnection() async {
+    if (_localStream == null || _peerConnection == null) return;
+    
+    try {
+      developer.log('➕ Adding media tracks to peer connection...');
+      
+      // Add each track individually for better compatibility
+      for (var track in _localStream!.getTracks()) {
+        developer.log('➕ Adding ${track.kind} track: ${track.id}');
+        await _peerConnection!.addTrack(track, _localStream!);
+      }
+      
+      developer.log('✅ All tracks added to peer connection');
+    } catch (e) {
+      developer.log('❌ Error adding tracks: $e');
+      // Fallback to addStream for older implementations
+      try {
+        await _peerConnection!.addStream(_localStream!);
+        developer.log('✅ Stream added using fallback method');
+      } catch (fallbackError) {
+        developer.log('❌ Fallback addStream failed: $fallbackError');
+        throw Exception('Failed to add media to peer connection: $e');
+      }
+    }
+  }
+  
+  // ENHANCED: Start outgoing call with permission check
   Future<String> startCall({
     required String receiverId,
     required String receiverName,
@@ -279,6 +362,12 @@ class WebRTCCallService extends GetxService {
   }) async {
     try {
       developer.log('📞 Starting ${isVideoCall ? 'video' : 'voice'} call to $receiverId');
+      
+      // Request permissions first
+      final hasPermissions = await _requestPermissions(isVideoCall: isVideoCall);
+      if (!hasPermissions) {
+        throw Exception('Required permissions not granted');
+      }
       
       // Create unique call ID
       final callId = '${callerId}_${receiverId}_${DateTime.now().millisecondsSinceEpoch}';
@@ -291,7 +380,7 @@ class WebRTCCallService extends GetxService {
       // Create peer connection
       await _createPeerConnection();
       
-      // Add tracks individually instead of adding stream
+      // Add tracks to peer connection
       await _addLocalStreamToPeerConnection();
       
       // Create call document in Firestore FIRST
@@ -314,10 +403,11 @@ class WebRTCCallService extends GetxService {
       // Start listening to call document changes
       _listenToCallDocument(callId);
       
-      // CRITICAL: Send call notification AFTER Firestore document is created
+      // Send call notification
       await CallNotificationService.sendCallNotification(
         receiverId: receiverId,
         callId: callId,
+        callerId: callerId,
         callerName: callerName,
         isVideoCall: isVideoCall,
       );
@@ -336,7 +426,7 @@ class WebRTCCallService extends GetxService {
     }
   }
   
-  // Answer incoming call - FIXED VERSION
+  // ENHANCED: Answer incoming call with video handling
   Future<void> answerCall(String callId) async {
     try {
       developer.log('✅ Answering call: $callId');
@@ -352,6 +442,12 @@ class WebRTCCallService extends GetxService {
       final callData = callDoc.data()!;
       final isVideoCall = callData['isVideoCall'] as bool;
       
+      // Request permissions
+      final hasPermissions = await _requestPermissions(isVideoCall: isVideoCall);
+      if (!hasPermissions) {
+        throw Exception('Required permissions not granted');
+      }
+      
       // Get user media
       _localStream = await _getUserMedia(video: isVideoCall, audio: true);
       _localStreamController.add(_localStream);
@@ -359,7 +455,7 @@ class WebRTCCallService extends GetxService {
       // Create peer connection
       await _createPeerConnection();
       
-      // Add tracks individually instead of adding stream
+      // Add tracks to peer connection
       await _addLocalStreamToPeerConnection();
       
       // Get offer from Firestore and create answer
@@ -417,7 +513,7 @@ class WebRTCCallService extends GetxService {
     }
   }
   
-  // End active call
+  // ENHANCED: End call with proper cleanup
   Future<void> endCall() async {
     try {
       developer.log('📞 Ending call...');
@@ -430,11 +526,7 @@ class WebRTCCallService extends GetxService {
         });
       }
       
-      // Close peer connection
-      await _peerConnection?.close();
-      _peerConnection = null;
-      
-      // Stop local stream
+      // Stop local stream tracks
       if (_localStream != null) {
         for (var track in _localStream!.getTracks()) {
           await track.stop();
@@ -445,6 +537,18 @@ class WebRTCCallService extends GetxService {
       // Clear remote stream
       _remoteStream = null;
       
+      // Clear video renderers
+      if (_localRenderer != null) {
+        _localRenderer!.srcObject = null;
+      }
+      if (_remoteRenderer != null) {
+        _remoteRenderer!.srcObject = null;
+      }
+      
+      // Close peer connection
+      await _peerConnection?.close();
+      _peerConnection = null;
+      
       // Cancel call document subscription
       _callDocSubscription?.cancel();
       
@@ -454,6 +558,7 @@ class WebRTCCallService extends GetxService {
       isOutgoingCall.value = false;
       isVideoEnabled.value = true;
       isAudioEnabled.value = true;
+      isSpeakerOn.value = false;
       callStatus.value = '';
       currentCallId.value = '';
       currentCallData.clear();
@@ -469,41 +574,85 @@ class WebRTCCallService extends GetxService {
     }
   }
   
-  // Toggle video on/off
+  // ENHANCED: Toggle video with proper error handling
   Future<void> toggleVideo() async {
     if (_localStream != null) {
-      final videoTracks = _localStream!.getVideoTracks();
-      if (videoTracks.isNotEmpty) {
-        final videoTrack = videoTracks.first;
-        videoTrack.enabled = !videoTrack.enabled;
-        isVideoEnabled.value = videoTrack.enabled;
-        developer.log('📹 Video ${videoTrack.enabled ? 'enabled' : 'disabled'}');
+      try {
+        final videoTracks = _localStream!.getVideoTracks();
+        if (videoTracks.isNotEmpty) {
+          final videoTrack = videoTracks.first;
+          videoTrack.enabled = !videoTrack.enabled;
+          isVideoEnabled.value = videoTrack.enabled;
+          
+          // Update renderer visibility
+          if (_localRenderer != null) {
+            if (!videoTrack.enabled) {
+              _localRenderer!.srcObject = null;
+            } else {
+              _localRenderer!.srcObject = _localStream;
+            }
+          }
+          
+          developer.log('📹 Video ${videoTrack.enabled ? 'enabled' : 'disabled'}');
+        }
+      } catch (e) {
+        developer.log('❌ Error toggling video: $e');
       }
     }
   }
   
-  // Toggle audio on/off
+  // ENHANCED: Toggle audio
   Future<void> toggleAudio() async {
     if (_localStream != null) {
-      final audioTracks = _localStream!.getAudioTracks();
-      if (audioTracks.isNotEmpty) {
-        final audioTrack = audioTracks.first;
-        audioTrack.enabled = !audioTrack.enabled;
-        isAudioEnabled.value = audioTrack.enabled;
-        developer.log('🎤 Audio ${audioTrack.enabled ? 'enabled' : 'disabled'}');
+      try {
+        final audioTracks = _localStream!.getAudioTracks();
+        if (audioTracks.isNotEmpty) {
+          final audioTrack = audioTracks.first;
+          audioTrack.enabled = !audioTrack.enabled;
+          isAudioEnabled.value = audioTrack.enabled;
+          developer.log('🎤 Audio ${audioTrack.enabled ? 'enabled' : 'disabled'}');
+        }
+      } catch (e) {
+        developer.log('❌ Error toggling audio: $e');
       }
     }
   }
   
-  // Switch camera (front/back)
+  // ENHANCED: Switch camera with proper handling
   Future<void> switchCamera() async {
     if (_localStream != null) {
-      final videoTracks = _localStream!.getVideoTracks();
-      if (videoTracks.isNotEmpty) {
-        final videoTrack = videoTracks.first;
-        await webrtc.Helper.switchCamera(videoTrack);
-        developer.log('📱 Camera switched');
+      try {
+        final videoTracks = _localStream!.getVideoTracks();
+        if (videoTracks.isNotEmpty) {
+          await webrtc.Helper.switchCamera(videoTracks.first);
+          isCameraFront.value = !isCameraFront.value;
+          developer.log('📱 Camera switched to ${isCameraFront.value ? 'front' : 'back'}');
+        }
+      } catch (e) {
+        developer.log('❌ Error switching camera: $e');
       }
+    }
+  }
+  
+  // ENHANCED: Toggle speaker
+  Future<void> toggleSpeaker() async {
+    try {
+      isSpeakerOn.value = !isSpeakerOn.value;
+      await webrtc.Helper.setSpeakerphoneOn(isSpeakerOn.value);
+      developer.log('🔊 Speaker ${isSpeakerOn.value ? 'enabled' : 'disabled'}');
+    } catch (e) {
+      developer.log('❌ Error toggling speaker: $e');
+    }
+  }
+  
+  // ENHANCED: Enable/disable speaker
+  Future<void> setSpeaker(bool enabled) async {
+    try {
+      isSpeakerOn.value = enabled;
+      await webrtc.Helper.setSpeakerphoneOn(enabled);
+      developer.log('🔊 Speaker set to ${enabled ? 'on' : 'off'}');
+    } catch (e) {
+      developer.log('❌ Error setting speaker: $e');
     }
   }
   
@@ -525,7 +674,7 @@ class WebRTCCallService extends GetxService {
       'isVideoCall': isVideoCall,
       'status': 'calling',
       'createdAt': FieldValue.serverTimestamp(),
-      'participants': [callerId, receiverId], // ADDED for proper queries
+      'participants': [callerId, receiverId],
     });
     
     developer.log('✅ Call document created: $callId');
@@ -652,6 +801,10 @@ class WebRTCCallService extends GetxService {
     switch (state) {
       case webrtc.RTCPeerConnectionState.RTCPeerConnectionStateConnected:
         callStatus.value = 'Connected';
+        // Auto-enable speaker for video calls
+        if (currentCallData['isVideoCall'] == true) {
+          setSpeaker(true);
+        }
         break;
       case webrtc.RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
         callStatus.value = 'Disconnected';
@@ -668,7 +821,7 @@ class WebRTCCallService extends GetxService {
     }
   }
   
-  // Get current user ID - FIXED
+  // Get current user ID
   String _getCurrentUserId() {
     try {
       final currentUser = AppData().currentUser;
