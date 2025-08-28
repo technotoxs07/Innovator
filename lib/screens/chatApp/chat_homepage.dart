@@ -57,7 +57,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
       ),
       backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
       elevation: 0,
-      automaticallyImplyLeading: false,
+      automaticallyImplyLeading: true,
      actions: [
       IconButton(onPressed: () => controller.refreshUsersAndCache(), icon: Icon(Icons.refresh,color: Colors.white,))
       

@@ -2220,7 +2220,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
       color: Colors.black,
       child: Stack(
         children: [
-          // Video Player or Loading/Error State
+          // Video Player or Loading/Error  nState
           if (!_initialized || _controller == null)
             Stack(
               children: [

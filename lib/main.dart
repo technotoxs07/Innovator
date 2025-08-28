@@ -48,15 +48,25 @@ late Size mq;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool _isAppOnline = false;
 
-// ENHANCED: Background message handler with call support
+// CRITICAL: Global notification plugin for background use
+late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
+// Global timers for emergency sound/vibration
+Timer? _emergencyRingtoneTimer;
+Timer? _emergencyVibrationTimer;
+bool _isEmergencyRinging = false;
+
+// ENHANCED: Background message handler with GUARANTEED call ringing
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     developer.log('🔥 === BACKGROUND MESSAGE HANDLER START ===');
     developer.log('🔥 Message ID: ${message.messageId}');
     developer.log('🔥 Data: ${message.data}');
+    developer.log('🔥 Notification: ${message.notification?.toMap()}');
+    developer.log('🔥 Time: ${DateTime.now()}');
     
-    // Initialize Firebase if not already done
+    // CRITICAL: Initialize Firebase if not already done
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -64,72 +74,432 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       developer.log('🔥 Firebase initialized in background');
     }
     
+    // Initialize local notifications for background
+    await _initializeBackgroundNotifications();
+    
     // Get message type
     final messageType = message.data['type']?.toString() ?? '';
+    developer.log('🔥 Message type: $messageType');
+
+    if (messageType == 'call') {
+      // ONLY show notification - let notification handle sound
+      await _showFullScreenCallNotification(
+        callId: message.data['callId'] ?? '',
+        callerName: message.data['callerName'] ?? 'Unknown',
+        isVideoCall: message.data['isVideoCall'] == 'true',
+        data: message.data,
+      );
+    }
     
     switch (messageType) {
       case 'call':
-        await _handleBackgroundCallWithPersistentRinging(message);
+        await _handleBackgroundCallWithGuaranteedRinging(message);
         break;
       case 'chat':
       case 'message':
-        await _handleBackgroundChatNotification(message);
+        await _handleBackgroundChatMessage(message);
         break;
       default:
-        await _handleBackgroundNotification(message);
+        await _showBackgroundNotification(message);
         break;
     }
     
-    developer.log('✅ Background notification processed');
+    developer.log('✅ Background message processed successfully');
     developer.log('🔥 === BACKGROUND MESSAGE HANDLER END ===');
   } catch (e) {
-    developer.log('❌ Error in background handler: $e');
+    developer.log('❌ CRITICAL: Background handler error: $e');
+    developer.log('❌ Stack trace: ${StackTrace.current}');
+    
+    // Still try to show basic notification
+    await _showEmergencyCallNotification(message);
   }
 }
 
-Future<void> _handleBackgroundCallWithPersistentRinging(RemoteMessage message) async {
+// CRITICAL: Handle background calls with GUARANTEED ringing
+Future<void> _handleBackgroundCallWithGuaranteedRinging(RemoteMessage message) async {
   try {
-    developer.log('📞 === HANDLING BACKGROUND CALL WITH PERSISTENT RINGING ===');
+    developer.log('📞 === BACKGROUND CALL WITH GUARANTEED RINGING ===');
     
     final data = message.data;
     final callId = data['callId']?.toString() ?? '';
     final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
+    final callerId = data['callerId']?.toString() ?? '';
+    final receiverId = data['receiverId']?.toString() ?? '';
     final isVideoCall = data['isVideoCall']?.toString() == 'true';
     
-    developer.log('📞 Call ID: $callId');
-    developer.log('📞 Caller: $callerName');
-    developer.log('📞 Video: $isVideoCall');
+    developer.log('📞 Call Details:');
+    developer.log('   - ID: $callId');
+    developer.log('   - Caller: $callerName');
+    developer.log('   - Caller ID: $callerId');
+    developer.log('   - Receiver ID: $receiverId');
+    developer.log('   - Video: $isVideoCall');
     
-    // CRITICAL: Use the enhanced background call service
-    await EnhancedBackgroundCallService.handleBackgroundCall(data);
+    // STEP 1: Enable wakelock immediately
+    await WakelockPlus.enable();
+    developer.log('📞 Wakelock enabled');
     
-    // Also show a persistent notification
-    await _showPersistentCallNotification(
+    // STEP 2: Start emergency ringtone immediately (MULTIPLE METHODS)
+    await _startMultiMethodRingtone();
+    developer.log('📞 Multi-method ringtone started');
+    
+    // STEP 3: Start emergency vibration immediately  
+    await _startEmergencyVibration();
+    developer.log('📞 Emergency vibration started');
+    
+    // STEP 4: Show full-screen notification with HIGHEST priority
+    await _showFullScreenCallNotification(
       callId: callId,
       callerName: callerName,
       isVideoCall: isVideoCall,
       data: data,
     );
+    developer.log('📞 Full-screen notification shown');
     
-    developer.log('✅ Background call handled with persistent ringing');
+    // STEP 5: Use enhanced background service (if available)
+    try {
+      // Only try if service is available
+      await EnhancedBackgroundCallService.handleBackgroundCall(data);
+      developer.log('📞 Enhanced background service started');
+    } catch (e) {
+      developer.log('⚠️ Enhanced service not available, continuing with basic: $e');
+    }
+    
+    // STEP 6: Auto-stop after 45 seconds (WhatsApp-style)
+    Timer(const Duration(seconds: 45), () async {
+      await _stopAllEmergencyAlerts();
+      developer.log('📞 Auto-stopped after timeout');
+    });
+    
+    developer.log('✅ Background call handling completed successfully');
+    
   } catch (e) {
-    developer.log('❌ Error handling background call: $e');
+    developer.log('❌ CRITICAL: Background call handling failed: $e');
+    // Emergency fallback
+    await _showEmergencyCallNotification(message);
   }
 }
 
+// MULTI-METHOD: Start ringtone with ALL possible methods
+Future<void> _startMultiMethodRingtone() async {
+  if (_isEmergencyRinging) return; // Prevent double-start
+  
+  _isEmergencyRinging = true;
+  developer.log('🔔 Starting MULTI-METHOD ringtone...');
+  
+  // Method 1: Flutter Ringtone Player (Primary)
+  try {
+    await FlutterRingtonePlayer().playRingtone(
+      looping: true,
+      volume: 1.0,
+      asAlarm: false,
+    );
+    developer.log('✅ Method 1: FlutterRingtonePlayer started');
+  } catch (e) {
+    developer.log('⚠️ Method 1 failed: $e');
+  }
+  
+  // Method 2: System sound loop (Backup)
+  try {
+    _startSystemSoundLoop();
+    developer.log('✅ Method 2: System sound loop started');
+  } catch (e) {
+    developer.log('⚠️ Method 2 failed: $e');
+  }
+  
+  // Method 3: Haptic feedback loop (Additional)
+  try {
+    _startHapticFeedbackLoop();
+    developer.log('✅ Method 3: Haptic feedback loop started');
+  } catch (e) {
+    developer.log('⚠️ Method 3 failed: $e');
+  }
+  
+  // Method 4: Audio notification (Last resort)
+  try {
+    _playNotificationSound();
+    developer.log('✅ Method 4: Notification sound started');
+  } catch (e) {
+    developer.log('⚠️ Method 4 failed: $e');
+  }
+}
 
-Future<void> _showPersistentCallNotification({
+// System sound loop as primary backup
+void _startSystemSoundLoop() {
+  _emergencyRingtoneTimer?.cancel();
+  _emergencyRingtoneTimer = Timer.periodic(const Duration(milliseconds: 1200), (timer) {
+    try {
+      if (_isEmergencyRinging) {
+        SystemSound.play(SystemSoundType.click);
+        
+        // Stop after 45 seconds
+        if (timer.tick >= 37) { // 37 * 1.2 seconds ≈ 45 seconds
+          timer.cancel();
+          _isEmergencyRinging = false;
+        }
+      } else {
+        timer.cancel();
+      }
+    } catch (e) {
+      timer.cancel();
+      _isEmergencyRinging = false;
+    }
+  });
+}
+
+// Haptic feedback loop for additional alert
+void _startHapticFeedbackLoop() {
+  Timer.periodic(const Duration(milliseconds: 800), (timer) {
+    try {
+      if (_isEmergencyRinging) {
+        HapticFeedback.heavyImpact();
+        
+        if (timer.tick >= 56) { // 56 * 0.8 seconds ≈ 45 seconds
+          timer.cancel();
+        }
+      } else {
+        timer.cancel();
+      }
+    } catch (e) {
+      timer.cancel();
+    }
+  });
+}
+
+// Play notification sound as additional method
+void _playNotificationSound() {
+  Timer.periodic(const Duration(milliseconds: 2000), (timer) {
+    try {
+      if (_isEmergencyRinging) {
+        // This will trigger the system notification sound
+        SystemSound.play(SystemSoundType.alert);
+        
+        if (timer.tick >= 22) { // 22 * 2 seconds ≈ 45 seconds
+          timer.cancel();
+        }
+      } else {
+        timer.cancel();
+      }
+    } catch (e) {
+      timer.cancel();
+    }
+  });
+}
+
+// EMERGENCY: Start vibration with persistent pattern
+Future<void> _startEmergencyVibration() async {
+  try {
+    developer.log('📳 Starting emergency vibration...');
+    
+    // Check if device supports vibration
+    bool? hasVibrator = await Vibration.hasVibrator();
+    if (hasVibrator != true) {
+      developer.log('📳 Device does not support vibration');
+      return;
+    }
+    
+    // Start repeating vibration pattern (WhatsApp-style)
+    _emergencyVibrationTimer?.cancel();
+    _emergencyVibrationTimer = Timer.periodic(const Duration(milliseconds: 2000), (timer) async {
+      try {
+        if (_isEmergencyRinging) {
+          await Vibration.vibrate(
+            pattern: [0, 1000, 300, 1000, 300, 1000], // Strong, varied pattern
+            intensities: [0, 255, 0, 255, 0, 255],
+          );
+          
+          // Stop after 45 seconds
+          if (timer.tick >= 22) { // 22 * 2 seconds ≈ 45 seconds
+            timer.cancel();
+          }
+        } else {
+          timer.cancel();
+        }
+      } catch (e) {
+        timer.cancel();
+      }
+    });
+    
+    developer.log('✅ Emergency vibration started');
+    
+  } catch (e) {
+    developer.log('❌ Emergency vibration failed: $e');
+  }
+}
+
+// Stop all emergency alerts
+Future<void> _stopAllEmergencyAlerts() async {
+  try {
+    _isEmergencyRinging = false;
+    
+    // Stop ringtone
+    try {
+      await FlutterRingtonePlayer().stop();
+    } catch (e) {
+      developer.log('Warning: Error stopping ringtone: $e');
+    }
+    
+    // Stop timers
+    _emergencyRingtoneTimer?.cancel();
+    _emergencyVibrationTimer?.cancel();
+    
+    // Stop vibration
+    try {
+      await Vibration.cancel();
+    } catch (e) {
+      developer.log('Warning: Error stopping vibration: $e');
+    }
+    
+    // Disable wakelock
+    try {
+      await WakelockPlus.disable();
+    } catch (e) {
+      developer.log('Warning: Error disabling wakelock: $e');
+    }
+    
+    developer.log('🔇 All emergency alerts stopped');
+  } catch (e) {
+    developer.log('❌ Error stopping emergency alerts: $e');
+  }
+}
+
+// CRITICAL: Show full-screen call notification with MAXIMUM priority
+Future<void> _showFullScreenCallNotification({
   required String callId,
   required String callerName,
   required bool isVideoCall,
   required Map<String, dynamic> data,
 }) async {
   try {
-    developer.log('📱 Showing persistent call notification...');
+    developer.log('📱 Showing MAXIMUM PRIORITY full-screen call notification...');
     
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    // Create notification with ABSOLUTE HIGHEST priority
+    final androidDetails = AndroidNotificationDetails(
+      'incoming_calls',
+      'Incoming Calls',
+      channelDescription: 'Critical notifications for incoming calls',
+      importance: Importance.max,        // MAXIMUM importance
+      priority: Priority.max,            // MAXIMUM priority
+      category: AndroidNotificationCategory.call,
+      fullScreenIntent: true,            // CRITICAL: Shows over lock screen
+      ongoing: true,                     // Persistent until action taken
+      autoCancel: false,                 // Don't auto-dismiss
+      showWhen: false,                   // Don't show timestamp
+      timeoutAfter: 45000,              // 45 seconds timeout
+      visibility: NotificationVisibility.public, // Show on lock screen
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      styleInformation: BigTextStyleInformation(
+        'Incoming ${isVideoCall ? 'video' : 'voice'} call from $callerName. Tap to answer or decline.',
+        htmlFormatBigText: true,
+        contentTitle: '📞 ${isVideoCall ? 'Video' : 'Voice'} Call',
+        htmlFormatContentTitle: true,
+        summaryText: 'Tap to answer or decline',
+      ),
+      actions: [
+        AndroidNotificationAction(
+          'accept_call_$callId',
+          '✅ Answer',
+          titleColor: Colors.green,
+          showsUserInterface: true,        // Opens app
+        ),
+        AndroidNotificationAction(
+          'decline_call_$callId',
+          '❌ Decline',
+          titleColor: Colors.red,
+          cancelNotification: true,        // Dismisses notification
+        ),
+      ],
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1000]),
+      enableLights: true,
+      ledColor: Colors.blue,
+      ledOnMs: 1000,
+      ledOffMs: 500,
+      playSound: true,
+
+      // insistent : true,
+      sound: const RawResourceAndroidNotificationSound('default'),
+      ticker: 'Incoming call from $callerName',   // Shows in status bar
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+      interruptionLevel: InterruptionLevel.critical,  // CRITICAL level for iOS
+      categoryIdentifier: 'CALL_CATEGORY',
+      threadIdentifier: 'call_thread',
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      callId.hashCode.abs(),
+      '📞 ${isVideoCall ? 'Video' : 'Voice'} Call',
+      'Incoming call from $callerName',
+      notificationDetails,
+      payload: jsonEncode({
+        ...data,
+        'notification_shown': 'true',
+        'show_time': DateTime.now().toIso8601String(),
+      }),
+    );
     
-    // Initialize with call-specific settings
+    developer.log('✅ MAXIMUM PRIORITY full-screen call notification shown');
+    
+  } catch (e) {
+    developer.log('❌ Error showing full-screen notification: $e');
+    // Try simpler notification as fallback
+    await _showSimpleCallNotification(callerName, isVideoCall, data);
+  }
+}
+
+// Fallback: Simple call notification
+Future<void> _showSimpleCallNotification(
+  String callerName, 
+  bool isVideoCall, 
+  Map<String, dynamic> data
+) async {
+  try {
+    developer.log('📱 Showing simple fallback call notification...');
+    
+    const androidDetails = AndroidNotificationDetails(
+      'incoming_calls',
+      'Calls',
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      ongoing: true,
+      autoCancel: false,
+      enableVibration: true,
+      playSound: true,
+    );
+    
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      'Call from $callerName',
+      '${isVideoCall ? 'Video' : 'Voice'} call - Tap to answer',
+      const NotificationDetails(android: androidDetails),
+      payload: jsonEncode(data),
+    );
+    
+    developer.log('✅ Simple fallback notification shown');
+  } catch (e) {
+    developer.log('❌ Even simple notification failed: $e');
+  }
+}
+
+// Initialize background notifications with MAXIMUM settings
+Future<void> _initializeBackgroundNotifications() async {
+  try {
+    developer.log('📱 Initializing MAXIMUM PRIORITY background notifications...');
+    
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
     const initSettings = InitializationSettings(
@@ -139,704 +509,238 @@ Future<void> _showPersistentCallNotification({
     
     await flutterLocalNotificationsPlugin.initialize(
       initSettings,
-      onDidReceiveNotificationResponse: (response) {
-        _handleCallNotificationResponse(response, data);
-      },
+      onDidReceiveNotificationResponse: _onNotificationTapped,
     );
     
-    // Create incoming calls channel if not exists
+    // Create call notification channel with MAXIMUM importance
     final androidPlugin = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     
     if (androidPlugin != null) {
+      // CRITICAL: Incoming calls channel with MAXIMUM priority
       await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
+         AndroidNotificationChannel(
           'incoming_calls',
           'Incoming Calls',
-          description: 'Notifications for incoming calls',
-          importance: Importance.max,
+          description: 'Critical notifications for incoming calls - MAXIMUM PRIORITY',
+          importance: Importance.max,        // HIGHEST importance
           enableVibration: true,
           enableLights: true,
           playSound: true,
-          sound: RawResourceAndroidNotificationSound('call_ringtone'),
-        ),
-      );
-    }
-    
-    // Enhanced notification for calls
-    final androidDetails = AndroidNotificationDetails(
-      'incoming_calls',
-      'Incoming Calls',
-      channelDescription: 'Notifications for incoming calls',
-      importance: Importance.max,
-      priority: Priority.max,
-      category: AndroidNotificationCategory.call,
-      fullScreenIntent: true, // Shows over lock screen
-      ongoing: true, // Persistent notification
-      autoCancel: false,
-      showWhen: false,
-      timeoutAfter: 45000, // 45 seconds timeout
-      icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      styleInformation: BigTextStyleInformation(
-        'Tap to answer or decline',
-        htmlFormatBigText: true,
-        contentTitle: '${isVideoCall ? 'Video' : 'Voice'} Call',
-        htmlFormatContentTitle: true,
-      ),
-      actions: [
-        AndroidNotificationAction(
-          'accept_$callId',
-          'Answer',
-          titleColor: Colors.green,
-          showsUserInterface: true,
-        ),
-        AndroidNotificationAction(
-          'decline_$callId',
-          'Decline',
-          titleColor: Colors.red,
-          cancelNotification: true,
-        ),
-      ],
-      visibility: NotificationVisibility.public,
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
-      enableLights: true,
-      ledColor: Colors.blue,
-      playSound: true,
-      sound: const RawResourceAndroidNotificationSound('call_ringtone'),
-    );
-    
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      sound: 'call_ringtone.wav',
-      interruptionLevel: InterruptionLevel.critical,
-      categoryIdentifier: 'CALL_CATEGORY',
-    );
-    
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-    
-    await flutterLocalNotificationsPlugin.show(
-      callId.hashCode,
-      '${isVideoCall ? 'Video' : 'Voice'} Call',
-      'Incoming ${isVideoCall ? 'video' : 'voice'} call from $callerName',
-      notificationDetails,
-      payload: jsonEncode({
-        ...data,
-        'action': 'incoming_call',
-      }),
-    );
-    
-    developer.log('✅ Persistent call notification shown');
-  } catch (e) {
-    developer.log('❌ Error showing persistent notification: $e');
-  }
-}
-
-void _handleCallNotificationResponse(
-  NotificationResponse response,
-  Map<String, dynamic> data,
-) {
-  try {
-    final actionId = response.actionId ?? '';
-    
-    if (actionId.startsWith('accept_')) {
-      // Accept call
-      developer.log('✅ Accepting call from notification');
-      EnhancedBackgroundCallService().stopAllRinging();
-      
-      // Open app and navigate to call screen
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.toNamed('/incoming-call', arguments: data);
-      });
-      
-    } else if (actionId.startsWith('decline_')) {
-      // Decline call
-      developer.log('❌ Declining call from notification');
-      EnhancedBackgroundCallService().stopAllRinging();
-      
-      // Update Firebase
-      final callId = data['callId']?.toString() ?? '';
-      if (callId.isNotEmpty) {
-        FirebaseFirestore.instance
-            .collection('calls')
-            .doc(callId)
-            .update({'status': 'rejected'});
-      }
-      
-    } else {
-      // Notification tapped - show incoming call screen
-      EnhancedBackgroundCallService().stopAllRinging();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.toNamed('/incoming-call', arguments: data);
-      });
-    }
-  } catch (e) {
-    developer.log('❌ Error handling call notification response: $e');
-  }
-}
-
-// NEW: Handle background call notifications with ringtone
-Future<void> _handleBackgroundCallNotification(RemoteMessage message) async {
-  try {
-    developer.log('📞 === HANDLING BACKGROUND CALL NOTIFICATION ===');
-    
-    final data = message.data;
-    final callId = data['callId']?.toString() ?? '';
-    final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
-    final isVideoCall = data['isVideoCall']?.toString() == 'true';
-    
-    developer.log('📞 Call ID: $callId');
-    developer.log('📞 Caller: $callerName');
-    developer.log('📞 Video Call: $isVideoCall');
-    
-    // Enable wakelock for incoming call
-    await WakelockPlus.enable();
-    
-    // Start ringtone in background
-    await _startBackgroundRingtone();
-    
-    // Start vibration pattern
-    await _startBackgroundVibration();
-    
-    // Show full-screen call notification
-    await _showFullScreenCallNotification(
-      callId: callId,
-      callerName: callerName,
-      isVideoCall: isVideoCall,
-      data: data,
-    );
-    
-    // Auto-stop ringtone after 45 seconds (like WhatsApp)
-    Timer(const Duration(seconds: 45), () async {
-      await _stopBackgroundRingtone();
-      await _stopBackgroundVibration();
-      await WakelockPlus.disable();
-    });
-    
-    developer.log('✅ Background call notification handled');
-  } catch (e) {
-    developer.log('❌ Error handling background call: $e');
-  }
-}
-
-// NEW: Start ringtone in background
-Future<void> _startBackgroundRingtone() async {
-  try {
-    developer.log('🔔 Starting background ringtone...');
-    
-    // Use FlutterRingtonePlayer for system ringtone
-    await FlutterRingtonePlayer().playRingtone(
-      looping: true,
-      volume: 1.0,
-      asAlarm: false, // Use ringtone, not alarm
-    );
-    
-    developer.log('✅ Background ringtone started');
-  } catch (e) {
-    developer.log('❌ Error starting background ringtone: $e');
-    
-    // Fallback to system sound
-    try {
-      await _playSystemSoundLoop();
-    } catch (fallbackError) {
-      developer.log('❌ Fallback sound also failed: $fallbackError');
-    }
-  }
-}
-
-// Fallback system sound loop
-Future<void> _playSystemSoundLoop() async {
-  Timer.periodic(const Duration(seconds: 2), (timer) async {
-    try {
-      await SystemSound.play(SystemSoundType.click);
-      HapticFeedback.heavyImpact();
-      
-      // Stop after 45 seconds
-      if (timer.tick >= 22) { // 22 * 2 seconds = 44 seconds
-        timer.cancel();
-      }
-    } catch (e) {
-      timer.cancel();
-    }
-  });
-}
-
-// NEW: Start vibration in background
-Future<void> _startBackgroundVibration() async {
-  try {
-    developer.log('📳 Starting background vibration...');
-    
-    // Check if device has vibrator
-    bool? hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator != true) {
-      developer.log('📳 Device does not support vibration');
-      return;
-    }
-    
-    // WhatsApp-like vibration pattern
-    Timer.periodic(const Duration(seconds: 2), (timer) async {
-      try {
-        await Vibration.vibrate(
-          pattern: [0, 800, 200, 800, 200, 800], // Long, short, long pattern
-          intensities: [0, 255, 0, 255, 0, 255],
-        );
-        
-        // Stop after 45 seconds
-        if (timer.tick >= 22) {
-          timer.cancel();
-        }
-      } catch (e) {
-        timer.cancel();
-      }
-    });
-    
-    developer.log('✅ Background vibration started');
-  } catch (e) {
-    developer.log('❌ Error starting background vibration: $e');
-  }
-}
-
-// NEW: Stop background ringtone
-Future<void> _stopBackgroundRingtone() async {
-  try {
-    await FlutterRingtonePlayer().stop();
-    developer.log('🔇 Background ringtone stopped');
-  } catch (e) {
-    developer.log('❌ Error stopping background ringtone: $e');
-  }
-}
-
-// NEW: Stop background vibration
-Future<void> _stopBackgroundVibration() async {
-  try {
-    await Vibration.cancel();
-    developer.log('📳 Background vibration stopped');
-  } catch (e) {
-    developer.log('❌ Error stopping background vibration: $e');
-  }
-}
-
-// NEW: Show full-screen call notification
-Future<void> _showFullScreenCallNotification({
-  required String callId,
-  required String callerName,
-  required bool isVideoCall,
-  required Map<String, dynamic> data,
-}) async {
-  try {
-    developer.log('📱 Showing full-screen call notification...');
-    
-    // Initialize local notifications
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    await _initializeCallNotifications(flutterLocalNotificationsPlugin);
-    
-    // Enhanced call notification details
-    final androidDetails = AndroidNotificationDetails(
-      'call_notifications',
-      'Incoming Calls',
-      channelDescription: 'Notifications for incoming calls',
-      importance: Importance.max,
-      priority: Priority.max,
-      category: AndroidNotificationCategory.call,
-      fullScreenIntent: true, // CRITICAL: Shows over lock screen
-      ongoing: true, // Keep notification until action taken
-      autoCancel: false,
-      showWhen: false,
-      timeoutAfter: 45000, // Auto-dismiss after 45 seconds
-      icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      styleInformation: BigTextStyleInformation(
-        'Tap to answer or decline the ${isVideoCall ? 'video' : 'voice'} call',
-        htmlFormatBigText: true,
-        contentTitle: '${isVideoCall ? 'Video' : 'Voice'} Call',
-        htmlFormatContentTitle: true,
-      ),
-      actions: [
-        AndroidNotificationAction(
-          'accept_call',
-          'Answer',
-          icon: DrawableResourceAndroidBitmap('@drawable/ic_call_accept'),
-          contextual: true,
-          titleColor: Colors.green,
-        ),
-        AndroidNotificationAction(
-          'decline_call',
-          'Decline',
-          icon: DrawableResourceAndroidBitmap('@drawable/ic_call_decline'),
-          contextual: true,
-          titleColor: Colors.red,
-        ),
-      ],
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
-      enableLights: true,
-      ledColor: Colors.blue,
-      playSound: true,
-      sound: const RawResourceAndroidNotificationSound('call_ringtone'),
-      visibility: NotificationVisibility.public, // Show on lock screen
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      sound: 'call_ringtone.wav',
-      interruptionLevel: InterruptionLevel.critical, // Critical for calls
-      categoryIdentifier: 'CALL_CATEGORY',
-    );
-
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await flutterLocalNotificationsPlugin.show(
-      callId.hashCode,
-      '${isVideoCall ? 'Video' : 'Voice'} Call',
-      'Incoming ${isVideoCall ? 'video' : 'voice'} call from $callerName',
-      notificationDetails,
-      payload: jsonEncode({
-        ...data,
-        'action': 'incoming_call',
-        'showCallScreen': 'true',
-      }),
-    );
-    
-    developer.log('✅ Full-screen call notification shown');
-  } catch (e) {
-    developer.log('❌ Error showing full-screen call notification: $e');
-  }
-}
-
-// Initialize call-specific notifications
-Future<void> _initializeCallNotifications(FlutterLocalNotificationsPlugin plugin) async {
-  try {
-    const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInitialization = DarwinInitializationSettings();
-    
-    const initializationSettings = InitializationSettings(
-      android: androidInitialization,
-      iOS: iosInitialization,
-    );
-    
-    await plugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: _onCallNotificationTapped,
-    );
-    
-    // Create call notification channel
-    final androidPlugin = plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    
-    if (androidPlugin != null) {
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'call_notifications',
-          'Incoming Calls',
-          description: 'Notifications for incoming calls',
-          importance: Importance.max,
-          enableVibration: true,
-          enableLights: true,
-          ledColor: Colors.blue,
           showBadge: true,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound('call_ringtone'),
+          ledColor: Colors.blue,
+vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1000]),
+          sound: RawResourceAndroidNotificationSound('default'),
         ),
       );
-    }
-    
-    developer.log('✅ Call notifications initialized');
-  } catch (e) {
-    developer.log('❌ Error initializing call notifications: $e');
-  }
-}
-
-// Handle call notification taps
-void _onCallNotificationTapped(NotificationResponse response) {
-  try {
-    developer.log('📞 Call notification tapped: ${response.actionId}');
-    
-    if (response.payload != null) {
-      final data = jsonDecode(response.payload!) as Map<String, dynamic>;
       
-      switch (response.actionId) {
-        case 'accept_call':
-          _handleCallAcceptFromNotification(data);
-          break;
-        case 'decline_call':
-          _handleCallDeclineFromNotification(data);
-          break;
-        default:
-          _showIncomingCallScreen(data);
-          break;
-      }
-    }
-  } catch (e) {
-    developer.log('❌ Error handling call notification tap: $e');
-  }
-}
-
-// Handle call accept from notification
-void _handleCallAcceptFromNotification(Map<String, dynamic> data) {
-  try {
-    developer.log('✅ Accepting call from notification');
-    
-    // Stop ringtone and vibration
-    _stopBackgroundRingtone();
-    _stopBackgroundVibration();
-    
-    // Navigate to app and accept call
-    _navigateToCallAccept(data);
-    
-  } catch (e) {
-    developer.log('❌ Error accepting call from notification: $e');
-  }
-}
-
-// Handle call decline from notification
-void _handleCallDeclineFromNotification(Map<String, dynamic> data) {
-  try {
-    developer.log('❌ Declining call from notification');
-    
-    // Stop ringtone and vibration
-    _stopBackgroundRingtone();
-    _stopBackgroundVibration();
-    
-    // Decline the call
-    _declineCallDirectly(data);
-    
-  } catch (e) {
-    developer.log('❌ Error declining call from notification: $e');
-  }
-}
-
-// Navigate to app to accept call
-void _navigateToCallAccept(Map<String, dynamic> data) {
-  // Use platform channel or deep link to open app and accept call
-  // This would require additional native code integration
-  _showIncomingCallScreen(data);
-}
-
-// Decline call directly
-void _declineCallDirectly(Map<String, dynamic> data) {
-  // Implement direct call decline logic
-  // This could involve Firebase update or API call
-  final callId = data['callId']?.toString() ?? '';
-  if (callId.isNotEmpty) {
-    // Update call status in Firebase
-    // FirebaseFirestore.instance.collection('calls').doc(callId).update({'status': 'rejected'});
-  }
-}
-
-// Show incoming call screen when app opens
-void _showIncomingCallScreen(Map<String, dynamic> data) {
-  try {
-    developer.log('📱 Showing incoming call screen');
-    
-    // Stop ringtone when screen is shown
-    _stopBackgroundRingtone();
-    
-    // Navigate to incoming call screen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.to(
-        () => IncomingCallScreen(callData: data),
-        transition: Transition.fadeIn,
-        fullscreenDialog: true,
-      );
-    });
-    
-  } catch (e) {
-    developer.log('❌ Error showing incoming call screen: $e');
-  }
-}
-
-// Enhanced background chat notification handler
-Future<void> _handleBackgroundChatNotification(RemoteMessage message) async {
-  try {
-    developer.log('💬 === HANDLING BACKGROUND CHAT NOTIFICATION ===');
-    
-    final notification = message.notification;
-    final data = message.data;
-    
-    // Create notification service instance
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    
-    // Initialize local notifications
-    await _initializeBackgroundNotifications(flutterLocalNotificationsPlugin);
-    
-    // Extract notification details
-    String title = notification?.title ?? data['senderName'] ?? 'New Message';
-    String body = notification?.body ?? data['message'] ?? 'You have a new message';
-    
-    // Show local notification
-    await _showBackgroundLocalNotification(
-      flutterLocalNotificationsPlugin,
-      title,
-      body,
-      data,
-    );
-    
-    developer.log('✅ Background chat notification handled');
-  } catch (e) {
-    developer.log('❌ Error handling background chat notification: $e');
-  }
-}
-
-// Enhanced background notification handler (existing function - keep as is)
-Future<void> _handleBackgroundNotification(RemoteMessage message) async {
-  try {
-    final notification = message.notification;
-    final data = message.data;
-    
-    developer.log('📱 Background notification data: $data');
-    developer.log('📱 Background notification payload: ${notification?.toMap()}');
-    
-    // Create notification service instance
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    
-    // Initialize local notifications with proper channel
-    await _initializeBackgroundNotifications(flutterLocalNotificationsPlugin);
-    
-    // Extract notification details
-    String title = notification?.title ?? data['senderName'] ?? 'New Message';
-    String body = notification?.body ?? data['message'] ?? 'You have a new message';
-    
-    // Show local notification
-    await _showBackgroundLocalNotification(
-      flutterLocalNotificationsPlugin,
-      title,
-      body,
-      data,
-    );
-    
-    developer.log('✅ Background local notification shown');
-    
-  } catch (e) {
-    developer.log('❌ Error in background notification handler: $e');
-  }
-}
-
-// Rest of your existing functions...
-Future<void> _initializeBackgroundNotifications(FlutterLocalNotificationsPlugin plugin) async {
-  try {
-    const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInitialization = DarwinInitializationSettings();
-    const initializationSettings = InitializationSettings(
-      android: androidInitialization,
-      iOS: iosInitialization,
-    );
-    
-    await plugin.initialize(initializationSettings);
-    
-    // Create notification channels for Android
-    final androidPlugin = plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    
-    if (androidPlugin != null) {
+      // High importance channel for chat messages
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
           'chat_messages',
           'Chat Messages',
-          description: 'Notifications for new chat messages',
-          importance: Importance.max,
-          enableVibration: true,
-          enableLights: true,
-          ledColor: Color.fromRGBO(244, 135, 6, 1),
-          showBadge: true,
-          playSound: true,
-        ),
-      );
-      
-      // Call notifications channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'call_notifications',
-          'Incoming Calls',
-          description: 'Notifications for incoming calls',
-          importance: Importance.max,
-          enableVibration: true,
-          enableLights: true,
-          ledColor: Colors.blue,
-          showBadge: true,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound('call_ringtone'),
-        ),
-      );
-      
-      // Additional fallback channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'fallback_channel',
-          'Fallback Notifications',
-          description: 'Fallback notifications',
+          description: 'Notifications for chat messages',
           importance: Importance.high,
           enableVibration: true,
-          showBadge: true,
+          enableLights: true,
           playSound: true,
+          showBadge: true,
+        ),
+      );
+      
+      // Emergency channel for last-resort notifications
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'emergency_calls',
+          'Emergency Calls',
+          description: 'Emergency call notifications',
+          importance: Importance.max,
+          enableVibration: true,
+          enableLights: true,
+          playSound: true,
+          showBadge: true,
+          sound: RawResourceAndroidNotificationSound('default'),
         ),
       );
     }
     
-    developer.log('✅ Background notifications initialized');
+    developer.log('✅ MAXIMUM PRIORITY background notifications initialized');
+    
   } catch (e) {
-    developer.log('❌ Error initializing background notifications: $e');
+    developer.log('❌ Background notification initialization failed: $e');
   }
 }
 
-Future<void> _showBackgroundLocalNotification(
-  FlutterLocalNotificationsPlugin plugin,
-  String title,
-  String body,
-  Map<String, dynamic> data,
+// Handle notification taps
+void _onNotificationTapped(NotificationResponse response) {
+  try {
+    developer.log('👆 Notification tapped: ${response.actionId}');
+    
+    // Stop all emergency alerts immediately
+    _stopAllEmergencyAlerts();
+    
+    final actionId = response.actionId ?? '';
+    
+    if (actionId.startsWith('accept_call_')) {
+      _handleCallAccept(response.payload);
+    } else if (actionId.startsWith('decline_call_')) {
+      _handleCallDecline(response.payload);
+
+    } else if (response.payload != null) {
+      _handleNotificationTap(response.payload!);
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error handling notification tap: $e');
+  }
+}
+
+// Handle call accept from notification
+void _handleCallAccept(String? payload) {
+  try {
+    developer.log('✅ Accepting call from notification');
+    
+    if (payload != null) {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      
+      // Navigate to incoming call screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.to(
+          () => IncomingCallScreen(callData: data),
+          transition: Transition.fadeIn,
+          fullscreenDialog: true,
+        );
+      });
+    }
+  } catch (e) {
+    developer.log('❌ Error handling call accept: $e');
+  }
+}
+
+// Handle call decline from notification
+void _handleCallDecline(String? payload) {
+  try {
+    developer.log('❌ Declining call from notification');
+    
+    if (payload != null) {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      final callId = data['callId']?.toString() ?? '';
+      
+      if (callId.isNotEmpty) {
+        // Update call status in Firestore
+        FirebaseFirestore.instance
+            .collection('calls')
+            .doc(callId)
+            .update({'status': 'rejected'});
+        
+        developer.log('📞 Call $callId rejected via notification');
+      }
+    }
+  } catch (e) {
+    developer.log('❌ Error handling call decline: $e');
+  }
+}
+
+// Handle general notification tap
+void _handleNotificationTap(String payload) {
+  try {
+    final data = jsonDecode(payload) as Map<String, dynamic>;
+    final type = data['type']?.toString() ?? '';
+    
+    developer.log('👆 General notification tap: $type');
+    
+    switch (type) {
+      case 'call':
+        // Show incoming call screen
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.to(
+            () => IncomingCallScreen(callData: data),
+            transition: Transition.fadeIn,
+            fullscreenDialog: true,
+          );
+        });
+        break;
+      case 'chat':
+      case 'message':
+        _navigateToChatFromNotification(data);
+        break;
+      default:
+        // Navigate to home
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.toNamed('/home');
+        });
+        break;
+    }
+  } catch (e) {
+    developer.log('❌ Error handling notification tap: $e');
+  }
+}
+
+// Navigate to chat from notification
+void _navigateToChatFromNotification(Map<String, dynamic> data) {
+  try {
+    final senderId = data['senderId']?.toString() ?? '';
+    final senderName = data['senderName']?.toString() ?? 'Unknown';
+    final chatId = data['chatId']?.toString() ?? '';
+    
+    if (senderId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.toNamed('/chat', arguments: {
+          'receiverUser': {
+            'id': senderId,
+            'userId': senderId,
+            '_id': senderId,
+            'name': senderName,
+          },
+          'chatId': chatId,
+          'fromNotification': true,
+        });
+      });
+    }
+  } catch (e) {
+    developer.log('❌ Error navigating to chat: $e');
+  }
+}
+
+// Handle background chat messages
+Future<void> _handleBackgroundChatMessage(RemoteMessage message) async {
+  try {
+    developer.log('💬 Handling background chat message');
+    
+    final title = message.notification?.title ?? message.data['senderName'] ?? 'New Message';
+    final body = message.notification?.body ?? message.data['message'] ?? 'You have a new message';
+    
+    await _showBackgroundChatNotification(title, body, message.data);
+    
+  } catch (e) {
+    developer.log('❌ Error handling background chat: $e');
+  }
+}
+
+// Show background chat notification
+Future<void> _showBackgroundChatNotification(
+  String title, 
+  String body, 
+  Map<String, dynamic> data
 ) async {
   try {
-    // Enhanced background notification structure
     const androidDetails = AndroidNotificationDetails(
       'chat_messages',
       'Chat Messages',
-      channelDescription: 'Notifications for new chat messages',
-      importance: Importance.max,
-      priority: Priority.max,
-      showWhen: true,
+      channelDescription: 'Notifications for chat messages',
+      importance: Importance.high,
+      priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      styleInformation: BigTextStyleInformation(
-        '',
-        htmlFormatBigText: true,
-      ),
-      actions: [
-        AndroidNotificationAction(
-          'reply',
-          'Reply',
-          inputs: [
-            AndroidNotificationActionInput(
-              label: 'Type a message...',
-            ),
-          ],
-        ),
-        AndroidNotificationAction(
-          'mark_read',
-          'Mark as Read',
-        ),
-      ],
-      autoCancel: true,
-      visibility: NotificationVisibility.public,
-      ticker: 'New message received',
       enableVibration: true,
       playSound: true,
       enableLights: true,
+      ledColor: Color.fromRGBO(244, 135, 6, 1),
     );
 
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default.wav',
       interruptionLevel: InterruptionLevel.active,
     );
 
@@ -845,46 +749,86 @@ Future<void> _showBackgroundLocalNotification(
       iOS: iosDetails,
     );
 
-    final notificationId = _generateNotificationId(data);
-    
-    await plugin.show(
-      notificationId,
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
       title,
       body,
       notificationDetails,
       payload: jsonEncode(data),
     );
     
-    developer.log('✅ Background local notification displayed with ID: $notificationId');
+    developer.log('✅ Background chat notification shown');
+    
   } catch (e) {
-    developer.log('❌ Error showing background local notification: $e');
+    developer.log('❌ Error showing chat notification: $e');
   }
 }
 
-int _generateNotificationId(Map<String, dynamic> data) {
-  final chatId = data['chatId']?.toString() ?? '';
-  if (chatId.isNotEmpty) {
-    return chatId.hashCode.abs();
+// Show basic background notification
+Future<void> _showBackgroundNotification(RemoteMessage message) async {
+  try {
+    final title = message.notification?.title ?? 'New Notification';
+    final body = message.notification?.body ?? 'You have a new notification';
+    
+    await _showBackgroundChatNotification(title, body, message.data);
+    
+  } catch (e) {
+    developer.log('❌ Error showing background notification: $e');
   }
-  return DateTime.now().millisecondsSinceEpoch.remainder(100000);
 }
 
-// Continue with your existing functions...
-// (Keep all your existing connectivity, initialization, and app functions as they are)
+// Emergency call notification as absolute last resort
+Future<void> _showEmergencyCallNotification(RemoteMessage message) async {
+  try {
+    developer.log('🚨 === SHOWING EMERGENCY CALL NOTIFICATION ===');
+    
+    // Start emergency alerts
+    await _startMultiMethodRingtone();
+    await _startEmergencyVibration();
+    
+    final callerName = message.data['callerName'] ?? 'Unknown Caller';
+    
+    const androidDetails = AndroidNotificationDetails(
+      'emergency_calls',
+      'Emergency Calls',
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      ongoing: true,
+      autoCancel: false,
+      enableVibration: true,
+      playSound: true,
+      enableLights: true,
+      ledColor: Colors.red,
+    );
+    
+    const notificationDetails = NotificationDetails(android: androidDetails);
+    
+    await flutterLocalNotificationsPlugin.show(
+      999999, // Emergency ID
+      '🚨 EMERGENCY CALL 🚨',
+      'CALL FROM $callerName - TAP TO ANSWER',
+      notificationDetails,
+      payload: jsonEncode(message.data),
+    );
+    
+    developer.log('🚨 EMERGENCY notification shown');
+    
+  } catch (e) {
+    developer.log('❌ CRITICAL: Emergency notification failed: $e');
+  }
+}
 
 // Enhanced connectivity check function
 Future<bool> _checkInternetConnectivity() async {
   try {
-    // First check connectivity status
     final connectivityResults = await Connectivity().checkConnectivity();
     
-    // Check if any connection type is available
     if (connectivityResults.every((result) => result == ConnectivityResult.none)) {
       developer.log('📶 No connectivity reported by system');
       return false;
     }
     
-    // Double-check with a simple network call
     try {
       final result = await InternetAddress.lookup('google.com')
           .timeout(const Duration(seconds: 5));
@@ -933,18 +877,15 @@ Future<void> _initializeAppDataWithFallback(bool hasInternet) async {
     } else {
       // Try offline initialization
       try {
-        // You'll need to add this method to your AppData class
         await AppData().initializeOffline();
         developer.log('✅ AppData initialized in offline mode');
       } catch (offlineError) {
         developer.log('⚠️ AppData offline initialization failed, using minimal setup');
-        // Minimal initialization fallback
         await _initializeMinimalAppData();
       }
     }
   } catch (e) {
     developer.log('❌ AppData initialization failed: $e');
-    // Try minimal initialization as last resort
     await _initializeMinimalAppData();
   }
 }
@@ -952,13 +893,14 @@ Future<void> _initializeAppDataWithFallback(bool hasInternet) async {
 // Minimal AppData initialization for offline mode
 Future<void> _initializeMinimalAppData() async {
   try {
-    // Initialize only essential offline components
     developer.log('⚠️ Using minimal AppData initialization');
+    // Initialize only essential offline components
   } catch (e) {
     developer.log('❌ Even minimal AppData initialization failed: $e');
   }
 }
 
+// Initialize call services
 Future<void> _initializeCallServices() async {
   try {
     // Initialize WebRTC call service
@@ -1061,27 +1003,7 @@ Future<void> _initializeApp() async {
   }
 }
 
-Future<void> _testNotificationSystem() async {
-  try {
-    developer.log('🧪 === TESTING NOTIFICATION SYSTEM ===');
-    
-    final notificationService = FirebaseNotificationService();
-    
-    // Wait a moment for initialization to complete
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Show test notification
-    await notificationService.showTestNotification();
-    
-    // Debug notification status
-    await notificationService.debugNotificationStatus();
-    
-    developer.log('✅ Notification system test completed');
-  } catch (e) {
-    developer.log('❌ Notification system test failed: $e');
-  }
-}
-
+// Test FCM token
 Future<void> _testFCMToken() async {
   try {
     developer.log('🧪 === TESTING FCM TOKEN ===');
@@ -1102,6 +1024,7 @@ Future<void> _testFCMToken() async {
   }
 }
 
+// Setup notification listeners
 void _setupNotificationListeners() {
   try {
     developer.log('📱 === SETTING UP NOTIFICATION LISTENERS ===');
@@ -1133,7 +1056,7 @@ void _setupNotificationListeners() {
     // Handle notification taps when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       developer.log('👆 App opened from notification: ${message.messageId}');
-      _handleNotificationTap(message);
+      _handleNotificationTapFromMessage(message);
     });
 
     // Handle notification taps when app is terminated
@@ -1142,7 +1065,7 @@ void _setupNotificationListeners() {
         developer.log('🚀 App launched from notification: ${message.messageId}');
         // Delay navigation to ensure app is fully loaded
         Future.delayed(const Duration(seconds: 2), () {
-          _handleNotificationTap(message);
+          _handleNotificationTapFromMessage(message);
         });
       }
     });
@@ -1153,7 +1076,7 @@ void _setupNotificationListeners() {
   }
 }
 
-// NEW: Handle foreground call messages
+// Handle foreground call messages
 void _handleForegroundCallMessage(RemoteMessage message) {
   try {
     developer.log('📞 === HANDLING FOREGROUND CALL MESSAGE ===');
@@ -1210,7 +1133,7 @@ void _showImmediateFeedback(RemoteMessage message) {
       mainButton: TextButton(
         onPressed: () {
           Get.back();
-          _handleNotificationTap(message);
+          _handleNotificationTapFromMessage(message);
         },
         child: const Text(
           'View',
@@ -1231,9 +1154,10 @@ void _showImmediateFeedback(RemoteMessage message) {
   }
 }
 
-void _handleNotificationTap(RemoteMessage message) {
+// Handle notification tap from message
+void _handleNotificationTapFromMessage(RemoteMessage message) {
   try {
-    developer.log('👆 Handling notification tap...');
+    developer.log('👆 Handling notification tap from message...');
     developer.log('Data: ${message.data}');
     
     final data = message.data;
@@ -1242,10 +1166,10 @@ void _handleNotificationTap(RemoteMessage message) {
     switch (type) {
       case 'chat':
       case 'message':
-        _navigateToChat(data);
+        _navigateToChatFromNotification(data);
         break;
       case 'call':
-        _handleCallNotificationTap(data);
+        _handleCallNotificationTapFromMessage(data);
         break;
       default:
         // Navigate to home if no specific action
@@ -1253,51 +1177,17 @@ void _handleNotificationTap(RemoteMessage message) {
         break;
     }
   } catch (e) {
-    developer.log('❌ Error handling notification tap: $e');
+    developer.log('❌ Error handling notification tap from message: $e');
   }
 }
 
-void _navigateToChat(Map<String, dynamic> data) {
+// Handle call notification tap from message
+void _handleCallNotificationTapFromMessage(Map<String, dynamic> data) {
   try {
-    final senderId = data['senderId']?.toString() ?? '';
-    final senderName = data['senderName']?.toString() ?? 'Unknown';
-    final chatId = data['chatId']?.toString() ?? '';
+    developer.log('📞 Handling call notification tap from message: $data');
     
-    if (senderId.isNotEmpty) {
-      // Navigate to chat screen
-      Get.toNamed('/chat', arguments: {
-        'receiverUser': {
-          'id': senderId,
-          'userId': senderId,
-          '_id': senderId,
-          'name': senderName,
-        },
-        'chatId': chatId,
-        'fromNotification': true,
-      });
-      
-      // Mark messages as read
-      try {
-        final chatController = Get.find<FireChatController>();
-        if (chatId.isNotEmpty) {
-          chatController.markMessagesAsRead(chatId);
-        }
-      } catch (e) {
-        developer.log('Controller not found, will mark as read when available');
-      }
-    }
-  } catch (e) {
-    developer.log('❌ Error navigating to chat: $e');
-  }
-}
-
-void _handleCallNotificationTap(Map<String, dynamic> data) {
-  try {
-    developer.log('📞 Handling call notification tap: $data');
-    
-    // Stop any background ringtone
-    _stopBackgroundRingtone();
-    _stopBackgroundVibration();
+    // Stop any emergency alerts
+    _stopAllEmergencyAlerts();
     
     // Show incoming call screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1382,10 +1272,8 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
         developer.log('📶 Connectivity changed: $isOnline');
         
         if (isOnline) {
-          // Reconnected - reinitialize online services
           _handleReconnection();
         } else {
-          // Disconnected - handle offline mode
           _handleDisconnection();
         }
       }

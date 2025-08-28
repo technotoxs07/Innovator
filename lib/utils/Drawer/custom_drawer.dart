@@ -15,6 +15,7 @@ import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/Notification/FCM_Services.dart';
 import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
+import 'package:innovator/screens/Events/Events.dart';
 import 'package:innovator/screens/F&Q/F&Qscreen.dart';
 import 'package:innovator/screens/Privacy_Policy/privacy_screen.dart';
 import 'package:innovator/screens/Profile/profile_page.dart';
@@ -32,7 +33,7 @@ class SmoothDrawerService {
   static void showLeftDrawer(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        opaque: false,
+        opaque: false, 
         barrierDismissible: true,
         barrierColor: Colors.black54,
         transitionDuration: const Duration(
@@ -473,7 +474,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => Project_HomeScreen(),
+                                        builder: (_) => EventsHomePage(),
                                       ),
                                     );
                                   },

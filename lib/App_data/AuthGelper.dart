@@ -7,7 +7,7 @@ class AuthHelper {
     final appData = Provider.of<AppData>(context, listen: false);
     final userId = appData.currentUserId;
 
-    if (userId == null && redirectOnNull) {
+    if (userId == null && redirectOnNull) { 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User not authenticated. Please log in.')),

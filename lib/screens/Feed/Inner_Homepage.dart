@@ -13,6 +13,7 @@ import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/screens/Feed/Optimize%20Media/OptimizeMediaScreen.dart';
+import 'package:innovator/screens/Feed/SuggestedUsr.dart';
 import 'package:innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
 import 'package:innovator/screens/Follow/follow-Service.dart';
 import 'package:innovator/screens/Follow/follow_Button.dart';
@@ -457,7 +458,9 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   final List<FeedContent> _allContents = [];
   final ScrollController _scrollController = ScrollController();
   final AppData _appData = AppData();
-  
+    Set<int> _suggestedUsersShownAt = {}; // Track where suggestions were shown
+  bool _suggestionsEnabled = true;
+
   // Loading and error states
   bool _isLoading = false;
   bool _hasError = false;
@@ -817,9 +820,22 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
   }
 
+  void _toggleSuggestions() {
+    setState(() {
+      _suggestionsEnabled = !_suggestionsEnabled;
+      if (!_suggestionsEnabled) {
+        _suggestedUsersShownAt.clear();
+      }
+    });
+  }
+
   // ENHANCED: Refresh with cursor reset
   Future<void> _refresh() async {
     debugPrint('🔄 Refreshing feed...');
+    
+    // Reset suggestions tracking
+    _suggestedUsersShownAt.clear();
+    //_SuggestedUsersWidgetState._hasBeenShown = false;
     
     HapticFeedback.mediumImpact();
     
@@ -871,6 +887,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       _handleError('Failed to refresh feed');
     }
   }
+
 
   // Retry with different parameters
   Future<void> _retryLoadWithDifferentParams() async {
@@ -1078,71 +1095,174 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     );
   }
 
+
+
+
+
   // ENHANCED: Debug information in the infinite scroll list
-  Widget _buildInfiniteScrollList() {
-  return Stack(
-    children: [
-      Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              physics: AlwaysScrollableScrollPhysics(),
-              cacheExtent: 1000.0,
-              itemCount: _allContents.length + (_isLoading ? 1 : 0) + (_shouldShowEndMessage() ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index < _allContents.length) {
-                  return _buildContentItem(_allContents[index]);
-                }
-
-                if (index == _allContents.length && _isLoading) {
-                  return _buildLoadingIndicator();
-                }
-
-                if (index == _allContents.length && _shouldShowEndMessage()) {
-                  return _buildEndMessage();
-                }
-
-                return SizedBox.shrink();
-              },
+ Widget _buildInfiniteScrollList() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                physics: AlwaysScrollableScrollPhysics(),
+                cacheExtent: 1000.0,
+                itemCount: _calculateTotalItemCount(),
+                itemBuilder: (context, index) {
+                  return _buildListItem(index);
+                },
+              ),
             ),
-          ),
-        ],
-      ),
-      // Custom refresh indicator overlay
-      if (_isLoading && _allContents.isEmpty)
-        Positioned.fill(
-          child: Container(
-            color: Colors.white.withOpacity(0.8),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    child: Image.asset(
-                      'animation/IdeaBulb.gif',
-                      fit: BoxFit.contain,
+          ],
+        ),
+        // Custom refresh indicator overlay
+        if (_isLoading && _allContents.isEmpty)
+          Positioned.fill(
+            child: Container(
+              color: Colors.white.withOpacity(0.8),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      child: Image.asset(
+                        'animation/IdeaBulb.gif',
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Refreshing feed...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
+                    SizedBox(height: 16),
+                    Text(
+                      'Refreshing feed...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
+ int _calculateTotalItemCount() {
+    int baseCount = _allContents.length;
+    if (_isLoading) baseCount++;
+    if (_shouldShowEndMessage()) baseCount++;
+    
+    // Add suggested users count based on random positions
+    baseCount += _calculateSuggestedUsersCount();
+    
+    return baseCount;
+  }
+
+  // NEW: Calculate how many suggested user sections to show
+  int _calculateSuggestedUsersCount() {
+    if (!_suggestionsEnabled || _allContents.length < 5) return 0;
+    
+    // Show suggestions at multiple random positions
+    return _getSuggestedUsersPositions().length;
+  }
+
+  // NEW: Get positions where suggested users should appear
+  List<int> _getSuggestedUsersPositions() {
+    List<int> positions = [];
+    
+    if (_allContents.length >= 5) {
+      // First suggestion after 3-7 posts (random)
+      int firstPosition = 3 + (_allContents.length % 5);
+      positions.add(firstPosition);
+      
+      // Additional suggestions every 8-15 posts
+      int nextPosition = firstPosition + 8 + (_allContents.length % 8);
+      while (nextPosition < _allContents.length - 2) {
+        positions.add(nextPosition);
+        nextPosition += 8 + (nextPosition % 8);
+      }
+    }
+    
+    return positions;
+  }
+
+  // NEW: Build individual list items with suggestions
+  Widget _buildListItem(int index) {
+    // Check if this index should show suggested users
+    if (_shouldShowSuggestedUsersAtIndex(index)) {
+      return _buildSuggestedUsersAtIndex(index);
+    }
+    
+    // Get the adjusted content index (accounting for inserted suggestions)
+    final adjustedIndex = _getAdjustedContentIndex(index);
+    
+    // Show regular content
+    if (adjustedIndex < _allContents.length) {
+      return _buildContentItem(_allContents[adjustedIndex]);
+    }
+    
+    // Show loading indicator
+    if (adjustedIndex == _allContents.length && _isLoading) {
+      return _buildLoadingIndicator();
+    }
+    
+    // Show end message
+    if (adjustedIndex == _allContents.length && _shouldShowEndMessage()) {
+      return _buildEndMessage();
+    }
+    
+    return SizedBox.shrink();
+  }
+
+  // NEW: Check if suggested users should show at this index
+  bool _shouldShowSuggestedUsersAtIndex(int index) {
+    if (!_suggestionsEnabled) return false;
+    
+    final positions = _getSuggestedUsersPositions();
+    int adjustedIndex = index;
+    
+    // Adjust for previously shown suggestions
+    for (int pos in positions) {
+      int actualPosition = pos + _suggestedUsersShownAt.where((shown) => shown <= pos).length;
+      if (adjustedIndex == actualPosition) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // NEW: Build suggested users widget with unique key
+  Widget _buildSuggestedUsersAtIndex(int index) {
+    // Track that we've shown suggestions at this position
+    _suggestedUsersShownAt.add(index);
+    
+    return Container(
+      key: ValueKey('suggested_users_$index'),
+      child: SuggestedUsersWidget(),
+    );
+  }
+
+  // NEW: Get adjusted content index accounting for suggestions
+  int _getAdjustedContentIndex(int listIndex) {
+    int suggestionsBeforeIndex = 0;
+    final positions = _getSuggestedUsersPositions();
+    
+    for (int pos in positions) {
+      int actualPosition = pos + suggestionsBeforeIndex;
+      if (listIndex > actualPosition) {
+        suggestionsBeforeIndex++;
+      }
+    }
+    
+    return listIndex - suggestionsBeforeIndex;
+  }
 
   Widget _buildContentItem(FeedContent content) {
     return RepaintBoundary(
@@ -3849,16 +3969,54 @@ class _LinkifyText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Regular expressions for different patterns
     final RegExp urlRegExp = RegExp(
       r'(https?:\/\/[^\s]+)',
       caseSensitive: false,
     );
+    
+    final RegExp hashtagRegExp = RegExp(
+      r'(#[a-zA-Z0-9_]+)',
+      caseSensitive: false,
+    );
 
     final List<InlineSpan> spans = [];
-    final matches = urlRegExp.allMatches(text);
-
+    final List<_TextMatch> allMatches = [];
+    
+    // Collect all URL matches
+    allMatches.addAll(
+      urlRegExp.allMatches(text).map((match) => _TextMatch(match, 'url'))
+    );
+    
+    // Collect all hashtag matches
+    allMatches.addAll(
+      hashtagRegExp.allMatches(text).map((match) => _TextMatch(match, 'hashtag'))
+    );
+    
+    // Sort matches by position
+    allMatches.sort((a, b) => a.match.start.compareTo(b.match.start));
+    
+    // Remove overlapping matches (URLs take priority)
+    final List<_TextMatch> filteredMatches = [];
+    for (int i = 0; i < allMatches.length; i++) {
+      bool shouldAdd = true;
+      for (int j = 0; j < filteredMatches.length; j++) {
+        if (_matchesOverlap(allMatches[i].match, filteredMatches[j].match)) {
+          shouldAdd = false;
+          break;
+        }
+      }
+      if (shouldAdd) {
+        filteredMatches.add(allMatches[i]);
+      }
+    }
+    
+    // Build text spans
     int lastMatchEnd = 0;
-    for (final match in matches) {
+    for (final matchWithType in filteredMatches) {
+      final match = matchWithType.match;
+      
+      // Add text before the match
       if (match.start > lastMatchEnd) {
         spans.add(
           TextSpan(
@@ -3867,37 +4025,75 @@ class _LinkifyText extends StatelessWidget {
           ),
         );
       }
-      final url = match.group(0)!;
-      spans.add(
-        TextSpan(
-          text: url,
-          style:
-              style?.copyWith(
-                color: Colors.blue,
-                decoration: TextDecoration.underline,
-              ) ??
-              const TextStyle(
-                color: Colors.blue,
-                decoration: TextDecoration.underline,
-              ),
-          recognizer:
-              TapGestureRecognizer()
-                ..onTap = () async {
-                  final uri = Uri.parse(url);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Could not Open link')),
-                    );
-                  }
-                },
-        ),
-      );
+      
+      final matchText = match.group(0)!;
+      
+      if (matchWithType.type == 'url') {
+        // Handle URL
+        spans.add(
+          TextSpan(
+            text: matchText,
+            style: style?.copyWith(
+              color: Colors.blue.shade600,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
+            ) ?? TextStyle(
+              color: Colors.blue.shade600,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () async {
+                final uri = Uri.parse(matchText);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not open link')),
+                  );
+                }
+              },
+          ),
+        );
+      } else if (matchWithType.type == 'hashtag') {
+        // Handle Hashtag - Change this color to your preference
+        spans.add(
+          TextSpan(
+            text: matchText,
+            style: style?.copyWith(
+              color: Colors.purple.shade600, // Change this to your desired hashtag color
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.none,
+            ) ?? TextStyle(
+              color: Colors.purple.shade600, // Change this to your desired hashtag color
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.none,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                // Optional: Handle hashtag tap
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Hashtag tapped: $matchText'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+          ),
+        );
+      }
+      
       lastMatchEnd = match.end;
     }
+    
+    // Add remaining text
     if (lastMatchEnd < text.length) {
-      spans.add(TextSpan(text: text.substring(lastMatchEnd), style: style));
+      spans.add(
+        TextSpan(
+          text: text.substring(lastMatchEnd),
+          style: style,
+        ),
+      );
     }
 
     return RichText(
@@ -3906,6 +4102,18 @@ class _LinkifyText extends StatelessWidget {
       overflow: overflow ?? TextOverflow.clip,
     );
   }
+  
+  bool _matchesOverlap(RegExpMatch match1, RegExpMatch match2) {
+    return (match1.start < match2.end && match1.end > match2.start);
+  }
+}
+
+// Helper class to track match types
+class _TextMatch {
+  final RegExpMatch match;
+  final String type;
+  
+  _TextMatch(this.match, this.type);
 }
 
 extension DateTimeExtension on DateTime {

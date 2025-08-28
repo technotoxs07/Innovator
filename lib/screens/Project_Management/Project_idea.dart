@@ -136,9 +136,9 @@ class _Project_HomeScreenState extends State<Project_HomeScreen> with TickerProv
           controller: _tabController,
           indicatorColor: Colors.white,
           tabs: [
-            Tab(text: 'My Projects', icon: Icon(Icons.assignment)),
-            Tab(text: 'Find Mentors', icon: Icon(Icons.people)),
-            Tab(text: 'Reviews', icon: Icon(Icons.star)),
+            Tab(text: 'My Projects', icon: Icon(Icons.assignment, color: Colors.white,)),
+            Tab(text: 'Find Mentors', icon: Icon(Icons.people, color: Colors.white,)),
+            Tab(text: 'Reviews', icon: Icon(Icons.star, color: Colors.white,)),
           ],
         ),
       ),
@@ -154,7 +154,7 @@ class _Project_HomeScreenState extends State<Project_HomeScreen> with TickerProv
           ? FloatingActionButton.extended(
               onPressed: _showCreateProjectDialog,
               icon: Icon(Icons.add),
-              label: Text('New Project'),
+              label: Text('New Project',style: TextStyle(color: Colors.white),),
             )
           : null,
     );

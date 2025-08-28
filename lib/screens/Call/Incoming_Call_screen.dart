@@ -337,7 +337,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   }
 
   @override
-  void dispose() {
+  void dispose() {  
     _pulseController.dispose();
     _slideController.dispose();
     _acceptController.dispose();

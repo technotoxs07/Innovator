@@ -393,7 +393,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
               ),
       ),
     ));
-  }
+  } 
 
   Widget _buildVideoStats() {
     return Container(
@@ -467,7 +467,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
                       ),
                       child: Center(
                         child: Text(
-                          receiverName.isNotEmpty 
+                          receiverName.isEmpty
                               ? receiverName.substring(0, 1).toUpperCase()
                               : 'U',
                           style: const TextStyle(

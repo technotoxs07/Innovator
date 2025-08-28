@@ -8,6 +8,7 @@ import 'package:innovator/screens/Course/models/api_models.dart';
 import 'package:innovator/screens/Course/services/api_services.dart';
 import 'package:innovator/screens/Course/sub_category_screen.dart';
 import 'package:innovator/screens/Events/Events.dart';
+import 'package:innovator/screens/Project_Management/Project_idea.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/utils/Drawer/custom_drawer.dart';
 import 'package:innovator/Notification/FCM_Services.dart';
@@ -35,7 +36,7 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
     {'icon': Icons.home, 'name': 'FEED', 'action': 'navigate_golf'},
     {'icon': Icons.school, 'name': 'COURSE', 'action': 'open_search'},
     {'icon': Icons.add_a_photo, 'name': 'ADD POST', 'action': 'add_photo'},
-    {'icon': Icons.event, 'name': 'Events', 'action': 'show_events'},
+    {'icon': Icons.developer_mode, 'name': 'Events', 'action': 'show_events'},
   ];
 
   final List<Map<String, dynamic>> _bottomIcons = [
@@ -175,7 +176,7 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
       case 'show_events':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => EventsHomePage()),
+          MaterialPageRoute(builder: (_) => Project_HomeScreen()),
         );
         break;
       case 'open_settings':

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:innovator/App_data/App_data.dart';
+import 'package:innovator/screens/Feed/SuggestedUsr.dart';
 import 'package:innovator/screens/Follow/follow-Service.dart';
 import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
@@ -166,7 +167,7 @@ class _SearchPageState extends State<SearchPage>
       _isSearching = true;
       _isLoading = true;
     });
-
+ 
     try {
       final response = await http.get(
         Uri.parse('http://182.93.94.210:3066/api/v1/users'),
@@ -251,7 +252,8 @@ class _SearchPageState extends State<SearchPage>
                         Expanded(
                           child: _buildContentSection(isDarkMode),
                         ),
-                      ],
+                        SuggestedUsersWidget()
+                      ], 
                     ),
                   ),
                 );
