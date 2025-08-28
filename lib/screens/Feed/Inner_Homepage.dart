@@ -1233,7 +1233,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       if (adjustedIndex == actualPosition) {
         return true;
       }
-    }
+    }                                                                     
     
     return false;
   }
@@ -2345,18 +2345,22 @@ class _FeedItemState extends State<FeedItem>
   }
 
   Color _getTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'post':
-        return Colors.blue.shade600;
-      case 'photo':
-        return Colors.green.shade600;
-      case 'video':
-        return Colors.red.shade600;
-      case 'story':
-        return Colors.purple.shade600;
-      default:
-        return Colors.grey.shade600;
-    }
+     switch (type.toLowerCase()) {
+    case 'innovation':
+      return Colors.amber.shade700;
+    case 'idea':
+      return Colors.teal.shade600;
+    case 'project':
+      return Colors.indigo.shade600;
+    case 'question':
+      return Colors.orange.shade600;
+    case 'announcement':
+      return Colors.deepPurple.shade600;
+    case 'other':
+      return Colors.grey.shade600;
+    default:
+      return Colors.blueGrey.shade600;
+  }
   }
 
   Widget _buildAuthorAvatar() {
