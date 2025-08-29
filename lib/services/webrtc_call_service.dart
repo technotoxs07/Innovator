@@ -3,9 +3,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as webrtc;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:innovator/main.dart';
 import 'package:innovator/screens/Call/Incoming_Call_screen.dart';
 import 'package:innovator/services/Firebase_Messaging.dart';
 import 'package:innovator/services/call_notification_service.dart';
@@ -70,9 +72,16 @@ class WebRTCCallService extends GetxService {
   @override
   void onInit() {
     super.onInit();
-    developer.log('🎥 WebRTC Call Service initialized');
-    _initializeVideoRenderers();
+      _lastInitTime = DateTime.now();
+
+  developer.log('WebRTC Call Service initialized');
+  _initializeVideoRenderers();
+  
+  // CRITICAL: Clean up old calls before setting up listener
+  _cleanupOldCalls().then((_) {
+    // Only setup listener after cleanup is complete
     _setupIncomingCallListener();
+  });
   }
   
   @override
@@ -117,89 +126,193 @@ class WebRTCCallService extends GetxService {
   
   // FIXED: Setup proper incoming call listener
   void _setupIncomingCallListener() {
-    final currentUserId = _getCurrentUserId();
-    if (currentUserId.isEmpty) {
-      developer.log('❌ No current user ID, cannot setup call listener');
+  final currentUserId = _getCurrentUserId();
+  if (currentUserId.isEmpty) {
+    developer.log('No current user ID, cannot setup call listener');
+    return;
+  }
+  
+  developer.log('Setting up incoming call listener for: $currentUserId');
+  
+  _incomingCallSubscription = _firestore
+      .collection('calls')
+      .where('receiverId', isEqualTo: currentUserId)
+      .where('status', isEqualTo: 'calling')
+      .snapshots()
+      .listen(
+        (snapshot) {
+          for (var change in snapshot.docChanges) {
+            if (change.type == DocumentChangeType.added) {
+              final callData = change.doc.data() as Map<String, dynamic>;
+              
+              // CRITICAL: Check if call is recent (within last 2 minutes)
+              final createdAt = callData['createdAt'] as Timestamp?;
+              if (createdAt != null) {
+                final callAge = DateTime.now().difference(createdAt.toDate());
+                if (callAge.inMinutes > 2) {
+                  developer.log('Ignoring old call: ${callData['callId']}, age: ${callAge.inMinutes} minutes');
+                  
+                  // Mark old call as expired
+                  _firestore.collection('calls').doc(change.doc.id).update({
+                    'status': 'expired',
+                    'expiredAt': FieldValue.serverTimestamp(),
+                  });
+                  continue;
+                }
+              }
+              
+              developer.log('New incoming call detected: ${callData['callId']}');
+              _handleIncomingCall(callData);
+            }
+          }
+        },
+        onError: (error) {
+          developer.log('Error in incoming call listener: $error');
+        },
+      );
+}
+
+// Add this method to WebRTCCallService
+Future<void> _startCallExpiryTimer(String callId) async {
+  Timer(const Duration(minutes: 2), () async {
+    try {
+      final callDoc = await _firestore.collection('calls').doc(callId).get();
+      if (callDoc.exists) {
+        final data = callDoc.data()!;
+        final status = data['status'] as String;
+        
+        // If call is still in calling state after 2 minutes, expire it
+        if (status == 'calling') {
+          await _firestore.collection('calls').doc(callId).update({
+            'status': 'expired',
+            'expiredAt': FieldValue.serverTimestamp(),
+          });
+          developer.log('Call expired due to timeout: $callId');
+        }
+      }
+    } catch (e) {
+      developer.log('Error expiring call: $e');
+    }
+  });
+}
+  
+  // FIXED: Handle incoming call properly
+  // In webrtc_call_service.dart
+void _handleIncomingCall(Map<String, dynamic> callData) {
+  try {
+    // Check if already in a call
+    if (isCallActive.value) {
+      developer.log('📞 Already in call, rejecting incoming call');
+      rejectCall(callData['callId']);
       return;
     }
     
-    developer.log('🔔 Setting up incoming call listener for: $currentUserId');
+    developer.log('📞 Processing incoming call: ${callData['callId']}');
     
-    _incomingCallSubscription = _firestore
-        .collection('calls')
-        .where('receiverId', isEqualTo: currentUserId)
-        .where('status', isEqualTo: 'calling')
-        .snapshots()
-        .listen(
-          (snapshot) {
-            for (var change in snapshot.docChanges) {
-              if (change.type == DocumentChangeType.added) {
-                final callData = change.doc.data() as Map<String, dynamic>;
-                developer.log('📞 New incoming call detected: ${callData['callId']}');
-                _handleIncomingCall(callData);
-              }
-            }
-          },
-          onError: (error) {
-            developer.log('❌ Error in incoming call listener: $error');
-          },
-        );
-  }
-  
-  // FIXED: Handle incoming call properly
-  void _handleIncomingCall(Map<String, dynamic> callData) {
-    try {
-      // Check if already in a call
-      if (isCallActive.value) {
-        developer.log('📞 Already in call, rejecting incoming call');
-        rejectCall(callData['callId']);
-        return;
+    // Update call state
+    isIncomingCall.value = true;
+    currentCallData.value = callData;
+    currentCallId.value = callData['callId'];
+    
+    // FIXED: Wait for next frame and check if Get context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<GetMaterialController>() || Get.key.currentContext != null) {
+        _showIncomingCallScreen(callData);
+      } else {
+        developer.log('⚠️ GetX context not ready, showing notification instead');
+        _showLocalCallNotification(callData);
       }
-      
-      developer.log('📞 Processing incoming call: ${callData['callId']}');
-      
-      // Update call state
-      isIncomingCall.value = true;
-      currentCallData.value = callData;
-      currentCallId.value = callData['callId'];
-      
-      // Show incoming call screen
-      _showIncomingCallScreen(callData);
-      
-      // CRITICAL: Send local notification to ensure user sees the call
-      _showLocalCallNotification(callData);
-      
-    } catch (e) {
-      developer.log('❌ Error handling incoming call: $e');
-    }
+    });
+    
+    // Always show local notification as backup
+    _showLocalCallNotification(callData);
+    
+  } catch (e) {
+    developer.log('❌ Error handling incoming call: $e');
+    // Fallback to notification
+    _showLocalCallNotification(callData);
   }
+}
   
   // FIXED: Show incoming call screen
   void _showIncomingCallScreen(Map<String, dynamic> callData) {
-    try {
-      developer.log('📱 Showing incoming call screen');
-      
-      // Navigate to incoming call screen with proper data
-      Get.to(
-        () => IncomingCallScreen(callData: callData),
-        transition: Transition.fadeIn,
-        fullscreenDialog: true,
-        preventDuplicates: false,
-      );
-      
-    } catch (e) {
-      developer.log('❌ Error showing incoming call screen: $e');
+  try {
+    if (!_isNavigationReady()) {
+      developer.log('⚠️ Navigation not ready, showing notification instead');
+      _showLocalCallNotification(callData);
+      return;
     }
+    
+    developer.log('📱 Showing incoming call screen');
+    
+    Get.to(
+      () => IncomingCallScreen(callData: callData),
+      transition: Transition.fadeIn,
+      fullscreenDialog: true,
+      preventDuplicates: true, // Add this to prevent duplicates
+    );
+    
+  } catch (e) {
+    developer.log('❌ Error showing incoming call screen: $e');
+    // Fallback to notification
+    _showLocalCallNotification(callData);
   }
+}
+
+  bool _isNavigationReady() {
+  try {
+    return Get.key.currentContext != null && 
+           WidgetsBinding.instance.lifecycleState != null;
+  } catch (e) {
+    return false;
+  }
+}
   
+
+  // Add this method to WebRTCCallService class
+Future<void> _cleanupOldCalls() async {
+  try {
+    final currentUserId = _getCurrentUserId();
+    if (currentUserId.isEmpty) return;
+    
+    developer.log('Cleaning up old call documents...');
+    
+    // Get all calls where this user is receiver and status is 'calling'
+    final oldCalls = await _firestore
+        .collection('calls')
+        .where('receiverId', isEqualTo: currentUserId)
+        .where('status', isEqualTo: 'calling')
+        .get();
+    
+    // Update all old calling status to 'expired'
+    final batch = _firestore.batch();
+    for (var doc in oldCalls.docs) {
+      batch.update(doc.reference, {
+        'status': 'expired',
+        'expiredAt': FieldValue.serverTimestamp(),
+      });
+    }
+    
+    if (oldCalls.docs.isNotEmpty) {
+      await batch.commit();
+      developer.log('Cleaned up ${oldCalls.docs.length} old call documents');
+    }
+    
+  } catch (e) {
+    developer.log('Error cleaning up old calls: $e');
+  }
+}
+
   // FIXED: Show local notification for incoming call
-  void _showLocalCallNotification(Map<String, dynamic> callData) {
-    try {
-      final callerName = callData['callerName']?.toString() ?? 'Unknown Caller';
-      final isVideoCall = callData['isVideoCall'] == true;
-      final callId = callData['callId']?.toString() ?? '';
-      
-      // Use the Firebase notification service to show local notification
+  // In webrtc_call_service.dart
+void _showLocalCallNotification(Map<String, dynamic> callData) {
+  try {
+    final callerName = callData['callerName']?.toString() ?? 'Unknown Caller';
+    final isVideoCall = callData['isVideoCall'] == true;
+    final callId = callData['callId']?.toString() ?? '';
+    
+    // FIXED: Check if service is registered before using
+    if (Get.isRegistered<FirebaseNotificationService>()) {
       final notificationService = Get.find<FirebaseNotificationService>();
       notificationService.sendCallNotification(
         token: '',
@@ -207,13 +320,65 @@ class WebRTCCallService extends GetxService {
         callerName: callerName,
         isVideoCall: isVideoCall,
       );
-      
-      developer.log('📱 Local call notification shown');
-      
-    } catch (e) {
-      developer.log('❌ Error showing local call notification: $e');
+      developer.log('📱 Local call notification shown via service');
+    } else {
+      // FIXED: Fallback to direct notification plugin usage
+      _showDirectNotification(callId, callerName, isVideoCall, callData);
     }
+    
+  } catch (e) {
+    developer.log('❌ Error showing local call notification: $e');
+    // Final fallback
+    _showDirectNotification(
+      callData['callId']?.toString() ?? '',
+      callData['callerName']?.toString() ?? 'Unknown',
+      callData['isVideoCall'] == true,
+      callData
+    );
   }
+}
+
+// Add this fallback method
+void _showDirectNotification(String callId, String callerName, bool isVideoCall, Map<String, dynamic> data) {
+  try {
+    // Use the global notification plugin directly
+    const androidDetails = AndroidNotificationDetails(
+      'incoming_calls',
+      'Incoming Calls',
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      ongoing: true,
+      autoCancel: false,
+      enableVibration: true,
+      playSound: true,
+    );
+    
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.critical,
+    );
+    
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+    
+    flutterLocalNotificationsPlugin.show(
+      callId.hashCode.abs(),
+      'Incoming ${isVideoCall ? 'Video' : 'Voice'} Call',
+      'Call from $callerName',
+      notificationDetails,
+      payload: jsonEncode(data),
+    );
+    
+    developer.log('📱 Direct notification shown successfully');
+  } catch (e) {
+    developer.log('❌ Direct notification failed: $e');
+  }
+}
   
   // ENHANCED: Request permissions before starting call
   Future<bool> _requestPermissions({required bool isVideoCall}) async {
@@ -655,30 +820,47 @@ class WebRTCCallService extends GetxService {
       developer.log('❌ Error setting speaker: $e');
     }
   }
+
+  DateTime _lastInitTime = DateTime.now();
+
+
+  bool _isDevelopmentRestart() {
+  try {
+    // Check if this is a development restart by looking at app lifecycle
+    return WidgetsBinding.instance.lifecycleState == null ||
+           DateTime.now().difference(_lastInitTime).inSeconds < 10;
+  } catch (e) {
+    return false;
+  }
+}
   
   // Create call document in Firestore
   Future<void> _createCallDocument({
-    required String callId,
-    required String callerId,
-    required String callerName,
-    required String receiverId,
-    required String receiverName,
-    required bool isVideoCall,
-  }) async {
-    await _firestore.collection('calls').doc(callId).set({
-      'callId': callId,
-      'callerId': callerId,
-      'callerName': callerName,
-      'receiverId': receiverId,
-      'receiverName': receiverName,
-      'isVideoCall': isVideoCall,
-      'status': 'calling',
-      'createdAt': FieldValue.serverTimestamp(),
-      'participants': [callerId, receiverId],
-    });
-    
-    developer.log('✅ Call document created: $callId');
-  }
+  required String callId,
+  required String callerId,
+  required String callerName,
+  required String receiverId,
+  required String receiverName,
+  required bool isVideoCall,
+}) async {
+  await _firestore.collection('calls').doc(callId).set({
+    'callId': callId,
+    'callerId': callerId,
+    'callerName': callerName,
+    'receiverId': receiverId,
+    'receiverName': receiverName,
+    'isVideoCall': isVideoCall,
+    'status': 'calling',
+    'createdAt': FieldValue.serverTimestamp(),
+    'participants': [callerId, receiverId],
+    'expiresAt': Timestamp.fromDate(DateTime.now().add(const Duration(minutes: 2))), // Add expiry
+  });
+  
+  developer.log('Call document created: $callId');
+  
+  // Start expiry timer
+  _startCallExpiryTimer(callId);
+}
   
   // Save WebRTC offer to Firestore
   Future<void> _saveOfferToFirestore(String callId, webrtc.RTCSessionDescription offer) async {

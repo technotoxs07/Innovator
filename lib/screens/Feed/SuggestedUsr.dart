@@ -308,7 +308,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color.fromRGBO(244, 135, 6, 1), // Your brand orange
+                  Color.fromRGBO(240, 155, 52, 1), // Your brand orange
                   Color.fromRGBO(255, 204, 128, 1), // Soft amber
                 ],
                 begin: Alignment.topLeft,
