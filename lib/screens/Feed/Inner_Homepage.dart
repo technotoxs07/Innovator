@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:math' as math;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -14,8 +13,6 @@ import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/screens/Feed/Optimize%20Media/OptimizeMediaScreen.dart';
 import 'package:innovator/screens/Feed/SuggestedUsr.dart';
-import 'package:innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
-import 'package:innovator/screens/Follow/follow-Service.dart';
 import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:innovator/screens/Likes/Content-Like-Service.dart';
 import 'package:innovator/screens/Likes/content-Like-Button.dart';
@@ -31,10 +28,8 @@ import 'package:innovator/screens/comment/comment_section.dart';
 import 'package:innovator/widget/Custom_refresh_Indicator.dart';
 import 'package:innovator/widget/CustomizeFAB.dart';
 import 'dart:io';
-import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:typed_data';
 import 'dart:developer' as developer;
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -43,9 +38,11 @@ import 'package:visibility_detector/visibility_detector.dart';
 // VideoPlaybackManager class
 
 class LoadingConfig {
-  static const String loadingGifPath = 'animation/IdeaBulb.gif'; // Update this path to your GIF file
+  static const String loadingGifPath =
+      'animation/IdeaBulb.gif'; // Update this path to your GIF file
 }
-// ronir ronnndfnfkj sjhbhd ronit shrivastav ronit shrivasta   roniuf ronjf 
+
+// ronir ronnndfnfkj sjhbhd ronit shrivastav ronit shrivasta   roniuf ronjf
 class VideoPlaybackManager {
   static final VideoPlaybackManager _instance =
       VideoPlaybackManager._internal();
@@ -78,9 +75,6 @@ class VideoPlaybackManager {
     }
   }
 }
-
-
-
 
 // Replace the RefreshIndicator in your build metho
 // Enhanced CacheManager class
@@ -346,7 +340,9 @@ class ContentResponse {
   factory ContentResponse.fromJson(Map<String, dynamic> json) {
     return ContentResponse(
       status: json['status'] as int,
-      data: ContentData.fromNewFeedApi(json['data'] ?? {}), // FIXED: Use the correct method name
+      data: ContentData.fromNewFeedApi(
+        json['data'] ?? {},
+      ), // FIXED: Use the correct method name
       error: json['error'],
       message: json['message'] as String? ?? '',
     );
@@ -401,7 +397,7 @@ class CursorHelper {
   // Check if a string is a valid MongoDB ObjectId
   static bool isValidObjectId(String? cursor) {
     if (cursor == null || cursor.isEmpty) return false;
-    
+
     // MongoDB ObjectId is 24 hex characters
     final objectIdRegex = RegExp(r'^[0-9a-fA-F]{24}$');
     return objectIdRegex.hasMatch(cursor);
@@ -410,42 +406,40 @@ class CursorHelper {
   // Extract ObjectId from cursor if it contains one
   static String? extractObjectId(String? cursor) {
     if (cursor == null || cursor.isEmpty) return null;
-    
+
     // If it's already a valid ObjectId, return it
     if (isValidObjectId(cursor)) return cursor;
-    
+
     // Try to extract ObjectId from cursor string
     final objectIdRegex = RegExp(r'[0-9a-fA-F]{24}');
     final match = objectIdRegex.firstMatch(cursor);
-    
+
     if (match != null) {
       final extractedId = match.group(0);
       if (extractedId != null && isValidObjectId(extractedId)) {
         return extractedId;
       }
     }
-    
+
     return null;
   }
 
   // Clean cursor for API usage
   static String? cleanCursor(String? cursor) {
     if (cursor == null || cursor.isEmpty || cursor == 'null') return null;
-    
+
     // If it's a valid ObjectId, return it
     if (isValidObjectId(cursor)) return cursor;
-    
+
     // Try to extract ObjectId
     final extractedId = extractObjectId(cursor);
     if (extractedId != null) return extractedId;
-    
+
     // If no valid ObjectId found, return null to start fresh
     debugPrint('⚠️ Invalid cursor format: $cursor - will start fresh');
     return null;
   }
 }
-
-
 
 class Inner_HomePage extends StatefulWidget {
   const Inner_HomePage({Key? key}) : super(key: key);
@@ -458,7 +452,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   final List<FeedContent> _allContents = [];
   final ScrollController _scrollController = ScrollController();
   final AppData _appData = AppData();
-    Set<int> _suggestedUsersShownAt = {}; // Track where suggestions were shown
+  Set<int> _suggestedUsersShownAt = {}; // Track where suggestions were shown
   bool _suggestionsEnabled = true;
 
   // Loading and error states
@@ -472,22 +466,22 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   bool _isInitialLoad = true;
   bool _hasInitialData = false;
   bool _isLoadingMore = false;
-  
+
   // Pagination handling
   int _currentOffset = 0;
   bool _useCursorPagination = true;
-  
+
   // Scroll management
   Timer? _scrollDebounce;
   bool _isNearBottom = false;
   double _lastScrollPosition = 0;
   static const double _scrollThreshold = 0.8;
   static const int _preloadDistance = 300;
-  
+
   // Memory management
   static const int _maxContentItems = 300;
   static const int _itemsToRemoveOnCleanup = 100;
-  
+
   // Rate limiting - REDUCED interval
   DateTime _lastLoadTime = DateTime.now();
   static const int _minimumLoadInterval = 500;
@@ -495,15 +489,15 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   @override
   void initState() {
     super.initState();
-     if (!Get.isRegistered<UserController>()) {
+    if (!Get.isRegistered<UserController>()) {
       Get.put(UserController());
     }
-    
+
     // Register FireChatController if not already registered
     if (!Get.isRegistered<FireChatController>()) {
       Get.put(FireChatController());
     }
-    
+
     _requestNotificationPermission();
     _initializeInfiniteScroll();
     _checkConnectivity();
@@ -537,81 +531,106 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
   // ENHANCED: Handle scroll events with better logic
   void _handleScrollEvent() {
-    if (!_scrollController.hasClients || _isLoading || !_hasMoreContent || _isLoadingMore) {
+    if (!_scrollController.hasClients ||
+        _isLoading ||
+        !_hasMoreContent ||
+        _isLoadingMore) {
       return;
     }
 
     final position = _scrollController.position;
     final currentScroll = position.pixels;
     final maxScroll = position.maxScrollExtent;
-    
+
     if (maxScroll <= 0) return;
 
     final scrollPercentage = currentScroll / maxScroll;
     _isNearBottom = scrollPercentage >= _scrollThreshold;
-    
-    final shouldLoadMore = _shouldLoadMoreContent(currentScroll, maxScroll, scrollPercentage);
-    
+
+    final shouldLoadMore = _shouldLoadMoreContent(
+      currentScroll,
+      maxScroll,
+      scrollPercentage,
+    );
+
     if (shouldLoadMore) {
       debugPrint('🚀 Infinite scroll triggered');
-      debugPrint('📊 Scroll: ${scrollPercentage.toStringAsFixed(2)} (${currentScroll.toInt()}/${maxScroll.toInt()})');
+      debugPrint(
+        '📊 Scroll: ${scrollPercentage.toStringAsFixed(2)} (${currentScroll.toInt()}/${maxScroll.toInt()})',
+      );
       debugPrint('📦 Current items: ${_allContents.length}');
-      
+
       _loadMoreContent();
     }
-    
+
     _lastScrollPosition = currentScroll;
   }
-  
+
   // ENHANCED: Improved load more logic with better conditions
-  bool _shouldLoadMoreContent(double currentScroll, double maxScroll, double scrollPercentage) {
+  bool _shouldLoadMoreContent(
+    double currentScroll,
+    double maxScroll,
+    double scrollPercentage,
+  ) {
     // Don't load if already loading or no more content
     if (_isLoading || !_hasMoreContent || _isLoadingMore) {
-      debugPrint('⏸️ Skip loading - isLoading: $_isLoading, hasMore: $_hasMoreContent, isLoadingMore: $_isLoadingMore');
+      debugPrint(
+        '⏸️ Skip loading - isLoading: $_isLoading, hasMore: $_hasMoreContent, isLoadingMore: $_isLoadingMore',
+      );
       return false;
     }
-    
+
     // Rate limiting check - but more lenient
     final timeSinceLastLoad = DateTime.now().difference(_lastLoadTime);
     if (timeSinceLastLoad.inMilliseconds < _minimumLoadInterval) {
-      debugPrint('⏳ Rate limited - ${timeSinceLastLoad.inMilliseconds}ms < ${_minimumLoadInterval}ms');
+      debugPrint(
+        '⏳ Rate limited - ${timeSinceLastLoad.inMilliseconds}ms < ${_minimumLoadInterval}ms',
+      );
       return false;
     }
-    
+
     // Multiple trigger conditions - any of these should trigger loading
-    
+
     // Condition 1: Reached scroll threshold
     if (scrollPercentage >= _scrollThreshold) {
-      debugPrint('✅ Trigger condition 1: Scroll threshold reached (${scrollPercentage.toStringAsFixed(2)} >= $_scrollThreshold)');
+      debugPrint(
+        '✅ Trigger condition 1: Scroll threshold reached (${scrollPercentage.toStringAsFixed(2)} >= $_scrollThreshold)',
+      );
       return true;
     }
-    
+
     // Condition 2: Close to bottom by distance
     final distanceFromBottom = maxScroll - currentScroll;
     if (distanceFromBottom <= _preloadDistance) {
-      debugPrint('✅ Trigger condition 2: Distance from bottom (${distanceFromBottom.toInt()} <= $_preloadDistance)');
+      debugPrint(
+        '✅ Trigger condition 2: Distance from bottom (${distanceFromBottom.toInt()} <= $_preloadDistance)',
+      );
       return true;
     }
-    
+
     // Condition 3: Very close to bottom
     if (scrollPercentage >= 0.85) {
-      debugPrint('✅ Trigger condition 3: Very close to bottom (${scrollPercentage.toStringAsFixed(2)} >= 0.85)');
+      debugPrint(
+        '✅ Trigger condition 3: Very close to bottom (${scrollPercentage.toStringAsFixed(2)} >= 0.85)',
+      );
       return true;
     }
-    
+
     // Condition 4: If we have very few items left to show
     if (_allContents.length < 20 && scrollPercentage >= 0.7) {
-      debugPrint('✅ Trigger condition 4: Few items and moderate scroll (${_allContents.length} items, ${scrollPercentage.toStringAsFixed(2)} >= 0.7)');
+      debugPrint(
+        '✅ Trigger condition 4: Few items and moderate scroll (${_allContents.length} items, ${scrollPercentage.toStringAsFixed(2)} >= 0.7)',
+      );
       return true;
     }
-    
+
     return false;
   }
 
   // ENHANCED: Load initial content with cursor format testing
   Future<void> _loadInitialContent() async {
     debugPrint('🔄 Loading initial content...');
-    
+
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -621,7 +640,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     try {
       // Test cursor format first
       await FeedApiService.testCursorFormat();
-      
+
       final ContentData? contentData = await FeedApiService.fetchContents(
         cursor: null,
         limit: 20,
@@ -647,11 +666,13 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
         debugPrint('✅ Initial content loaded: ${_allContents.length} items');
         debugPrint('📊 Has more: $_hasMoreContent');
         debugPrint('📊 Next cursor: $_nextCursor');
-        debugPrint('📊 Is cursor valid ObjectId: ${CursorHelper.isValidObjectId(_nextCursor)}');
+        debugPrint(
+          '📊 Is cursor valid ObjectId: ${CursorHelper.isValidObjectId(_nextCursor)}',
+        );
       }
     } catch (e) {
       debugPrint('❌ Error loading initial content: $e');
-     // _handleError('Failed to load initial content: ${e.toString()}');
+      // _handleError('Failed to load initial content: ${e.toString()}');
     }
   }
 
@@ -677,7 +698,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
     try {
       ContentData? contentData;
-      
+
       if (_useCursorPagination) {
         // Try cursor-based pagination first
         try {
@@ -689,13 +710,13 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
           );
         } catch (e) {
           debugPrint('❌ Cursor-based pagination failed: $e');
-          
+
           // If cursor fails, try offset-based pagination
           if (e.toString().contains('Invalid cursor')) {
             debugPrint('🔄 Switching to offset-based pagination...');
             _useCursorPagination = false;
             _currentOffset = _allContents.length;
-            
+
             contentData = await FeedApiService.fetchContentsWithOffset(
               offset: _currentOffset,
               limit: 20,
@@ -726,19 +747,21 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       if (mounted) {
         setState(() {
           _allContents.addAll(contentData!.contents);
-          
+
           if (_useCursorPagination) {
             _nextCursor = contentData.nextCursor;
           } else {
             _currentOffset += contentData.contents.length;
           }
-          
+
           _hasMoreContent = contentData.hasMore;
           _isLoading = false;
           _isLoadingMore = false;
         });
 
-        debugPrint('✅ More content loaded: ${contentData.contents.length} new items');
+        debugPrint(
+          '✅ More content loaded: ${contentData.contents.length} new items',
+        );
         debugPrint('📦 Total items: ${_allContents.length}');
         debugPrint('📊 Has more: $_hasMoreContent');
         debugPrint('📊 Next cursor: $_nextCursor');
@@ -751,7 +774,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       }
     } catch (e) {
       debugPrint('❌ Error loading more content: $e');
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -775,7 +798,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     debugPrint('   - Has more: ${contentData.hasMore}');
     debugPrint('   - Next cursor: ${contentData.nextCursor}');
     debugPrint('   - Total items in feed: ${_allContents.length}');
-    
+
     if (contentData.contents.isEmpty && contentData.hasMore) {
       debugPrint('⚠️ WARNING: API says hasMore=true but returned 0 items');
     }
@@ -789,12 +812,16 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     debugPrint('📦 Items before cleanup: ${_allContents.length}');
 
     // Remove fewer items to avoid aggressive cleanup
-    final itemsToRemove = (_allContents.length - _maxContentItems + 50).clamp(0, _itemsToRemoveOnCleanup);
-    
+    final itemsToRemove = (_allContents.length - _maxContentItems + 50).clamp(
+      0,
+      _itemsToRemoveOnCleanup,
+    );
+
     if (itemsToRemove > 0) {
-      final currentScrollPosition = _scrollController.hasClients 
-          ? _scrollController.position.pixels 
-          : 0.0;
+      final currentScrollPosition =
+          _scrollController.hasClients
+              ? _scrollController.position.pixels
+              : 0.0;
 
       _allContents.removeRange(0, itemsToRemove);
 
@@ -806,8 +833,11 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
           if (_scrollController.hasClients) {
             final estimatedItemHeight = 400.0;
             final scrollAdjustment = itemsToRemove * estimatedItemHeight;
-            final newScrollPosition = math.max(0.0, currentScrollPosition - scrollAdjustment);
-            
+            final newScrollPosition = math.max(
+              0.0,
+              currentScrollPosition - scrollAdjustment,
+            );
+
             try {
               _scrollController.jumpTo(newScrollPosition);
               debugPrint('📍 Adjusted scroll position to: $newScrollPosition');
@@ -832,13 +862,13 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   // ENHANCED: Refresh with cursor reset
   Future<void> _refresh() async {
     debugPrint('🔄 Refreshing feed...');
-    
+
     // Reset suggestions tracking
     _suggestedUsersShownAt.clear();
     //_SuggestedUsersWidgetState._hasBeenShown = false;
-    
+
     HapticFeedback.mediumImpact();
-    
+
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -888,11 +918,10 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
   }
 
-
   // Retry with different parameters
   Future<void> _retryLoadWithDifferentParams() async {
     debugPrint('🔄 Retrying with different parameters...');
-    
+
     setState(() {
       _nextCursor = null;
       _currentOffset = 0;
@@ -900,7 +929,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       _hasError = false;
       _useCursorPagination = true;
     });
-    
+
     await _loadMoreContent();
   }
 
@@ -928,16 +957,19 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
         }
       }
 
-      NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        criticalAlert: true,
-        provisional: false,
-      );
+      NotificationSettings settings = await FirebaseMessaging.instance
+          .requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+            criticalAlert: true,
+            provisional: false,
+          );
 
       if (Platform.isAndroid) {
-        debugPrint('Running on Android, please ensure battery optimization is disabled for Innovator');
+        debugPrint(
+          'Running on Android, please ensure battery optimization is disabled for Innovator',
+        );
       }
     } catch (e) {
       debugPrint('Error requesting notification permission: $e');
@@ -1010,31 +1042,25 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   }
 
   Widget _buildInitialLoadingState() {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Replace CircularProgressIndicator with GIF
-        Container(
-          width: 80,
-          height: 80,
-          child: Image.asset(
-            'animation/IdeaBulb.gif',
-            fit: BoxFit.contain,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Replace CircularProgressIndicator with GIF
+          Container(
+            width: 80,
+            height: 80,
+            child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
           ),
-        ),
-        SizedBox(height: 16),
-        Text(
-          'Loading your feed...',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
+          SizedBox(height: 16),
+          Text(
+            'Loading your feed...',
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   // Enhanced error state with retry options
   Widget _buildErrorState() {
@@ -1042,11 +1068,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
           SizedBox(height: 16),
           Text(
             'Oops! Something went wrong',
@@ -1059,10 +1081,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
           SizedBox(height: 8),
           Text(
             _errorMessage,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 24),
@@ -1095,12 +1114,8 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     );
   }
 
-
-
-
-
   // ENHANCED: Debug information in the infinite scroll list
- Widget _buildInfiniteScrollList() {
+  Widget _buildInfiniteScrollList() {
     return Stack(
       children: [
         Column(
@@ -1153,21 +1168,21 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     );
   }
 
- int _calculateTotalItemCount() {
+  int _calculateTotalItemCount() {
     int baseCount = _allContents.length;
     if (_isLoading) baseCount++;
     if (_shouldShowEndMessage()) baseCount++;
-    
+
     // Add suggested users count based on random positions
     baseCount += _calculateSuggestedUsersCount();
-    
+
     return baseCount;
   }
 
   // NEW: Calculate how many suggested user sections to show
   int _calculateSuggestedUsersCount() {
     if (!_suggestionsEnabled || _allContents.length < 5) return 0;
-    
+
     // Show suggestions at multiple random positions
     return _getSuggestedUsersPositions().length;
   }
@@ -1175,12 +1190,12 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   // NEW: Get positions where suggested users should appear
   List<int> _getSuggestedUsersPositions() {
     List<int> positions = [];
-    
+
     if (_allContents.length >= 5) {
       // First suggestion after 3-7 posts (random)
       int firstPosition = 3 + (_allContents.length % 5);
       positions.add(firstPosition);
-      
+
       // Additional suggestions every 8-15 posts
       int nextPosition = firstPosition + 8 + (_allContents.length % 8);
       while (nextPosition < _allContents.length - 2) {
@@ -1188,7 +1203,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
         nextPosition += 8 + (nextPosition % 8);
       }
     }
-    
+
     return positions;
   }
 
@@ -1198,43 +1213,44 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     if (_shouldShowSuggestedUsersAtIndex(index)) {
       return _buildSuggestedUsersAtIndex(index);
     }
-    
+
     // Get the adjusted content index (accounting for inserted suggestions)
     final adjustedIndex = _getAdjustedContentIndex(index);
-    
+
     // Show regular content
     if (adjustedIndex < _allContents.length) {
       return _buildContentItem(_allContents[adjustedIndex]);
     }
-    
+
     // Show loading indicator
     if (adjustedIndex == _allContents.length && _isLoading) {
       return _buildLoadingIndicator();
     }
-    
+
     // Show end message
     if (adjustedIndex == _allContents.length && _shouldShowEndMessage()) {
       return _buildEndMessage();
     }
-    
+
     return SizedBox.shrink();
   }
 
   // NEW: Check if suggested users should show at this index
   bool _shouldShowSuggestedUsersAtIndex(int index) {
     if (!_suggestionsEnabled) return false;
-    
+
     final positions = _getSuggestedUsersPositions();
     int adjustedIndex = index;
-    
+
     // Adjust for previously shown suggestions
     for (int pos in positions) {
-      int actualPosition = pos + _suggestedUsersShownAt.where((shown) => shown <= pos).length;
+      int actualPosition =
+          pos + _suggestedUsersShownAt.where((shown) => shown <= pos).length;
       if (adjustedIndex == actualPosition) {
         return true;
       }
-    }                                                                     
-    
+    }
+
     return false;
   }
 
@@ -1242,7 +1258,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   Widget _buildSuggestedUsersAtIndex(int index) {
     // Track that we've shown suggestions at this position
     _suggestedUsersShownAt.add(index);
-    
+
     return Container(
       key: ValueKey('suggested_users_$index'),
       child: SuggestedUsersWidget(),
@@ -1253,14 +1269,14 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   int _getAdjustedContentIndex(int listIndex) {
     int suggestionsBeforeIndex = 0;
     final positions = _getSuggestedUsersPositions();
-    
+
     for (int pos in positions) {
       int actualPosition = pos + suggestionsBeforeIndex;
       if (listIndex > actualPosition) {
         suggestionsBeforeIndex++;
       }
     }
-    
+
     return listIndex - suggestionsBeforeIndex;
   }
 
@@ -1281,7 +1297,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
           if (mounted) {
             setState(() {
               content.isFollowed = isFollowed;
-            }); 
+            });
           }
         },
       ),
@@ -1290,72 +1306,55 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
   // ENHANCED: Better loading indicator that shows current state
   Widget _buildLoadingIndicator() {
-  return Container(
-    padding: EdgeInsets.all(20),
-    child: Column(
-      children: [
-        // Replace CircularProgressIndicator with GIF
-        Container(
-          width: 40,
-          height: 40,
-          child: Image.asset(
-            'animation/IdeaBulb.gif',
-            fit: BoxFit.contain,
+    return Container(
+      padding: EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Replace CircularProgressIndicator with GIF
+          Container(
+            width: 40,
+            height: 40,
+            child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
           ),
-        ),
-        SizedBox(height: 12),
-        Text(
-          'Loading more content...',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
-        ),
-        if (_allContents.isNotEmpty) ...[
-          SizedBox(height: 4),
+          SizedBox(height: 12),
           Text(
-            'Loaded ${_allContents.length} items',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 12,
-            ),
+            'Loading more content...',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
-          // Show hasMore status for debugging
-          if (_hasMoreContent) ...[
+          if (_allContents.isNotEmpty) ...[
+            SizedBox(height: 4),
+            Text(
+              'Loaded ${_allContents.length} items',
+              style: TextStyle(color: Colors.grey[400], fontSize: 12),
+            ),
+            // Show hasMore status for debugging
+            if (_hasMoreContent) ...[
+              SizedBox(height: 2),
+              Text(
+                'More content available',
+                style: TextStyle(color: Colors.green[400], fontSize: 10),
+              ),
+            ],
+            // Show pagination method
             SizedBox(height: 2),
             Text(
-              'More content available',
-              style: TextStyle(
-                color: Colors.green[400],
-                fontSize: 10,
-              ),
+              _useCursorPagination
+                  ? 'Using cursor pagination'
+                  : 'Using offset pagination',
+              style: TextStyle(color: Colors.blue[400], fontSize: 10),
             ),
           ],
-          // Show pagination method
-          SizedBox(height: 2),
-          Text(
-            _useCursorPagination ? 'Using cursor pagination' : 'Using offset pagination',
-            style: TextStyle(
-              color: Colors.blue[400],
-              fontSize: 10,
-            ),
-          ),
         ],
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   Widget _buildEndMessage() {
     return Container(
       padding: EdgeInsets.all(20),
       child: Column(
         children: [
-          Icon(
-            Icons.check_circle_outline,
-            color: Colors.grey[400],
-            size: 32,
-          ),
+          Icon(Icons.check_circle_outline, color: Colors.grey[400], size: 32),
           SizedBox(height: 8),
           Text(
             "You're all caught up!",
@@ -1367,10 +1366,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
           ),
           Text(
             'No more posts to show',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey[400], fontSize: 12),
           ),
         ],
       ),
@@ -1382,27 +1378,21 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   }
 
   Widget _buildFloatingActionButton() {
-return CustomFAB(
-      
+    return CustomFAB(
       gifAsset: 'animation/chaticon.gif',
-        backgroundColor: Colors.transparent,
-
-        onPressed: () {
-          // Register controller if not already registered
-          if (!Get.isRegistered<FireChatController>()) {
-            Get.put(FireChatController());
-          }
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const OptimizedChatHomePage(),
-            ),
-          );
-        },
-        
-       
-      
-    );  }
+      backgroundColor: Colors.transparent,
+      onPressed: () {
+        // Register controller if not already registered
+        if (!Get.isRegistered<FireChatController>()) {
+          Get.put(FireChatController());
+        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const OptimizedChatHomePage()),
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -1466,40 +1456,48 @@ class FeedApiService {
         'limit': limit.toString(),
         'contentType': contentType,
       };
-      
+
       // Clean and validate cursor
       final cleanedCursor = CursorHelper.cleanCursor(cursor);
-      
+
       if (cleanedCursor != null) {
         params['cursor'] = cleanedCursor;
-        debugPrint('🔍 Using cleaned cursor: $cleanedCursor (original: $cursor)');
+        debugPrint(
+          '🔍 Using cleaned cursor: $cleanedCursor (original: $cursor)',
+        );
       } else {
-        debugPrint('🔍 No valid cursor - loading initial content (original cursor: $cursor)');
+        debugPrint(
+          '🔍 No valid cursor - loading initial content (original cursor: $cursor)',
+        );
       }
 
-      final uri = Uri.parse('$baseUrl/api/v1/random-feed').replace(
-        queryParameters: params,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/api/v1/random-feed',
+      ).replace(queryParameters: params);
 
       debugPrint('🌐 Fetching from: $uri');
 
-      final response = await http.get(uri, headers: headers).timeout(
-        const Duration(seconds: 30),
-      );
-      
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
+
       debugPrint('📡 Response status: ${response.statusCode}');
-      debugPrint('📡 Response body preview: ${response.body.substring(0, math.min(500, response.body.length))}...');
-      
+      debugPrint(
+        '📡 Response body preview: ${response.body.substring(0, math.min(500, response.body.length))}...',
+      );
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseJson = json.decode(response.body);
         final contentData = ContentData.fromNewFeedApi(responseJson);
-        
+
         // Log the cursor we received for debugging
         debugPrint('📍 Received cursor: ${contentData.nextCursor}');
         if (contentData.nextCursor != null) {
-          debugPrint('📍 Cursor is valid ObjectId: ${CursorHelper.isValidObjectId(contentData.nextCursor)}');
+          debugPrint(
+            '📍 Cursor is valid ObjectId: ${CursorHelper.isValidObjectId(contentData.nextCursor)}',
+          );
         }
-        
+
         return contentData;
       } else if (response.statusCode == 400) {
         try {
@@ -1508,7 +1506,7 @@ class FeedApiService {
           debugPrint('❌ 400 Error details: $errorMessage');
           debugPrint('❌ Original cursor: $cursor');
           debugPrint('❌ Cleaned cursor: $cleanedCursor');
-          
+
           // If cursor is invalid, try without cursor
           if (errorMessage.contains('Invalid cursor') && cursor != null) {
             debugPrint('🔄 Cursor invalid, retrying without cursor...');
@@ -1519,13 +1517,15 @@ class FeedApiService {
               context: context,
             );
           }
-          
+
           throw Exception('Bad request: $errorMessage');
         } catch (e) {
           if (e.toString().contains('Bad request:')) {
             rethrow;
           }
-          debugPrint('❌ 400 Error - Could not parse error response: ${response.body}');
+          debugPrint(
+            '❌ 400 Error - Could not parse error response: ${response.body}',
+          );
           throw Exception('Bad request - Invalid cursor or parameters');
         }
       } else if (response.statusCode == 401) {
@@ -1569,18 +1569,18 @@ class FeedApiService {
         'offset': offset.toString(),
       };
 
-      final uri = Uri.parse('$baseUrl/api/v1/random-feed').replace(
-        queryParameters: params,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/api/v1/random-feed',
+      ).replace(queryParameters: params);
 
       debugPrint('🌐 Fetching with offset: $uri');
 
-      final response = await http.get(uri, headers: headers).timeout(
-        const Duration(seconds: 30),
-      );
-      
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
+
       debugPrint('📡 Response status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseJson = json.decode(response.body);
         return ContentData.fromNewFeedApi(responseJson);
@@ -1590,7 +1590,6 @@ class FeedApiService {
     } catch (e) {
       debugPrint('❌ FeedApiService.fetchContentsWithOffset error: $e');
       rethrow;
-      
     }
   }
 
@@ -1606,32 +1605,35 @@ class FeedApiService {
         headers['authorization'] = 'Bearer $authToken';
       }
 
-      final uri = Uri.parse('$baseUrl/api/v1/random-feed?limit=5&contentType=normal');
-      
-      debugPrint('🧪 Testing cursor format: $uri');
-      
-      final response = await http.get(uri, headers: headers).timeout(
-        const Duration(seconds: 10),
+      final uri = Uri.parse(
+        '$baseUrl/api/v1/random-feed?limit=5&contentType=normal',
       );
-      
+
+      debugPrint('🧪 Testing cursor format: $uri');
+
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 10));
+
       debugPrint('🧪 Test response status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseJson = json.decode(response.body);
         final data = responseJson['data'] as Map<String, dynamic>? ?? {};
         final nextCursor = data['nextCursor'];
-        
+
         debugPrint('🧪 Received cursor: $nextCursor');
         debugPrint('🧪 Cursor type: ${nextCursor.runtimeType}');
-        debugPrint('🧪 Is valid ObjectId: ${CursorHelper.isValidObjectId(nextCursor)}');
-        
+        debugPrint(
+          '🧪 Is valid ObjectId: ${CursorHelper.isValidObjectId(nextCursor)}',
+        );
+
         if (nextCursor != null && !CursorHelper.isValidObjectId(nextCursor)) {
           debugPrint('🧪 Attempting to extract ObjectId from: $nextCursor');
           final extracted = CursorHelper.extractObjectId(nextCursor);
           debugPrint('🧪 Extracted ObjectId: $extracted');
         }
       }
-      
     } catch (e) {
       debugPrint('🧪 Test cursor format error: $e');
     }
@@ -1644,54 +1646,51 @@ class FeedApiService {
   }) async {
     debugPrint('🔄 Refreshing feed with contentType: $contentType');
     return fetchContents(
-      cursor: null, 
-      limit: 20, 
+      cursor: null,
+      limit: 20,
       contentType: contentType,
       context: context,
     );
   }
 }
+
 // ENHANCED CONTENT DATA CLASS
 class ContentData {
   final List<FeedContent> contents;
   final bool hasMore;
   final String? nextCursor;
 
-  ContentData({
-    required this.contents,
-    required this.hasMore,
-    this.nextCursor,
-  });
+  ContentData({required this.contents, required this.hasMore, this.nextCursor});
 
   factory ContentData.fromNewFeedApi(Map<String, dynamic> json) {
     try {
       debugPrint('📊 Raw API Response structure:');
       debugPrint('   - Status: ${json['status']}');
       debugPrint('   - Message: ${json['message']}');
-      
+
       final data = json['data'] as Map<String, dynamic>? ?? {};
-      
+
       debugPrint('📊 Data structure keys: ${data.keys.toList()}');
-      
+
       // Parse different content arrays from the API response
       final normalContentList = data['normalContent'] as List<dynamic>? ?? [];
       final videoContentList = data['videoContent'] as List<dynamic>? ?? [];
-      
+
       // Also check for 'normal' and 'videos' keys (backup)
       final normalList = data['normal'] as List<dynamic>? ?? [];
       final videosList = data['videos'] as List<dynamic>? ?? [];
-      
+
       // Combine all content arrays
       final allItems = <dynamic>[];
       allItems.addAll(normalContentList);
       allItems.addAll(videoContentList);
       allItems.addAll(normalList);
       allItems.addAll(videosList);
-      
+
       // Parse pagination info
       final hasMore = data['hasMore'] as bool? ?? false;
       final nextCursor = data['nextCursor'] as String?;
-      
+
       debugPrint('📊 ContentData parsing:');
       debugPrint('   - Normal content items: ${normalContentList.length}');
       debugPrint('   - Video content items: ${videoContentList.length}');
@@ -1700,22 +1699,23 @@ class ContentData {
       debugPrint('   - Total items: ${allItems.length}');
       debugPrint('   - Has more: $hasMore');
       debugPrint('   - Next cursor: $nextCursor');
-      
-      final contents = allItems
-          .map((item) {
-            try {
-              return FeedContent.fromJson(item as Map<String, dynamic>);
-            } catch (e) {
-              debugPrint('❌ Error parsing individual content item: $e');
-              return null;
-            }
-          })
-          .where((content) => content != null && content.id.isNotEmpty)
-          .cast<FeedContent>()
-          .toList();
-      
+
+      final contents =
+          allItems
+              .map((item) {
+                try {
+                  return FeedContent.fromJson(item as Map<String, dynamic>);
+                } catch (e) {
+                  debugPrint('❌ Error parsing individual content item: $e');
+                  return null;
+                }
+              })
+              .where((content) => content != null && content.id.isNotEmpty)
+              .cast<FeedContent>()
+              .toList();
+
       debugPrint('   - Valid contents parsed: ${contents.length}');
-      
+
       return ContentData(
         contents: contents,
         hasMore: hasMore,
@@ -2345,78 +2345,83 @@ class _FeedItemState extends State<FeedItem>
   }
 
   Color _getTypeColor(String type) {
-     switch (type.toLowerCase()) {
-    case 'innovation':
-      return Colors.amber.shade700;
-    case 'idea':
-      return Colors.teal.shade600;
-    case 'project':
-      return Colors.indigo.shade600;
-    case 'question':
-      return Colors.orange.shade600;
-    case 'announcement':
-      return Colors.deepPurple.shade600;
-    case 'other':
-      return Colors.grey.shade600;
-    default:
-      return Colors.blueGrey.shade600;
-  }
+    switch (type.toLowerCase()) {
+      case 'innovation':
+        return Colors.amber.shade700;
+      case 'idea':
+        return Colors.teal.shade600;
+      case 'project':
+        return Colors.indigo.shade600;
+      case 'question':
+        return Colors.orange.shade600;
+      case 'announcement':
+        return Colors.deepPurple.shade600;
+      case 'other':
+        return Colors.grey.shade600;
+      default:
+        return Colors.blueGrey.shade600;
+    }
   }
 
   Widget _buildAuthorAvatar() {
-  final userController = Get.find<UserController>();
+    final userController = Get.find<UserController>();
 
-  if (_isAuthorCurrentUser()) {
-    return Obx(() {
-      final picturePath = userController.getFullProfilePicturePath();
-      final version = userController.profilePictureVersion.value;
+    if (_isAuthorCurrentUser()) {
+      return Obx(() {
+        final picturePath = userController.getFullProfilePicturePath();
+        final version = userController.profilePictureVersion.value;
 
+        return CircleAvatar(
+          key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
+          backgroundImage:
+              picturePath != null
+                  ? NetworkImage('$picturePath?v=$version')
+                  : null,
+          child:
+              picturePath == null || picturePath.isEmpty
+                  ? Text(
+                    widget.content.author.name.isNotEmpty
+                        ? widget.content.author.name[0].toUpperCase()
+                        : '?',
+                  )
+                  : null,
+        );
+      });
+    }
+
+    if (widget.content.author.picture.isEmpty) {
       return CircleAvatar(
-        key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
-        backgroundImage: picturePath != null ? NetworkImage('$picturePath?v=$version') : null,
-        child: picturePath == null || picturePath.isEmpty
-            ? Text(
-                widget.content.author.name.isNotEmpty
-                    ? widget.content.author.name[0].toUpperCase()
-                    : '?',
-              )
-            : null,
+        child: Text(
+          widget.content.author.name.isNotEmpty
+              ? widget.content.author.name[0].toUpperCase()
+              : '?',
+        ),
       );
-    });
-  }
+    }
 
-  if (widget.content.author.picture.isEmpty) {
-    return CircleAvatar(
-      child: Text(
-        widget.content.author.name.isNotEmpty
-            ? widget.content.author.name[0].toUpperCase()
-            : '?',
-      ),
+    return CachedNetworkImage(
+      imageUrl: 'http://182.93.94.210:3066${widget.content.author.picture}',
+      imageBuilder:
+          (context, imageProvider) =>
+              CircleAvatar(backgroundImage: imageProvider),
+      placeholder:
+          (context, url) => CircleAvatar(
+            child: Container(
+              width: 20,
+              height: 20,
+              child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+            ),
+          ),
+      errorWidget:
+          (context, url, error) => CircleAvatar(
+            child: Text(
+              widget.content.author.name.isNotEmpty
+                  ? widget.content.author.name[0].toUpperCase()
+                  : '?',
+            ),
+          ),
     );
   }
-
-  return CachedNetworkImage(
-    imageUrl: 'http://182.93.94.210:3066${widget.content.author.picture}',
-    imageBuilder: (context, imageProvider) => CircleAvatar(backgroundImage: imageProvider),
-    placeholder: (context, url) => CircleAvatar(
-      child: Container(
-        width: 20,
-        height: 20,
-        child: Image.asset(
-          'animation/IdeaBulb.gif',
-          fit: BoxFit.contain,
-        ),
-      ),
-    ),
-    errorWidget: (context, url, error) => CircleAvatar(
-      child: Text(
-        widget.content.author.name.isNotEmpty
-            ? widget.content.author.name[0].toUpperCase()
-            : '?',
-      ),
-    ),
-  );
-}
 
   Widget _buildMediaPreview() {
     final hasOptimizedVideo = widget.content.optimizedFiles.any(
@@ -2628,51 +2633,231 @@ class _FeedItemState extends State<FeedItem>
   Widget _buildSingleImage(String url) {
     return GestureDetector(
       onTap: () => _showMediaGallery(context, [url], 0),
-      child: CachedNetworkImage(
-        filterQuality: FilterQuality.high,
-        imageUrl: url,
-        fit: BoxFit.cover,
-        memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
-        placeholder:
-            (context, url) => Container(
-              color: Colors.grey[300],
-              child: Center(child: CircularProgressIndicator()),
-            ),
-        errorWidget:
-            (context, url, error) =>
-                Container(color: Colors.grey[300], child: Icon(Icons.error)),
+      child: Container(
+        constraints: BoxConstraints(maxHeight: 450, minHeight: 200),
+        child: CachedNetworkImage(
+          filterQuality: FilterQuality.high,
+          imageUrl: url,
+          fit: BoxFit.cover, // Changed to cover
+          width: double.infinity,
+          memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
+          placeholder:
+              (context, url) => Container(
+                height: 250,
+                color: Colors.grey[300],
+                child: Center(
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    child: Image.asset(
+                      'animation/IdeaBulb.gif',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+          errorWidget:
+              (context, url, error) => Container(
+                height: 250,
+                color: Colors.grey[300],
+                child: Icon(Icons.error),
+              ),
+        ),
       ),
     );
   }
 
   Widget _buildImageGallery(List<String> urls) {
-    return GridView.builder(
-      physics: NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: urls.length > 1 ? 2 : 1,
-        crossAxisSpacing: 4.0,
-        mainAxisSpacing: 4.0,
-        childAspectRatio: 1.0,
-      ),
-      itemCount: urls.length > 4 ? 4 : urls.length,
-      itemBuilder: (context, index) {
-        if (index == 3 && urls.length > 4) {
-          return GestureDetector(
-            onTap: () => _showMediaGallery(context, urls, index),
-            child: Container(
-              color: Colors.black.withAlpha(50),
-              child: Center(
-                child: Text(
-                  '+${urls.length - 4}',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
-                ),
+    // For single image, don't use grid
+    if (urls.length == 1) {
+      return _buildSingleImageOptimized(urls[0]);
+    }
+
+    // For 2 images, show them side by side
+    if (urls.length == 2) {
+      return Container(
+        height: 250,
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: 2),
+                child: _buildGridImage(urls[0], 0, urls),
               ),
             ),
-          );
-        }
-        return _buildSingleImage(urls[index]);
-      },
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 2),
+                child: _buildGridImage(urls[1], 1, urls),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // For 3 or more images, use a better layout
+    if (urls.length >= 3) {
+      return Container(
+        height: urls.length == 3 ? 250 : 400,
+        child: Column(
+          children: [
+            // First row - single large image or two images
+            if (urls.length == 3)
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 2, bottom: 2),
+                        child: _buildGridImage(urls[0], 0, urls),
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 2, bottom: 2),
+                              child: _buildGridImage(urls[1], 1, urls),
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 2, top: 2),
+                              child: _buildGridImage(urls[2], 2, urls),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              // For 4+ images
+              Expanded(
+                child: GridView.builder(
+                  physics: NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 4.0,
+                    mainAxisSpacing: 4.0,
+                    childAspectRatio: 1.0, // This is fine for grid layout
+                  ),
+                  itemCount: urls.length > 4 ? 4 : urls.length,
+                  itemBuilder: (context, index) {
+                    if (index == 3 && urls.length > 4) {
+                      return GestureDetector(
+                        onTap: () => _showMediaGallery(context, urls, index),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            _buildGridImage(urls[index], index, urls),
+                            Container(
+                              color: Colors.black.withOpacity(0.6),
+                              child: Center(
+                                child: Text(
+                                  '+${urls.length - 4}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return _buildGridImage(urls[index], index, urls);
+                  },
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox.shrink();
+  }
+
+  Widget _buildSingleImageOptimized(String url) {
+    return GestureDetector(
+      onTap: () => _showMediaGallery(context, [url], 0),
+      child: Container(
+        constraints: BoxConstraints(maxHeight: 450, minHeight: 200),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover, // Changed from default to cover
+          width: double.infinity,
+          memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
+          placeholder:
+              (context, url) => AspectRatio(
+                aspectRatio: 16 / 9, // Default aspect ratio while loading
+                child: Container(
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      child: Image.asset(
+                        'animation/IdeaBulb.gif',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          errorWidget:
+              (context, url, error) => AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  color: Colors.grey[300],
+                  child: Icon(Icons.error),
+                ),
+              ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method for grid images
+  Widget _buildGridImage(String url, int index, List<String> allUrls) {
+    return GestureDetector(
+      onTap: () => _showMediaGallery(context, allUrls, index),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          fit:
+              BoxFit.cover, // Ensures image covers container without stretching
+          memCacheWidth: (MediaQuery.of(context).size.width * 0.75).toInt(),
+          placeholder:
+              (context, url) => Container(
+                color: Colors.grey[300],
+                child: Center(
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    child: Image.asset(
+                      'animation/IdeaBulb.gif',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+          errorWidget:
+              (context, url, error) => Container(
+                color: Colors.grey[300],
+                child: Icon(Icons.error, color: Colors.white),
+              ),
+        ),
+      ),
     );
   }
 
@@ -3063,33 +3248,34 @@ class _FeedItemState extends State<FeedItem>
     try {
       // Show loading dialog
       showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                child: Image.asset(
-                  'animation/IdeaBulb.gif',
-                  fit: BoxFit.contain,
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      child: Image.asset(
+                        'animation/IdeaBulb.gif',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text('Submitting report...'),
+                  ],
                 ),
               ),
-              SizedBox(height: 16),
-              Text('Submitting report...'),
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+      );
 
       final String? authToken = AppData().authToken;
       if (authToken == null || authToken.isEmpty) {
@@ -3315,33 +3501,34 @@ class _FeedItemState extends State<FeedItem>
     try {
       // Show loading dialog
       showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                child: Image.asset(
-                 'animation/IdeaBulb.gif',
-                  fit: BoxFit.contain,
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      child: Image.asset(
+                        'animation/IdeaBulb.gif',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text('Blocking user...'),
+                  ],
                 ),
               ),
-              SizedBox(height: 16),
-              Text('Blocking user...'),
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+      );
 
       final String? authToken = AppData().authToken;
       if (authToken == null || authToken.isEmpty) {
@@ -3807,41 +3994,39 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   }
 
   Widget _buildLoadingOrThumbnail() {
-  if (widget.thumbnailUrl != null) {
-    return CachedNetworkImage(
-      imageUrl: widget.thumbnailUrl!,
-      fit: BoxFit.cover,
-      placeholder: (context, url) => Center(
+    if (widget.thumbnailUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: widget.thumbnailUrl!,
+        fit: BoxFit.cover,
+        placeholder:
+            (context, url) => Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                child: Image.asset(
+                  'animation/IdeaBulb.gif',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+        errorWidget:
+            (context, url, error) => Container(
+              color: Colors.grey,
+              child: const Center(
+                child: Icon(Icons.videocam_off, color: Colors.white),
+              ),
+            ),
+      );
+    } else {
+      return Center(
         child: Container(
           width: 40,
           height: 40,
-          child: Image.asset(
-            'animation/IdeaBulb.gif',
-            fit: BoxFit.contain,
-          ),
+          child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
         ),
-      ),
-      errorWidget: (context, url, error) => Container(
-        color: Colors.grey,
-        child: const Center(
-          child: Icon(Icons.videocam_off, color: Colors.white),
-        ),
-      ),
-    );
-  } else {
-    return Center(
-      child: Container(
-        width: 40,
-        height: 40,
-        child: Image.asset(
-          'animation/IdeaBulb.gif',
-          fit: BoxFit.contain,
-        ),
-      ),
-    );
+      );
+    }
   }
-}
-
 
   Widget _buildVideoPlayer() {
     return LayoutBuilder(
@@ -3935,23 +4120,25 @@ class _OptimizedNetworkImage extends StatelessWidget {
       fit: BoxFit.cover,
       height: height,
       width: double.infinity,
-      placeholder: (context, url) => Container(
-        color: Colors.grey[300],
-        child: Center(
-          child: Container(
-            width: 30,
-            height: 30,
-            child: Image.asset(
-              'animation/IdeaBulb.gif',
-              fit: BoxFit.contain,
+      placeholder:
+          (context, url) => Container(
+            color: Colors.grey[300],
+            child: Center(
+              child: Container(
+                width: 30,
+                height: 30,
+                child: Image.asset(
+                  'animation/IdeaBulb.gif',
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      errorWidget: (context, url, error) => Container(
-        color: Colors.grey[300],
-        child: const Center(child: Icon(Icons.error, color: Colors.white)),
-      ),
+      errorWidget:
+          (context, url, error) => Container(
+            color: Colors.grey[300],
+            child: const Center(child: Icon(Icons.error, color: Colors.white)),
+          ),
       memCacheWidth: (MediaQuery.of(context).size.width * 2).toInt(),
       memCacheHeight: (MediaQuery.of(context).size.height * 2).toInt(),
     );
@@ -3978,7 +4165,7 @@ class _LinkifyText extends StatelessWidget {
       r'(https?:\/\/[^\s]+)',
       caseSensitive: false,
     );
-    
+
     final RegExp hashtagRegExp = RegExp(
       r'(#[a-zA-Z0-9_]+)',
       caseSensitive: false,
@@ -3986,20 +4173,22 @@ class _LinkifyText extends StatelessWidget {
 
     final List<InlineSpan> spans = [];
     final List<_TextMatch> allMatches = [];
-    
+
     // Collect all URL matches
     allMatches.addAll(
-      urlRegExp.allMatches(text).map((match) => _TextMatch(match, 'url'))
+      urlRegExp.allMatches(text).map((match) => _TextMatch(match, 'url')),
     );
-    
+
     // Collect all hashtag matches
     allMatches.addAll(
-      hashtagRegExp.allMatches(text).map((match) => _TextMatch(match, 'hashtag'))
+      hashtagRegExp
+          .allMatches(text)
+          .map((match) => _TextMatch(match, 'hashtag')),
     );
-    
+
     // Sort matches by position
     allMatches.sort((a, b) => a.match.start.compareTo(b.match.start));
-    
+
     // Remove overlapping matches (URLs take priority)
     final List<_TextMatch> filteredMatches = [];
     for (int i = 0; i < allMatches.length; i++) {
@@ -4014,12 +4203,12 @@ class _LinkifyText extends StatelessWidget {
         filteredMatches.add(allMatches[i]);
       }
     }
-    
+
     // Build text spans
     int lastMatchEnd = 0;
     for (final matchWithType in filteredMatches) {
       final match = matchWithType.match;
-      
+
       // Add text before the match
       if (match.start > lastMatchEnd) {
         spans.add(
@@ -4029,34 +4218,40 @@ class _LinkifyText extends StatelessWidget {
           ),
         );
       }
-      
+
       final matchText = match.group(0)!;
-      
+
       if (matchWithType.type == 'url') {
         // Handle URL
         spans.add(
           TextSpan(
             text: matchText,
-            style: style?.copyWith(
-              color: Colors.blue.shade600,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.w500,
-            ) ?? TextStyle(
-              color: Colors.blue.shade600,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.w500,
-            ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () async {
-                final uri = Uri.parse(matchText);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not open link')),
-                  );
-                }
-              },
+            style:
+                style?.copyWith(
+                  color: Colors.blue.shade600,
+                  decoration: TextDecoration.underline,
+                  fontWeight: FontWeight.w500,
+                ) ??
+                TextStyle(
+                  color: Colors.blue.shade600,
+                  decoration: TextDecoration.underline,
+                  fontWeight: FontWeight.w500,
+                ),
+            recognizer:
+                TapGestureRecognizer()
+                  ..onTap = () async {
+                    final uri = Uri.parse(matchText);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Could not open link')),
+                      );
+                    }
+                  },
           ),
         );
       } else if (matchWithType.type == 'hashtag') {
@@ -4064,40 +4259,44 @@ class _LinkifyText extends StatelessWidget {
         spans.add(
           TextSpan(
             text: matchText,
-            style: style?.copyWith(
-              color: Colors.purple.shade600, // Change this to your desired hashtag color
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.none,
-            ) ?? TextStyle(
-              color: Colors.purple.shade600, // Change this to your desired hashtag color
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.none,
-            ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                // Optional: Handle hashtag tap
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Hashtag tapped: $matchText'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
+            style:
+                style?.copyWith(
+                  color:
+                      Colors
+                          .purple
+                          .shade600, // Change this to your desired hashtag color
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.none,
+                ) ??
+                TextStyle(
+                  color:
+                      Colors
+                          .purple
+                          .shade600, // Change this to your desired hashtag color
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.none,
+                ),
+            recognizer:
+                TapGestureRecognizer()
+                  ..onTap = () {
+                    // Optional: Handle hashtag tap
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Hashtag tapped: $matchText'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
           ),
         );
       }
-      
+
       lastMatchEnd = match.end;
     }
-    
+
     // Add remaining text
     if (lastMatchEnd < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(lastMatchEnd),
-          style: style,
-        ),
-      );
+      spans.add(TextSpan(text: text.substring(lastMatchEnd), style: style));
     }
 
     return RichText(
@@ -4106,7 +4305,7 @@ class _LinkifyText extends StatelessWidget {
       overflow: overflow ?? TextOverflow.clip,
     );
   }
-  
+
   bool _matchesOverlap(RegExpMatch match1, RegExpMatch match2) {
     return (match1.start < match2.end && match1.end > match2.start);
   }
@@ -4116,7 +4315,7 @@ class _LinkifyText extends StatelessWidget {
 class _TextMatch {
   final RegExpMatch match;
   final String type;
-  
+
   _TextMatch(this.match, this.type);
 }
 

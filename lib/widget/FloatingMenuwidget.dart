@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:innovator/screens/Course/home.dart';
 import 'package:innovator/screens/Course/models/api_models.dart';
 import 'package:innovator/screens/Course/services/api_services.dart';
-import 'package:innovator/screens/Course/sub_category_screen.dart';
 import 'package:innovator/screens/Events/Events.dart';
 import 'package:innovator/screens/Project_Management/Project_idea.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
@@ -100,72 +99,7 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
         break;
       case 'open_search':
         // Fetch the first category and navigate to it
-        try {
-          final categoriesResponse = await ApiService.getParentCategories();
-          if (categoriesResponse['status'] == 200 &&
-              categoriesResponse['data'] != null &&
-              (categoriesResponse['data'] as List).isNotEmpty) {
-            final firstCategory = ParentCategory.fromJson(
-              categoriesResponse['data'][0],
-            );
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) => ProviderScope(
-                      child: SubcategoryScreen(parentCategory: firstCategory),
-                    ),
-              ),
-            );
-          } else {
-            // Fallback: Create a special search category
-            final searchCategory = ParentCategory(
-              id: 'search',
-              name: 'Search Courses',
-              description: 'Find the perfect course for you',
-              slug: 'search-courses',
-              icon: 'search',
-              color: '#F48706',
-              isActive: true,
-              sortOrder: 0,
-              keywords: ['search', 'find', 'browse'],
-              createdBy: CreatedBy(
-                id: 'system',
-                email: 'system@app.com',
-                name: 'System',
-              ),
-              statistics: Statistics(
-                courses: 0,
-                lessons: 0,
-                notes: 0,
-                videos: 0,
-              ),
-              createdAt: DateTime.now().toIso8601String(),
-              updatedAt: DateTime.now().toIso8601String(),
-            );
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) => ProviderScope(
-                      child: SubcategoryScreen(parentCategory: searchCategory),
-                    ),
-              ),
-            );
-          }
-        } catch (e) {
-          developer.log('Error fetching categories for navigation: $e');
-
-          // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Unable to load courses. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
         break;
       case 'add_photo':
         Navigator.pushReplacement(

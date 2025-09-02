@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:innovator/screens/Shop/Cart_List/api_services.dart';
+import 'package:innovator/screens/Shop/Cart_List/cart_model.dart';
+import 'package:path/path.dart' as path;
 
 class CheckoutScreen extends StatefulWidget {
   final double totalAmount;
@@ -24,8 +27,17 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   late TabController _tabController;
   late TabController _qrTabController;
 
+  // Form controllers
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _notesController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
   File? _paymentScreenshot;
   final ImagePicker _picker = ImagePicker();
+  final ApiService _apiService = ApiService();
+  
   bool _isProcessing = false;
   bool _isPaymentVerified = false;
 
@@ -45,101 +57,158 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-      _qrTabController = TabController(length: 2, vsync: this); // Add this line
-
+    _tabController = TabController(length: 3, vsync: this); // Updated to 3 tabs
+    _qrTabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-      _qrTabController.dispose(); // Add this line
-
+    _qrTabController.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
   Future<void> _pickPaymentScreenshot() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
-      );
+  try {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
 
-      if (image != null) {
-        setState(() {
-          _paymentScreenshot = File(image.path);
-        });
-        
-        // Show success message
+    if (image != null) {
+      // Validate file extension
+      final extension = path.extension(image.path).toLowerCase();
+      if (!_isValidImageExtension(extension)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Payment screenshot uploaded successfully'),
-              ],
-            ),
-            backgroundColor: _accentColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            content: Text('Please select a valid image file (JPEG, PNG, GIF, WebP)'),
+            backgroundColor: Colors.red,
           ),
         );
+        return;
       }
-    } catch (e) {
+
+      // Check file size (max 5MB)
+      final file = File(image.path);
+      final fileSize = await file.length();
+      if (fileSize > 5 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File size too large. Maximum 5MB allowed.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _paymentScreenshot = file;
+      });
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error picking image: $e'),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Payment screenshot uploaded successfully'),
+            ],
+          ),
+          backgroundColor: _accentColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error picking image: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
+bool _isValidImageExtension(String extension) {
+  const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+  return validExtensions.contains(extension.toLowerCase());
+}
 
   Future<void> _takePaymentScreenshot() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
-      );
+  try {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
 
-      if (image != null) {
-        setState(() {
-          _paymentScreenshot = File(image.path);
-        });
-        
+    if (image != null) {
+      // Validate file extension
+      final extension = path.extension(image.path).toLowerCase();
+      if (!_isValidImageExtension(extension)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.camera_alt, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Payment screenshot captured successfully'),
-              ],
-            ),
-            backgroundColor: _accentColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            content: Text('Camera captured an invalid file type. Please try again.'),
+            backgroundColor: Colors.red,
           ),
         );
+        return;
       }
-    } catch (e) {
+
+      // Check file size (max 5MB)
+      final file = File(image.path);
+      final fileSize = await file.length();
+      if (fileSize > 5 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Image size too large. Please try again with lower quality.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _paymentScreenshot = file;
+      });
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error taking photo: $e'),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              Icon(Icons.camera_alt, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Payment screenshot captured successfully'),
+            ],
+          ),
+          backgroundColor: _accentColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error taking photo: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
 
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
@@ -160,22 +229,56 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   }
 
   Future<void> _submitOrder() async {
-    if (_paymentScreenshot == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please attach payment screenshot first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+  // Validate form
+  if (!_formKey.currentState!.validate()) {
+    _tabController.animateTo(0); // Go to customer info tab
+    return;
+  }
 
+  if (_paymentScreenshot == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Please attach payment screenshot first'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    _tabController.animateTo(2); // Go to upload proof tab
+    return;
+  }
+
+  // Additional file validation before submitting
+  if (!await _paymentScreenshot!.exists()) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Payment screenshot file is missing. Please upload again.'),
+        backgroundColor: Colors.red,
+      ),
+    );
     setState(() {
-      _isProcessing = true;
+      _paymentScreenshot = null;
     });
+    return;
+  }
 
-    // Simulate API call
-    await Future.delayed(Duration(seconds: 2));
+  setState(() {
+    _isProcessing = true;
+  });
+
+  try {
+    final customerInfo = CustomerInfo(
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
+      address: _addressController.text.trim(),
+    );
+
+    final response = await _apiService.checkout(
+      customerInfo: customerInfo,
+      paidAmount: widget.totalAmount,
+      paymentProof: _paymentScreenshot!,
+      notes: _notesController.text.trim().isNotEmpty 
+          ? _notesController.text.trim() 
+          : null,
+    );
 
     setState(() {
       _isProcessing = false;
@@ -183,10 +286,39 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     });
 
     // Show success dialog
-    _showOrderSuccessDialog();
-  }
+    _showOrderSuccessDialog(response);
 
-  void _showOrderSuccessDialog() {
+  } catch (e) {
+    setState(() {
+      _isProcessing = false;
+    });
+    
+    debugPrint('Order failed: $e');
+    
+    // Extract clean error message
+    String errorMessage = e.toString();
+    if (errorMessage.startsWith('Exception: Checkout error: Exception: ')) {
+      errorMessage = errorMessage.substring('Exception: Checkout error: Exception: '.length);
+    } else if (errorMessage.startsWith('Exception: ')) {
+      errorMessage = errorMessage.substring('Exception: '.length);
+    }
+    debugPrint('Oder Failed $errorMessage');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Order failed: $errorMessage'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'RETRY',
+          textColor: Colors.white,
+          onPressed: () => _submitOrder(),
+        ),
+      ),
+    );
+  }
+}
+
+  void _showOrderSuccessDialog(CheckoutResponse response) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -222,13 +354,42 @@ class _CheckoutScreenState extends State<CheckoutScreen>
               ),
               SizedBox(height: 10),
               Text(
-                'Your order has been received and is being processed.',
+                response.data?.message ?? 'Your order has been received and is being processed.',
                 style: TextStyle(
                   fontSize: 14,
                   color: _textColor.withOpacity(0.7),
                 ),
                 textAlign: TextAlign.center,
               ),
+              if (response.data?.orders.isNotEmpty == true) ...[
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Order Numbers:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _textColor,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      ...response.data!.orders.map((order) => Text(
+                        order.orderNumber,
+                        style: TextStyle(
+                          color: _primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )),
+                    ],
+                  ),
+                ),
+              ],
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
@@ -276,7 +437,12 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           indicatorWeight: 3,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
+          //isScrollable: true,
           tabs: [
+            Tab(
+              icon: Icon(Icons.person),
+              text: 'Customer Info',
+            ),
             Tab(
               icon: Icon(Icons.qr_code),
               text: 'QR Payment',
@@ -297,6 +463,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
+                _buildCustomerInfoTab(),
                 _buildQRPaymentTab(),
                 _buildUploadProofTab(),
               ],
@@ -380,16 +547,17 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildQRPaymentTab() {
-  return SingleChildScrollView(
-    padding: EdgeInsets.all(16),
-    child: Column(
-      children: [
-        // QR Payment Method Tabs
-        Container(
+  // New customer info tab
+  Widget _buildCustomerInfoTab() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Container(
+          padding: EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: _cardColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -399,324 +567,484 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             ],
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Tab Bar for QR Methods
-              Container(
-                margin: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
+              Text(
+                'Customer Information',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _textColor,
                 ),
-                child: TabBar(
-                  controller: _qrTabController,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
+              ),
+              SizedBox(height: 24),
+              
+              // Name field
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Full Name *',
+                  hintText: 'Enter your full name',
+                  prefixIcon: Icon(Icons.person, color: _primaryColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _primaryColor, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your full name';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              
+              // Phone field
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number *',
+                  hintText: 'Enter your phone number',
+                  prefixIcon: Icon(Icons.phone, color: _primaryColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _primaryColor, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your phone number';
+                  }
+                  if (value.length < 10) {
+                    return 'Please enter a valid phone number';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              
+              // Address field
+              TextFormField(
+                controller: _addressController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Delivery Address *',
+                  hintText: 'Enter your delivery address',
+                  prefixIcon: Icon(Icons.location_on, color: _primaryColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _primaryColor, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your delivery address';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              
+              // Notes field (optional)
+              TextFormField(
+                controller: _notesController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'Order Notes (Optional)',
+                  hintText: 'Any special instructions for your order',
+                  prefixIcon: Icon(Icons.note, color: _primaryColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _primaryColor, width: 2),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              
+              // Info container
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.blue.shade200,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info, color: Colors.blue, size: 20),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Please fill in all required fields marked with (*) before proceeding to payment.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQRPaymentTab() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // QR Payment Method Tabs
+          Container(
+            decoration: BoxDecoration(
+              color: _cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Tab Bar for QR Methods
+                Container(
+                  margin: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(8),
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
+                  ),
+                  child: TabBar(
+                    controller: _qrTabController,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    labelColor: _textColor,
+                    unselectedLabelColor: _textColor.withOpacity(0.6),
+                    labelStyle: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    unselectedLabelStyle: TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                    tabs: [
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.account_balance_wallet, size: 18),
+                            SizedBox(width: 8),
+                            Text('eSewa'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.payment, size: 18),
+                            SizedBox(width: 8),
+                            Text('Laxmi Bank'),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  labelColor: _textColor,
-                  unselectedLabelColor: _textColor.withOpacity(0.6),
-                  labelStyle: TextStyle(
+                ),
+                // Tab Content with proper height constraint
+                SizedBox(
+                  height: 300,
+                  child: TabBarView(
+                    controller: _qrTabController,
+                    children: [
+                      _buildEsewaQRTab(),
+                      _buildLaxmiQRTab(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 16),
+          // Payment Details
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Manual Payment Details:',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    color: _textColor,
+                    fontSize: 16,
                   ),
-                  unselectedLabelStyle: TextStyle(
-                    fontWeight: FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                  tabs: [
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.account_balance_wallet, size: 18),
-                          SizedBox(width: 8),
-                          Text('eSewa'),
-                        ],
-                      ),
-                    ),
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.payment, size: 18),
-                          SizedBox(width: 8),
-                          Text('Laxmi Bank'),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
+                SizedBox(height: 12),
+                _buildPaymentDetailRow('Merchant:', _merchantName),
+                _buildPaymentDetailRow('UPI ID:', _merchantUPI),
+                _buildPaymentDetailRow('Phone:', _merchantPhone),
+                _buildPaymentDetailRow('Amount:', 'NPR ${widget.totalAmount.toStringAsFixed(2)}'),
+              ],
+            ),
+          ),
+          SizedBox(height: 16),
+          // Instructions
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.blue.shade200,
+                width: 1,
               ),
-              // Tab Content with proper height constraint
-              SizedBox(
-                height: 300, // Fixed height for TabBarView
-                child: TabBarView(
-                  controller: _qrTabController,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    _buildEsewaQRTab(),
-                    _buildKhaltiQRTab(),
+                    Icon(Icons.info, color: Colors.blue, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Payment Instructions',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 16),
-        // Payment Details
-        Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Text(
-                'Manual Payment Details:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: _textColor,
-                  fontSize: 16,
+                SizedBox(height: 12),
+                Text(
+                  '1. Choose your preferred payment method (eSewa or Laxmi Bank)\n'
+                  '2. Scan the QR code using your mobile app\n'
+                  '3. Enter the exact amount: NPR ${widget.totalAmount.toStringAsFixed(2)}\n'
+                  '4. Complete the payment\n'
+                  '5. Take a screenshot of the payment confirmation\n'
+                  '6. Upload the screenshot in the "Upload Proof" tab',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.blue.shade600,
+                    height: 1.5,
+                  ),
                 ),
-              ),
-              SizedBox(height: 12),
-              _buildPaymentDetailRow('Merchant:', _merchantName),
-              _buildPaymentDetailRow('UPI ID:', _merchantUPI),
-              _buildPaymentDetailRow('Phone:', _merchantPhone),
-              _buildPaymentDetailRow('Amount:', 'NPR ${widget.totalAmount.toStringAsFixed(2)}'),
-            ],
-          ),
-        ),
-        SizedBox(height: 16),
-        // Instructions
-        Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.blue.shade200,
-              width: 1,
+              ],
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.info, color: Colors.blue, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Payment Instructions',
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEsewaQRTab() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'eSewa Payment',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+          SizedBox(height: 16),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.green.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              children: [
+                Image.asset(
+                  'assets/images/qr_code.jpeg',
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.qr_code,
+                            size: 35,
+                            color: Colors.green.withOpacity(0.5),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'eSewa QR Code',
+                            style: TextStyle(
+                              color: Colors.green.withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(height: 10),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    'Scan with eSewa App',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
+                      fontSize: 11,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                ],
-              ),
-              SizedBox(height: 12),
-              Text(
-                '1. Choose your preferred payment method (eSewa or Khalti)\n'
-                '2. Scan the QR code using your mobile app\n'
-                '3. Enter the exact amount: NPR ${widget.totalAmount.toStringAsFixed(2)}\n'
-                '4. Complete the payment\n'
-                '5. Take a screenshot of the payment confirmation\n'
-                '6. Upload the screenshot in the "Upload Proof" tab',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.blue.shade600,
-                  height: 1.5,
                 ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-Widget _buildEsewaQRTab() {
-  return SingleChildScrollView(
-    padding: EdgeInsets.all(16),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'eSewa Payment',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.green,
-          ),
-        ),
-        SizedBox(height: 16),
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.green.withOpacity(0.3),
-              width: 2,
+              ],
             ),
           ),
-          child: Column(
-            children: [
-              Image.asset(
-                'assets/images/qr_code.jpeg',
-                width: 140,
-                height: 140,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.qr_code,
-                          size: 35,
-                          color: Colors.green.withOpacity(0.5),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'eSewa QR Code',
-                          style: TextStyle(
-                            color: Colors.green.withOpacity(0.7),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              SizedBox(height: 10),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Text(
-                  'Scan with eSewa App',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-// Khalti QR Tab Content
-Widget _buildKhaltiQRTab() {
-  return SingleChildScrollView(
-    padding: EdgeInsets.all(16),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Laxmi Payment',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.purple,
-          ),
-        ),
-        SizedBox(height: 16),
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.purple.withOpacity(0.3),
-              width: 2,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLaxmiQRTab() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Laxmi Bank Payment',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple,
             ),
           ),
-          child: Column(
-            children: [
-              Image.asset(
-                'assets/images/laxmi_sunrise.jpeg',
-                width: 140,
-                height: 140,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.qr_code,
-                          size: 35,
-                          color: Colors.purple.withOpacity(0.5),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Laxmi QR Code',
-                          style: TextStyle(
-                            color: Colors.purple.withOpacity(0.7),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+          SizedBox(height: 16),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.purple.withOpacity(0.3),
+                width: 2,
               ),
-              SizedBox(height: 10),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              children: [
+                Image.asset(
+                  'assets/images/laxmi_sunrise.jpeg',
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.qr_code,
+                            size: 35,
+                            color: Colors.purple.withOpacity(0.5),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Laxmi Bank QR Code',
+                            style: TextStyle(
+                              color: Colors.purple.withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                child: Text(
-                  'Scan with Khalti App',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.purple.shade700,
-                    fontWeight: FontWeight.w500,
+                SizedBox(height: 10),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    'Scan with Banking App',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.purple.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildPaymentDetailRow(String label, String value) {
     return Padding(

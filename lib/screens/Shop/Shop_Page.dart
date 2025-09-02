@@ -8,6 +8,7 @@ import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/CardIconWidget.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/cart_state_manager.dart'; // GetX version
 import 'package:innovator/screens/Shop/Cart_List/cart_screen.dart';
+import 'package:innovator/screens/Shop/Cart_List/orders_page.dart';
 import 'package:innovator/screens/Shop/Product_detail_Page.dart';
 import 'dart:convert';
 
@@ -732,6 +733,14 @@ Future<void> _addToCart(
                       ),
                     ),
                   ),
+                  IconButton(onPressed: (){
+                    Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => OrdersHistoryPage(),
+  ),
+);
+                  }, icon: Icon(Icons.history_rounded))
               ],
             ),
           ],

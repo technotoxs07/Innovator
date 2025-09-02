@@ -251,7 +251,7 @@ Future<void> _showFullScreenCallNotification({
       enableLights: true,
       ledColor: Colors.blue,
       playSound: true,
-      sound: const RawResourceAndroidNotificationSound('default'),
+      sound: null,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -860,7 +860,6 @@ Future<void> _handleReinstallAuthState(bool hasInternet) async {
     } else {
       developer.log('✅ No Firebase user - clean state');
     }
-    
   } catch (e) {
     developer.log('❌ Error handling reinstall auth state: $e');
     // On error, sign out to ensure clean state

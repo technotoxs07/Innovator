@@ -5,7 +5,6 @@ import 'package:in_app_update/in_app_update.dart';
 import 'package:innovator/main.dart';
 import 'package:innovator/screens/Feed/Inner_Homepage.dart';
 import 'package:innovator/screens/Feed/Video_Feed.dart';
-import 'package:innovator/widget/Feed&Post.dart';
 import 'package:innovator/widget/FloatingMenuwidget.dart';
 
 class Homepage extends StatefulWidget {
@@ -92,35 +91,49 @@ class _HomepageState extends State<Homepage>
     );
   }
 
+  void _navigateToVideoFeed() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => VideoFeedPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: Duration(milliseconds: 300),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      // drawer: const CustomDrawer(),
-      body: Stack(
-        children: [
-          Inner_HomePage(),
-          // Add the floating menu widget
-          FloatingMenuWidget(),
-          Positioned(
-            top: mq.height * 0.01,
-            right: mq.width * 0.03,
-            child: FeedToggleButton(
-              initialValue: true, // true for post feed (current page)
-              accentColor: Color.fromRGBO(244, 135, 6, 1),
-              onToggle: (bool isPost) {
-                if (!isPost) {
-                  // When switching to video feed
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => VideoFeedPage()),
-                  );
-                }
-                // If isPost is true, stay on current page (already on post feed)
-              },
-            ),
-          ),
-        ],
+      body: GestureDetector(
+        onHorizontalDragEnd: (DragEndDetails details) {
+          // Detect swipe from right to left
+          if (details.primaryVelocity! < -200) {
+            _navigateToVideoFeed();
+          }
+        },
+        child: Stack(
+          children: [
+            Inner_HomePage(),
+            // Add the floating menu widget
+            FloatingMenuWidget(),
+            // Remove FeedToggleButton from Homepage
+          ],
+        ),
       ),
     );
   }

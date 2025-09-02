@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math' as math;
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -313,7 +312,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-              ),// 
+              ), //
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20.0),
                 topRight: Radius.circular(20.0),
@@ -503,19 +502,19 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
             ),
 
             // Profession (if available) with responsive font size
-            if (user.profession.isNotEmpty) ...[
-              SizedBox(height: screenHeight * 0.003),
-              Text(
-                user.profession,
-                style: TextStyle(
-                  fontSize: professionFontSize,
-                  color: Colors.grey.shade600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+            // if (user.profession.isNotEmpty) ...[
+            //   SizedBox(height: screenHeight * 0.003),
+            //   Text(
+            //     user.profession,
+            //     style: TextStyle(
+            //       fontSize: professionFontSize,
+            //       color: Colors.grey.shade600,
+            //     ),
+            //     textAlign: TextAlign.center,
+            //     maxLines: 1,
+            //     overflow: TextOverflow.ellipsis,
+            //   ),
+            // ],
 
             SizedBox(height: screenHeight * 0.008),
 

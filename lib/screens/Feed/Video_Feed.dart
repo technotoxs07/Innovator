@@ -730,8 +730,16 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-      body: Stack(
+    key: _scaffoldKey,
+    body: GestureDetector(
+      onHorizontalDragEnd: (DragEndDetails details) {
+        // Detect swipe from left to right
+        if (details.primaryVelocity! > 200) {
+          // Navigate back to Homepage with animation
+          Navigator.pop(context);
+        }
+      },
+      child: Stack(
         children: [
           if (_hasError)
             Center(
@@ -850,86 +858,18 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
               ),
             ),
           
-          Positioned(
-            top: mq.height * 0.01,
-            right: mq.width * 0.03,
-            child: FeedToggleButton(
-              initialValue: false,
-              accentColor: Color.fromRGBO(244, 135, 6, 1),
-              onToggle: (bool isPost) {
-                if (isPost) {
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          ),
+          // Remove FeedToggleButton from VideoFeedPage
+          // Visual swipe indicator (optional - shows during first few seconds)
+          // if (_videoContents.isNotEmpty)
+          //   Positioned(
+          //     left: 10,
+          //     top: MediaQuery.of(context).size.height / 2 - 30,
+          //     child: _SwipeIndicator(isLeftSwipe: true),
+          //   ),
         ],
       ),
-      // floatingActionButton: GetBuilder<ChatListController>(
-      //   init: () {
-      //     if (!Get.isRegistered<ChatListController>()) {
-      //       Get.put(ChatListController());
-      //     }
-      //     return Get.find<ChatListController>();
-      //   }(),
-      //   builder: (chatController) {
-      //     return Obx(() {
-      //       final unreadCount = chatController.totalUnreadCount;
-      //       final isLoading = chatController.isLoading.value;
-      //       final isMqttConnected = chatController.isMqttConnected.value;
-
-      //       return CustomFAB(
-      //         gifAsset: 'animation/chaticon.gif',
-      //         onPressed: isLoading
-      //             ? () {}
-      //             : () async {
-      //                 try {
-      //                   if (unreadCount > 0) {
-      //                     chatController.resetAllUnreadCounts();
-      //                   }
-      //                   final result = await Navigator.push(
-      //                     context,
-      //                     MaterialPageRoute(
-      //                       builder: (_) => ChatListScreen(
-      //                         currentUserId: AppData().currentUserId ?? '',
-      //                         currentUserName: AppData().currentUserName ?? '',
-      //                         currentUserPicture: AppData().currentUserProfilePicture ?? '',
-      //                         currentUserEmail: AppData().currentUserEmail ?? '',
-      //                       ),
-      //                     ),
-      //                   );
-      //                   if (Get.isRegistered<ChatListController>()) {
-      //                     final controller = Get.find<ChatListController>();
-      //                     if (!controller.isMqttConnected.value) {
-      //                       await controller.initializeMQTT();
-      //                     }
-      //                     await controller.fetchChats();
-      //                   }
-      //                 } catch (e) {
-      //                   Get.snackbar(
-      //                     'Error',
-      //                     'Please Contact to Our Support Team',
-      //                     snackPosition: SnackPosition.BOTTOM,
-      //                   );
-      //                 }
-      //               },
-      //         backgroundColor: Colors.transparent,
-      //         elevation: 100.0,
-      //         size: 56.0,
-      //         showBadge: unreadCount > 0,
-      //         badgeText: unreadCount > 99 ? '99+' : '$unreadCount',
-      //         badgeColor: Colors.red,
-      //         badgeTextColor: Colors.white,
-      //         badgeSize: 24.0,
-      //         badgeTextSize: 12.0,
-      //         animationDuration: Duration(
-      //           milliseconds: isMqttConnected ? 300 : 500,
-      //         ),
-      //       );
-      //     });
-      //   },
-      // ),
-    );
+    ),
+  );
   }
 }
 

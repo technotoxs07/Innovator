@@ -1,139 +1,61 @@
-// models/api_models.dart - Updated for new API structure
+// api_models.dart
+class CourseResponse {
+  final int status;
+  final CourseData? data;
+  final String? error;
+  final String message;
 
-import 'package:flutter/material.dart';
-
-// Updated ParentCategory model for new API response
-class ParentCategory {
-  final String id;
-  final String name;
-  final String description;
-  final String slug;
-  final String icon;
-  final String color;
-  final bool isActive;
-  final int sortOrder;
-  final List<String> keywords;
-  final CreatedBy createdBy;
-  final Statistics statistics;
-  final String createdAt;
-  final String updatedAt;
-
-  ParentCategory({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.slug,
-    required this.icon,
-    required this.color,
-    required this.isActive,
-    required this.sortOrder,
-    required this.keywords,
-    required this.createdBy,
-    required this.statistics,
-    required this.createdAt,
-    required this.updatedAt,
+  CourseResponse({
+    required this.status,
+    this.data,
+    this.error,
+    required this.message,
   });
 
-  factory ParentCategory.fromJson(Map<String, dynamic> json) {
-    return ParentCategory(
-      id: json['_id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      slug: json['slug'] ?? '',
-      icon: json['icon'] ?? '',
-      color: json['color'] ?? '#FF5733',
-      isActive: json['isActive'] ?? true,
-      sortOrder: json['sortOrder'] ?? 0,
-      keywords: (json['keywords'] as List?)?.cast<String>() ?? [],
-      createdBy: CreatedBy.fromJson(json['createdBy'] ?? {}),
-      statistics: Statistics.fromJson(json['statistics'] ?? {}),
-      createdAt: json['createdAt'] ?? '',
-      updatedAt: json['updatedAt'] ?? '',
+  factory CourseResponse.fromJson(Map<String, dynamic> json) {
+    return CourseResponse(
+      status: json['status'] ?? 0,
+      data: json['data'] != null ? CourseData.fromJson(json['data']) : null,
+      error: json['error'],
+      message: json['message'] ?? '',
     );
   }
 }
 
-class CreatedBy {
-  final String id;
-  final String email;
-  final String name;
+class CourseData {
+  final List<Course> courses;
+  final Pagination pagination;
 
-  CreatedBy({
-    required this.id,
-    required this.email,
-    required this.name,
-  });
-
-  factory CreatedBy.fromJson(Map<String, dynamic> json) {
-    return CreatedBy(
-      id: json['_id'] ?? '',
-      email: json['email'] ?? '',
-      name: json['name'] ?? '',
-    );
-  }
-}
-
-class Statistics {
-  final int courses;
-  final int lessons;
-  final int notes;
-  final int videos;
-
-  Statistics({
+  CourseData({
     required this.courses,
-    required this.lessons,
-    required this.notes,
-    required this.videos,
+    required this.pagination,
   });
 
-  factory Statistics.fromJson(Map<String, dynamic> json) {
-    return Statistics(
-      courses: json['courses'] ?? 0,
-      lessons: json['lessons'] ?? 0,
-      notes: json['notes'] ?? 0,
-      videos: json['videos'] ?? 0,
+  factory CourseData.fromJson(Map<String, dynamic> json) {
+    return CourseData(
+      courses: (json['courses'] as List? ?? [])
+          .map((e) => Course.fromJson(e))
+          .toList(),
+      pagination: Pagination.fromJson(json['pagination'] ?? {}),
     );
   }
 }
 
-// Add CategoryInfo class here
-class CategoryInfo {
-  final String id;
-  final String name;
-  final String slug;
-  final String? description;
-
-  CategoryInfo({
-    required this.id, 
-    required this.name, 
-    required this.slug,
-    this.description,
-  });
-
-  factory CategoryInfo.fromJson(Map<String, dynamic> json) {
-    return CategoryInfo(
-      id: json['_id'] ?? '',
-      name: json['name'] ?? '',
-      slug: json['slug'] ?? '',
-      description: json['description'],
-    );
-  }
-}
-
-// Course model for category courses response
 class Course {
   final String id;
   final String title;
   final String description;
   final Price price;
-  final String thumbnail;
+  final String? thumbnail;
   final String? overviewVideo;
-  final String overviewVideoDuration;
-  final dynamic categoryId; // Can be String or CategoryInfo object
+  final String? overviewVideoDuration;
+  final int? overviewVideoDurationSeconds;
   final List<Lesson> lessons;
   final Instructor instructor;
   final Author author;
   final String level;
+  final String duration;
+  final int durationSeconds;
   final String language;
   final List<String> tags;
   final List<String> prerequisites;
@@ -142,27 +64,27 @@ class Course {
   final bool isPublished;
   final int enrollmentCount;
   final Rating rating;
-  final Settings settings;
-  final List<dynamic> courseVideos;
-  final List<dynamic> coursePDFs;
-  final ContentStatistics? contentStatistics; // Make nullable
+  final CourseSettings settings;
+  final ContentStatistics? contentStatistics;
+  final ComputedTotals? computedTotals;
   final String createdAt;
   final String updatedAt;
-  final CategoryInfo? category; // Add category field
 
   Course({
     required this.id,
     required this.title,
     required this.description,
     required this.price,
-    required this.thumbnail,
+    this.thumbnail,
     this.overviewVideo,
-    required this.overviewVideoDuration,
-    required this.categoryId,
+    this.overviewVideoDuration,
+    this.overviewVideoDurationSeconds,
     required this.lessons,
     required this.instructor,
     required this.author,
     required this.level,
+    required this.duration,
+    required this.durationSeconds,
     required this.language,
     required this.tags,
     required this.prerequisites,
@@ -172,12 +94,10 @@ class Course {
     required this.enrollmentCount,
     required this.rating,
     required this.settings,
-    required this.courseVideos,
-    required this.coursePDFs,
     this.contentStatistics,
+    this.computedTotals,
     required this.createdAt,
     required this.updatedAt,
-    this.category,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -186,35 +106,35 @@ class Course {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       price: Price.fromJson(json['price'] ?? {}),
-      thumbnail: json['thumbnail'] ?? '',
+      thumbnail: json['thumbnail'],
       overviewVideo: json['overviewVideo'],
-      overviewVideoDuration: json['overviewVideoDuration'] ?? '00:00:00',
-      categoryId: json['categoryId'], // Keep as dynamic
-      lessons: (json['lessons'] as List?)
-          ?.map((lesson) => Lesson.fromJson(lesson))
-          .toList() ?? [],
+      overviewVideoDuration: json['overviewVideoDuration'],
+      overviewVideoDurationSeconds: json['overviewVideoDurationSeconds'],
+      lessons: (json['lessons'] as List? ?? [])
+          .map((e) => Lesson.fromJson(e))
+          .toList(),
       instructor: Instructor.fromJson(json['instructor'] ?? {}),
       author: Author.fromJson(json['author'] ?? {}),
-      level: json['level'] ?? '',
-      language: json['language'] ?? '',
-      tags: (json['tags'] as List?)?.cast<String>() ?? [],
-      prerequisites: (json['prerequisites'] as List?)?.cast<String>() ?? [],
-      learningOutcomes: (json['learningOutcomes'] as List?)?.cast<String>() ?? [],
-      targetAudience: (json['targetAudience'] as List?)?.cast<String>() ?? [],
+      level: json['level'] ?? 'beginner',
+      duration: json['duration'] ?? '00:00:00',
+      durationSeconds: json['durationSeconds'] ?? 0,
+      language: json['language'] ?? 'English',
+      tags: List<String>.from(json['tags'] ?? []),
+      prerequisites: List<String>.from(json['prerequisites'] ?? []),
+      learningOutcomes: List<String>.from(json['learningOutcomes'] ?? []),
+      targetAudience: List<String>.from(json['targetAudience'] ?? []),
       isPublished: json['isPublished'] ?? false,
       enrollmentCount: json['enrollmentCount'] ?? 0,
       rating: Rating.fromJson(json['rating'] ?? {}),
-      settings: Settings.fromJson(json['settings'] ?? {}),
-      courseVideos: json['courseVideos'] ?? [],
-      coursePDFs: json['coursePDFs'] ?? [],
-      contentStatistics: json['contentStructure'] != null 
-          ? ContentStatistics.fromJson(json['contentStructure'])
-          : ContentStatistics(), // Provide default instance
+      settings: CourseSettings.fromJson(json['settings'] ?? {}),
+      contentStatistics: json['contentStatistics'] != null 
+          ? ContentStatistics.fromJson(json['contentStatistics']) 
+          : null,
+      computedTotals: json['computedTotals'] != null 
+          ? ComputedTotals.fromJson(json['computedTotals']) 
+          : null,
       createdAt: json['createdAt'] ?? '',
       updatedAt: json['updatedAt'] ?? '',
-      category: json['category'] != null 
-          ? CategoryInfo.fromJson(json['category'])
-          : null,
     );
   }
 }
@@ -222,114 +142,19 @@ class Course {
 class Price {
   final double usd;
   final double npr;
+  final String? id;
 
-  Price({required this.usd, required this.npr});
+  Price({
+    required this.usd,
+    required this.npr,
+    this.id,
+  });
 
   factory Price.fromJson(Map<String, dynamic> json) {
     return Price(
       usd: (json['usd'] ?? 0).toDouble(),
       npr: (json['npr'] ?? 0).toDouble(),
-    );
-  }
-}
-
-class Instructor {
-  final String name;
-  final String bio;
-  final List<String> credentials;
-
-  Instructor({required this.name, required this.bio, required this.credentials});
-
-  factory Instructor.fromJson(Map<String, dynamic> json) {
-    return Instructor(
-      name: json['name'] ?? '',
-      bio: json['bio'] ?? '',
-      credentials: (json['credentials'] as List?)?.cast<String>() ?? [],
-    );
-  }
-}
-
-class Author {
-  final String id;
-  final String email;
-  final String phone;
-
-  Author({required this.id, required this.email, required this.phone});
-
-  factory Author.fromJson(Map<String, dynamic> json) {
-    return Author(
-      id: json['_id'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? 'Not provided',
-    );
-  }
-}
-
-class Rating {
-  final double average;
-  final int count;
-
-  Rating({required this.average, required this.count});
-
-  factory Rating.fromJson(Map<String, dynamic> json) {
-    return Rating(
-      average: (json['average'] ?? 0).toDouble(),
-      count: json['count'] ?? 0,
-    );
-  }
-}
-
-class Settings {
-  final bool allowDownloads;
-  final bool certificateEnabled;
-
-  Settings({
-    required this.allowDownloads,
-    required this.certificateEnabled,
-  });
-
-  factory Settings.fromJson(Map<String, dynamic> json) {
-    return Settings(
-      allowDownloads: json['allowDownloads'] ?? false,
-      certificateEnabled: json['certificateEnabled'] ?? true,
-    );
-  }
-}
-
-class ContentStatistics {
-  final int totalLessons;
-  final int totalLessonVideos;
-  final int totalLessonNotes;
-  final int totalCourseVideos;
-  final int totalCoursePDFs;
-  final int totalVideos;
-  final int totalPDFs;
-  final bool hasOverviewVideo;
-  final String overviewVideoDuration;
-
-  ContentStatistics({
-    this.totalLessons = 0,
-    this.totalLessonVideos = 0,
-    this.totalLessonNotes = 0,
-    this.totalCourseVideos = 0,
-    this.totalCoursePDFs = 0,
-    this.totalVideos = 0,
-    this.totalPDFs = 0,
-    this.hasOverviewVideo = false,
-    this.overviewVideoDuration = '00:00:00',
-  });
-
-  factory ContentStatistics.fromJson(Map<String, dynamic> json) {
-    return ContentStatistics(
-      totalLessons: json['totalLessons'] ?? 0,
-      totalLessonVideos: json['totalLessonVideos'] ?? 0,
-      totalLessonNotes: json['totalLessonNotes'] ?? 0,
-      totalCourseVideos: json['totalCourseVideos'] ?? 0,
-      totalCoursePDFs: json['totalCoursePDFs'] ?? 0,
-      totalVideos: json['totalVideos'] ?? 0,
-      totalPDFs: json['totalPDFs'] ?? 0,
-      hasOverviewVideo: json['hasOverviewVideo'] ?? false,
-      overviewVideoDuration: json['overviewVideoDuration'] ?? '00:00:00',
+      id: json['_id'],
     );
   }
 }
@@ -340,6 +165,7 @@ class Lesson {
   final String description;
   final int sortOrder;
   final String duration;
+  final int durationSeconds;
   final bool isPublished;
   final List<Note> notes;
   final List<Video> videos;
@@ -351,6 +177,7 @@ class Lesson {
     required this.description,
     required this.sortOrder,
     required this.duration,
+    required this.durationSeconds,
     required this.isPublished,
     required this.notes,
     required this.videos,
@@ -362,15 +189,16 @@ class Lesson {
       id: json['_id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      sortOrder: json['sortOrder'] ?? 0,
-      duration: json['duration'] ?? '',
+      sortOrder: json['sortOrder'] ?? 1,
+      duration: json['duration'] ?? '00:00:00',
+      durationSeconds: json['durationSeconds'] ?? 0,
       isPublished: json['isPublished'] ?? false,
-      notes: (json['notes'] as List?)
-          ?.map((note) => Note.fromJson(note))
-          .toList() ?? [],
-      videos: (json['videos'] as List?)
-          ?.map((video) => Video.fromJson(video))
-          .toList() ?? [],
+      notes: (json['notes'] as List? ?? [])
+          .map((e) => Note.fromJson(e))
+          .toList(),
+      videos: (json['videos'] as List? ?? [])
+          .map((e) => Video.fromJson(e))
+          .toList(),
       metadata: LessonMetadata.fromJson(json['metadata'] ?? {}),
     );
   }
@@ -379,13 +207,22 @@ class Lesson {
 class LessonMetadata {
   final int estimatedTime;
   final String difficulty;
+  final int totalVideos;
+  final int totalNotes;
 
-  LessonMetadata({required this.estimatedTime, required this.difficulty});
+  LessonMetadata({
+    required this.estimatedTime,
+    required this.difficulty,
+    required this.totalVideos,
+    required this.totalNotes,
+  });
 
   factory LessonMetadata.fromJson(Map<String, dynamic> json) {
     return LessonMetadata(
       estimatedTime: json['estimatedTime'] ?? 0,
-      difficulty: json['difficulty'] ?? '',
+      difficulty: json['difficulty'] ?? 'beginner',
+      totalVideos: json['totalVideos'] ?? 0,
+      totalNotes: json['totalNotes'] ?? 0,
     );
   }
 }
@@ -396,7 +233,6 @@ class Note {
   final String description;
   final String fileUrl;
   final String fileType;
-  final int sortOrder;
   final bool premium;
   final NoteMetadata metadata;
 
@@ -406,7 +242,6 @@ class Note {
     required this.description,
     required this.fileUrl,
     required this.fileType,
-    required this.sortOrder,
     required this.premium,
     required this.metadata,
   });
@@ -417,8 +252,7 @@ class Note {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       fileUrl: json['fileUrl'] ?? '',
-      fileType: json['fileType'] ?? '',
-      sortOrder: json['sortOrder'] ?? 0,
+      fileType: json['fileType'] ?? 'pdf',
       premium: json['premium'] ?? false,
       metadata: NoteMetadata.fromJson(json['metadata'] ?? {}),
     );
@@ -426,21 +260,15 @@ class Note {
 }
 
 class NoteMetadata {
-  final String fileSize;
   final int downloadCount;
-  final String uploadedAt;
 
   NoteMetadata({
-    required this.fileSize,
     required this.downloadCount,
-    required this.uploadedAt,
   });
 
   factory NoteMetadata.fromJson(Map<String, dynamic> json) {
     return NoteMetadata(
-      fileSize: json['fileSize'] ?? 'Unknown',
       downloadCount: json['downloadCount'] ?? 0,
-      uploadedAt: json['uploadedAt'] ?? '',
     );
   }
 }
@@ -450,7 +278,7 @@ class Video {
   final String title;
   final String description;
   final String videoUrl;
-  final String thumbnail;
+  final String? thumbnail;
   final String duration;
   final int sortOrder;
   final VideoMetadata metadata;
@@ -460,7 +288,7 @@ class Video {
     required this.title,
     required this.description,
     required this.videoUrl,
-    required this.thumbnail,
+    this.thumbnail,
     required this.duration,
     required this.sortOrder,
     required this.metadata,
@@ -472,9 +300,9 @@ class Video {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       videoUrl: json['videoUrl'] ?? '',
-      thumbnail: json['thumbnail'] ?? '',
+      thumbnail: json['thumbnail'],
       duration: json['duration'] ?? '00:00:00',
-      sortOrder: json['sortOrder'] ?? 0,
+      sortOrder: json['sortOrder'] ?? 1,
       metadata: VideoMetadata.fromJson(json['metadata'] ?? {}),
     );
   }
@@ -509,22 +337,183 @@ class VideoMetadata {
 
   factory VideoMetadata.fromJson(Map<String, dynamic> json) {
     return VideoMetadata(
-      quality: json['quality'] ?? 'unknown',
+      quality: json['quality'] ?? '1080p',
       fileSize: json['fileSize'] ?? '0',
       viewCount: json['viewCount'] ?? 0,
       durationSeconds: json['durationSeconds'] ?? 0,
-      width: json['width'] ?? 0,
-      height: json['height'] ?? 0,
-      aspectRatio: json['aspectRatio'] ?? 'unknown',
+      width: json['width'] ?? 1920,
+      height: json['height'] ?? 1080,
+      aspectRatio: json['aspectRatio'] ?? '16:9',
       bitrate: json['bitrate'] ?? 0,
-      codec: json['codec'] ?? 'unknown',
-      format: json['format'] ?? 'unknown',
+      codec: json['codec'] ?? 'h264',
+      format: json['format'] ?? 'mp4',
       uploadedAt: json['uploadedAt'] ?? '',
     );
   }
 }
 
-// Course detail response models
+class Instructor {
+  final String name;
+  final String bio;
+  final List<String> credentials;
+
+  Instructor({
+    required this.name,
+    required this.bio,
+    required this.credentials,
+  });
+
+  factory Instructor.fromJson(Map<String, dynamic> json) {
+    return Instructor(
+      name: json['name'] ?? 'Unknown',
+      bio: json['bio'] ?? '',
+      credentials: List<String>.from(json['credentials'] ?? []),
+    );
+  }
+}
+
+class Author {
+  final String email;
+  final String id;
+  final String phone;
+
+  Author({
+    required this.email,
+    required this.id,
+    required this.phone,
+  });
+
+  factory Author.fromJson(Map<String, dynamic> json) {
+    return Author(
+      email: json['email'] ?? '',
+      id: json['_id'] ?? '',
+      phone: json['phone'] ?? 'Not provided',
+    );
+  }
+}
+
+class Rating {
+  final double average;
+  final int count;
+
+  Rating({
+    required this.average,
+    required this.count,
+  });
+
+  factory Rating.fromJson(Map<String, dynamic> json) {
+    return Rating(
+      average: (json['average'] ?? 0).toDouble(),
+      count: json['count'] ?? 0,
+    );
+  }
+}
+
+class CourseSettings {
+  final bool allowDownloads;
+  final bool certificateEnabled;
+
+  CourseSettings({
+    required this.allowDownloads,
+    required this.certificateEnabled,
+  });
+
+  factory CourseSettings.fromJson(Map<String, dynamic> json) {
+    return CourseSettings(
+      allowDownloads: json['allowDownloads'] ?? true,
+      certificateEnabled: json['certificateEnabled'] ?? true,
+    );
+  }
+}
+
+class ContentStatistics {
+  final int totalLessons;
+  final int totalLessonVideos;
+  final int totalLessonNotes;
+  final int totalCourseVideos;
+  final int totalCoursePDFs;
+  final int totalVideos;
+  final int totalPDFs;
+  final bool hasOverviewVideo;
+  final String? overviewVideoDuration;
+
+  ContentStatistics({
+    required this.totalLessons,
+    required this.totalLessonVideos,
+    required this.totalLessonNotes,
+    required this.totalCourseVideos,
+    required this.totalCoursePDFs,
+    required this.totalVideos,
+    required this.totalPDFs,
+    required this.hasOverviewVideo,
+    this.overviewVideoDuration,
+  });
+
+  factory ContentStatistics.fromJson(Map<String, dynamic> json) {
+    return ContentStatistics(
+      totalLessons: json['totalLessons'] ?? 0,
+      totalLessonVideos: json['totalLessonVideos'] ?? 0,
+      totalLessonNotes: json['totalLessonNotes'] ?? 0,
+      totalCourseVideos: json['totalCourseVideos'] ?? 0,
+      totalCoursePDFs: json['totalCoursePDFs'] ?? 0,
+      totalVideos: json['totalVideos'] ?? 0,
+      totalPDFs: json['totalPDFs'] ?? 0,
+      hasOverviewVideo: json['hasOverviewVideo'] ?? false,
+      overviewVideoDuration: json['overviewVideoDuration'],
+    );
+  }
+}
+
+class ComputedTotals {
+  final int totalDurationSeconds;
+  final int totalVideoCount;
+  final int totalPDFCount;
+  final int totalContentCount;
+
+  ComputedTotals({
+    required this.totalDurationSeconds,
+    required this.totalVideoCount,
+    required this.totalPDFCount,
+    required this.totalContentCount,
+  });
+
+  factory ComputedTotals.fromJson(Map<String, dynamic> json) {
+    return ComputedTotals(
+      totalDurationSeconds: json['totalDurationSeconds'] ?? 0,
+      totalVideoCount: json['totalVideoCount'] ?? 0,
+      totalPDFCount: json['totalPDFCount'] ?? 0,
+      totalContentCount: json['totalContentCount'] ?? 0,
+    );
+  }
+}
+
+class Pagination {
+  final int page;
+  final int limit;
+  final int total;
+  final int pages;
+  final bool hasMore;
+
+  Pagination({
+    required this.page,
+    required this.limit,
+    required this.total,
+    required this.pages,
+    required this.hasMore,
+  });
+
+  factory Pagination.fromJson(Map<String, dynamic> json) {
+    return Pagination(
+      page: json['page'] ?? 0,
+      limit: json['limit'] ?? 10,
+      total: json['total'] ?? 0,
+      pages: json['pages'] ?? 0,
+      hasMore: json['hasMore'] ?? false,
+    );
+  }
+}
+
+// Course Detail Response
 class CourseDetailResponse {
   final int status;
   final CourseDetailData data;
@@ -551,105 +540,77 @@ class CourseDetailResponse {
 class CourseDetailData {
   final Course course;
   final List<Lesson> lessons;
+  final List<dynamic> courseVideos;
+  final List<dynamic> coursePDFs;
+  final List<dynamic> allLessonVideos;
+  final List<dynamic> allLessonNotes;
   final Lesson? selectedLesson;
-  final List<Note> lessonNotes;
-  final List<Video> lessonVideos;
 
   CourseDetailData({
     required this.course,
     required this.lessons,
+    required this.courseVideos,
+    required this.coursePDFs,
+    required this.allLessonVideos,
+    required this.allLessonNotes,
     this.selectedLesson,
-    required this.lessonNotes,
-    required this.lessonVideos,
   });
 
   factory CourseDetailData.fromJson(Map<String, dynamic> json) {
     return CourseDetailData(
       course: Course.fromJson(json['course'] ?? {}),
-      lessons: (json['lessons'] as List?)
-          ?.map((lesson) => Lesson.fromJson(lesson))
-          .toList() ?? [],
-      selectedLesson: json['selectedLesson'] != null 
-          ? Lesson.fromJson(json['selectedLesson'])
-          : null,
-      lessonNotes: (json['lessonNotes'] as List?)
-          ?.map((note) => Note.fromJson(note))
-          .toList() ?? [],
-      lessonVideos: (json['lessonVideos'] as List?)
-          ?.map((video) => Video.fromJson(video))
-          .toList() ?? [],
+      lessons: (json['lessons'] as List? ?? [])
+          .map((e) => Lesson.fromJson(e))
+          .toList(),
+      courseVideos: json['courseVideos'] ?? [],
+      coursePDFs: json['coursePDFs'] ?? [],
+      allLessonVideos: json['allLessonVideos'] ?? [],
+      allLessonNotes: json['allLessonNotes'] ?? [],
+      selectedLesson: null,
     );
   }
 }
 
-// Category courses response
-class CategoryCoursesResponse {
-  final int status;
-  final CategoryCoursesData data;
-  final String? error;
-  final String message;
+// Parent Category Model
+class ParentCategory {
+  final String id;
+  final String name;
+  final String icon;
+  final String color;
+  final CategoryStatistics statistics;
 
-  CategoryCoursesResponse({
-    required this.status,
-    required this.data,
-    this.error,
-    required this.message,
+  ParentCategory({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.statistics,
   });
 
-  factory CategoryCoursesResponse.fromJson(Map<String, dynamic> json) {
-    return CategoryCoursesResponse(
-      status: json['status'] ?? 0,
-      data: CategoryCoursesData.fromJson(json['data'] ?? {}),
-      error: json['error'],
-      message: json['message'] ?? '',
+  factory ParentCategory.fromJson(Map<String, dynamic> json) {
+    return ParentCategory(
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      icon: json['icon'] ?? 'category',
+      color: json['color'] ?? '#F48706',
+      statistics: CategoryStatistics.fromJson(json['statistics'] ?? {}),
     );
   }
 }
 
-class CategoryCoursesData {
-  final ParentCategory category;
-  final List<Course> courses;
-  final Pagination pagination;
+class CategoryStatistics {
+  final int courses;
+  final int subcategories;
 
-  CategoryCoursesData({
-    required this.category,
+  CategoryStatistics({
     required this.courses,
-    required this.pagination,
+    required this.subcategories,
   });
 
-  factory CategoryCoursesData.fromJson(Map<String, dynamic> json) {
-    return CategoryCoursesData(
-      category: ParentCategory.fromJson(json['category'] ?? {}),
-      courses: (json['courses'] as List?)
-          ?.map((course) => Course.fromJson(course))
-          .toList() ?? [],
-      pagination: Pagination.fromJson(json['pagination'] ?? {}),
-    );
-  }
-}
-
-class Pagination {
-  final int page;
-  final int limit;
-  final int total;
-  final int pages;
-  final bool hasMore;
-
-  Pagination({
-    required this.page,
-    required this.limit,
-    required this.total,
-    required this.pages,
-    required this.hasMore,
-  });
-
-  factory Pagination.fromJson(Map<String, dynamic> json) {
-    return Pagination(
-      page: json['page'] ?? 0,
-      limit: json['limit'] ?? 10,
-      total: json['total'] ?? 0,
-      pages: json['pages'] ?? 1,
-      hasMore: json['hasMore'] ?? false,
+  factory CategoryStatistics.fromJson(Map<String, dynamic> json) {
+    return CategoryStatistics(
+      courses: json['courses'] ?? 0,
+      subcategories: json['subcategories'] ?? 0,
     );
   }
 }

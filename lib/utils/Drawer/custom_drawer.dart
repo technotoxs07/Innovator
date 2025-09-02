@@ -468,8 +468,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                                   delay: 300,
                                 ),
                                 _buildAnimatedMenuItem(
-                                  icon: Icons.help_rounded,
-                                  title: 'Projects',
+                                  icon: Icons.event_available,
+                                  title: 'Events',
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -965,7 +965,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Innovator App v1.0.22',
+                    'Innovator App v:1.0.25',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

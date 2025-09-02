@@ -48,7 +48,7 @@ class AppData {
   
   String? get currentUserName => _currentUser?['name'];
   
-  String? get currentUserProfilePicture => _currentUser?['profilePicture'];
+  String? get currentUserProfilePicture => _currentUser?['picture'];
   
   // New getter for fcmTokens
   List<String>? get fcmTokens => _currentUser?['fcmTokens']?.cast<String>();
@@ -423,7 +423,7 @@ Future<void> initializeFcmAfterLogin() async {
         alert: true,
         badge: true,
         sound: true,
-        provisional: false,
+        provisional: false, 
       );
       
       developer.log('🔥 FCM Permission status: ${settings.authorizationStatus}');
