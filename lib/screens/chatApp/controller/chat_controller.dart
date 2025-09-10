@@ -1062,7 +1062,7 @@ Future<void> markMessagesAsRead(String chatId) async {
             ...user, // Keep Firestore data (for chat functionality)
             'name': apiUserData['name'], // Use API name
             'picture': apiUserData['picture'], // Use API picture
-            'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}', // Full picture URL
+            'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}', // Full picture URL
             'isFollowing': followStatus['isFollowing'],
             'isFollowedBy': followStatus['isFollowedBy'],
             'isMutualFollow': true,
@@ -1210,7 +1210,7 @@ Future<void> markMessagesAsRead(String chatId) async {
                       ...otherUser,
                       'name': apiUserData['name'],
                       'picture': apiUserData['picture'],
-                      'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}',
+                      'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}',
                       'isMutualFollow': true,
                     };
                     userCache[otherUserId] = otherUser;
@@ -1351,7 +1351,7 @@ Future<void> _performSearchWithFollowCheck(String query) async {
               ...user,
               'name': apiUserData['name'],
               'picture': apiUserData['picture'],
-              'apiPictureUrl': 'http://182.93.94.210:3066${apiUserData['picture']}',
+              'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}',
               'isMutualFollow': true,
             };
             mutualFollowers.add(enhancedUser);
@@ -1384,7 +1384,7 @@ Future<void> _performSearchWithFollowCheck(String query) async {
       if (picture.startsWith('http')) {
         return picture;
       } else {
-        return 'http://182.93.94.210:3066$picture';
+        return 'http://182.93.94.210:3067$picture';
       }
     }
 
@@ -2559,7 +2559,7 @@ void _clearAllReactiveVariables() {
           final apiUserData = freshStatus!['user'] as Map<String, dynamic>;
           user['name'] = apiUserData['name'];
           user['picture'] = apiUserData['picture'];
-          user['apiPictureUrl'] = 'http://182.93.94.210:3066${apiUserData['picture']}';
+          user['apiPictureUrl'] = 'http://182.93.94.210:3067${apiUserData['picture']}';
           user['isMutualFollow'] = true;
         }
       }
@@ -2706,7 +2706,7 @@ Future<void> loadAllUsersWithSmartCaching() async {
             'name': apiUserData['name'] ?? user['name'], // Use API name if available
             'picture': apiUserData['picture'],
             'apiPictureUrl': apiUserData['picture'] != null 
-                ? 'http://182.93.94.210:3066${apiUserData['picture']}' 
+                ? 'http://182.93.94.210:3067${apiUserData['picture']}' 
                 : null,
             'isFollowing': followStatus['isFollowing'],
             'isFollowedBy': followStatus['isFollowedBy'],
@@ -2977,7 +2977,7 @@ Future<void> _loadUsersWithoutFollowFilter() async {
                       'name': apiUserData['name'],
                       'picture': apiUserData['picture'],
                       'apiPictureUrl':
-                          'http://182.93.94.210:3066${apiUserData['picture']}',
+                          'http://182.93.94.210:3067${apiUserData['picture']}',
                       'isMutualFollow': true,
                     };
                   }

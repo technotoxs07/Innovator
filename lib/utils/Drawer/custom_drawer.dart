@@ -29,27 +29,59 @@ import 'package:innovator/utils/Drawer/drawer_cache_manager.dart';
 import 'package:lottie/lottie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-class SmoothDrawerService {
-  static void showLeftDrawer(BuildContext context) {
+// Synchronous-only cache for instant access
+class InstantCache {
+  static Map<String, dynamic>? _data;
+  static bool _isInitialized = false;
+
+  // Initialize with current AppData - called once at app start
+  static void init() {
+    if (!_isInitialized) {
+      final appData = AppData().currentUser;
+      if (appData != null) {
+        _data = Map<String, dynamic>.from(appData);
+      }
+      _isInitialized = true;
+    }
+  }
+
+  // Get data synchronously (never null - returns default if empty)
+  static Map<String, dynamic> get() {
+    init(); // Ensure initialized
+    return _data ?? {
+      'name': 'User',
+      'email': '',
+      'picture': null,
+    };
+  }
+
+  static void update(Map<String, dynamic> newData) {
+    _data = Map<String, dynamic>.from(newData);
+  }
+
+  static void clear() {
+    _data = null;
+    _isInitialized = false;
+  }
+}
+
+// INSTANT drawer service - zero async operations
+class InstantDrawerService {
+  static void show(BuildContext context) {
+    // Pre-initialize cache before showing drawer
+    InstantCache.init();
+    
     Navigator.of(context).push(
       PageRouteBuilder(
-        opaque: false, 
+        opaque: false,
         barrierDismissible: true,
         barrierColor: Colors.black54,
-        transitionDuration: const Duration(
-          milliseconds: 300,
-        ), // Reduced from 350
-        reverseTransitionDuration: const Duration(
-          milliseconds: 200,
-        ), // Reduced from 250
+        transitionDuration: const Duration(milliseconds: 120), // Even faster
+        reverseTransitionDuration: const Duration(milliseconds: 80),
         pageBuilder: (context, animation, _) {
-          final drawerWidth = math.min(
-            MediaQuery.of(context).size.width * 0.8,
-            300.0,
-          );
-          return _SmoothDrawerOverlay(
+          return _InstantDrawerOverlay(
             animation: animation,
-            drawerWidth: drawerWidth,
+            drawerWidth: math.min(MediaQuery.of(context).size.width * 0.8, 300.0),
           );
         },
       ),
@@ -57,75 +89,60 @@ class SmoothDrawerService {
   }
 }
 
-class _SmoothDrawerOverlay extends StatelessWidget {
+class _InstantDrawerOverlay extends StatelessWidget {
   final Animation<double> animation;
   final double drawerWidth;
 
-  const _SmoothDrawerOverlay({
+  const _InstantDrawerOverlay({
     required this.animation,
     required this.drawerWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Optimized animation curves
-    final slideAnimation = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic, // Changed from custom Cubic
-    );
-
-    final fadeAnimation = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOut,
-      reverseCurve: Curves.easeIn,
-    );
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
         onHorizontalDragUpdate: (details) {
-          if (details.delta.dx < 0) {
-            final delta = details.delta.dx.abs() / drawerWidth;
-            if (delta > 0.001) {
-              Navigator.of(context).pop();
-            }
-          }
-        },
-        onHorizontalDragEnd: (details) {
-          if (details.velocity.pixelsPerSecond.dx < -200) {
-            Navigator.of(context).pop();
-          }
+          if (details.delta.dx < -8) Navigator.of(context).pop();
         },
         child: Stack(
           children: [
-            // Optimized backdrop
+            // Backdrop
             AnimatedBuilder(
-              animation: fadeAnimation,
-              builder:
-                  (context, _) => GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      color: Colors.black.withOpacity(
-                        0.5 * fadeAnimation.value,
-                      ),
-                    ),
-                  ),
+              animation: animation,
+              builder: (context, _) => Container(
+                color: Colors.black.withOpacity(0.5 * animation.value),
+              ),
             ),
-
-            // Optimized drawer animation
+            // Drawer
             AnimatedBuilder(
-              animation: slideAnimation,
-              builder:
-                  (context, child) => Transform.translate(
-                    offset: Offset(
-                      -drawerWidth * (1 - slideAnimation.value),
-                      0,
+              animation: animation,
+              builder: (context, _) => Transform.translate(
+                offset: Offset(-drawerWidth * (1 - animation.value), 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: drawerWidth,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(28),
+                        bottomRight: Radius.circular(28),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    child: child,
+                    child: const TrueInstantDrawer(),
                   ),
-              child: Opacity(
-                opacity: fadeAnimation.value,
-                child: _buildDrawerContainer(context),
+                ),
               ),
             ),
           ],
@@ -133,1158 +150,516 @@ class _SmoothDrawerOverlay extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildDrawerContainer(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        width: drawerWidth,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(28),
-            bottomRight: Radius.circular(28),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 20.0,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(28),
-            bottomRight: Radius.circular(28),
-          ),
-          child: const CustomDrawer(),
-        ),
-      ),
-    );
-  }
 }
 
-class CustomDrawer extends StatefulWidget {
-  const CustomDrawer({super.key});
+// Truly instant drawer - no async operations in initState or build
+class TrueInstantDrawer extends StatefulWidget {
+  const TrueInstantDrawer({super.key});
 
   @override
-  State<CustomDrawer> createState() => _CustomDrawerState();
+  State<TrueInstantDrawer> createState() => _TrueInstantDrawerState();
 }
 
-class _CustomDrawerState extends State<CustomDrawer>
-    with TickerProviderStateMixin {
-  List<NotificationModel> _notifications = [];
-  int _unreadCount = 0;
-  bool _isLoading = true;
-  Map<String, dynamic>? _userData;
-  String? _errorMessage;
-  bool _isLoadingFromCache = false;
-
-  late AnimationController _slideController;
-  late AnimationController _fadeController;
-  late Animation<double> _slideAnimation;
-  late Animation<double> _fadeAnimation;
+class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
+  // Display data - populated synchronously
+  late String _userName;
+  late String _userEmail;
+  late String? _userPicture;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeUserController(); // Add this line
-    _initializeAnimations();
-    _initializeData();
-  }
-
-  // Add this method to ensure UserController is registered
-  void _initializeUserController() {
-    if (!Get.isRegistered<UserController>()) {
-      Get.put(UserController());
-      developer.log('✅ UserController registered in CustomDrawer');
-    }
-  }
-
-  void _initializeAnimations() {
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _slideAnimation = Tween<double>(begin: -1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-    _slideController.forward();
-    _fadeController.forward();
-  }
-
-  @override
-  void dispose() {
-    _slideController.dispose();
-    _fadeController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _initializeData() async {
-    setState(() {
-      _isLoadingFromCache = true;
+    // CRITICAL: Only synchronous operations here
+    _loadDataSynchronously();
+    // Start background refresh AFTER drawer is shown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshInBackground();
     });
+  }
 
-    final cachedProfile = await DrawerProfileCache.getCachedProfile();
-    if (cachedProfile != null) {
-      if (mounted) {
-        setState(() {
-          _userData = {
-            'name': cachedProfile.name,
-            'email': cachedProfile.email,
-            'picture': cachedProfile.picturePath,
-          };
-          AppData().setCurrentUser(_userData!);
-          
-          // Safely update UserController
-          if (Get.isRegistered<UserController>()) {
-            Get.find<UserController>().updateProfilePicture(
-              cachedProfile.picturePath ?? '',
-            );
-          }
-          
-          _isLoading = false;
-          _isLoadingFromCache = false;
-        });
+  void _loadDataSynchronously() {
+    // Get cached data instantly - never blocks
+    final data = InstantCache.get();
+    _userName = data['name'] ?? 'User';
+    _userEmail = data['email'] ?? '';
+    _userPicture = data['picture'];
+  }
+
+  void _refreshInBackground() async {
+    // This runs AFTER the drawer is already open
+    try {
+      setState(() => _isRefreshing = true);
+      
+      // Try persistent cache first
+      final persistentCache = await DrawerProfileCache.getCachedProfile();
+      if (persistentCache != null && mounted) {
+        final data = {
+          'name': persistentCache.name,
+          'email': persistentCache.email,
+          'picture': persistentCache.picturePath,
+        };
+        _updateData(data);
+        InstantCache.update(data);
       }
-    } else {
-      setState(() {
-        _isLoading = true;
-      });
-    }
-
-    final bool hasInternet = await _checkInternetConnection();
-    if (hasInternet) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _fetchUserProfile();
-        // _loadNotifications();
-      });
-    } else if (cachedProfile == null) {
-      _handleError('No internet connection and no cached profile available');
+      
+      // Then try network
+      await _fetchFromNetwork();
+    } catch (e) {
+      developer.log('Background refresh failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
     }
   }
 
-  Future<void> _fetchUserProfile() async {
+  void _updateData(Map<String, dynamic> data) {
+    if (mounted) {
+      setState(() {
+        _userName = data['name'] ?? 'User';
+        _userEmail = data['email'] ?? '';
+        _userPicture = data['picture'];
+      });
+    }
+  }
+
+  Future<void> _fetchFromNetwork() async {
     try {
-      final String? authToken = AppData().authToken;
-      if (authToken == null || authToken.isEmpty) {
-        _handleError('Authentication token not found');
-        return;
-      }
+      final authToken = AppData().authToken;
+      if (authToken == null) return;
 
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/user-profile'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/user-profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
         },
-      );
+      ).timeout(const Duration(seconds: 5));
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
+      if (response.statusCode == 200 && mounted) {
+        final responseData = json.decode(response.body);
         if (responseData['status'] == 200 && responseData['data'] != null) {
           final userData = responseData['data'];
+          
+          // Update all storage
+          InstantCache.update(userData);
+          AppData().setCurrentUser(userData);
           await DrawerProfileCache.cacheProfile(
+            userId: userData['_id'] ?? '',
             name: userData['name'] ?? '',
             email: userData['email'] ?? '',
             picturePath: userData['picture'],
           );
-
-          if (userData['picture'] != null) {
-            const baseUrl = 'http://182.93.94.210:3066';
-            await precacheImage(
-              CachedNetworkImageProvider('$baseUrl${userData['picture']}'),
-              context,
-            );
-          }
-
-          // Safely update UserController
-          if (Get.isRegistered<UserController>()) {
-            Get.find<UserController>().updateProfilePicture(userData['picture']);
-          }
           
-          if (mounted) {
-            setState(() {
-              _userData = userData;
-              _isLoading = false;
-              AppData().setCurrentUser(_userData!);
-            });
-          }
-        } else {
-          _handleError(responseData['message'] ?? 'Unknown error');
+          _updateData(userData);
         }
-      } else {
-        _handleError('Failed to load profile. Status: ${response.statusCode}');
       }
     } catch (e) {
-      _handleError('Network error: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingFromCache = false;
-        });
-      }
-    }
-  }
-
-  Future<bool> _checkInternetConnection() async {
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException catch (_) {
-      return false;
-    }
-  }
-
-  void _handleError(String message) {
-    if (mounted) {
-      setState(() {
-        _errorMessage = message;
-        _isLoading = false;
-        _isLoadingFromCache = false;
-      });
-    }
-  }
-
-  Future<void> _loadNotifications() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/notifications'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${AppData().authToken}',
-        },
-      );
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _unreadCount = data['data']['unreadCount'] ?? 0;
-            _notifications =
-                (data['data']['notifications'] as List)
-                    .map((json) => NotificationModel.fromJson(json))
-                    .toList();
-          });
-        }
-      } else {
-        developer.log('Failed to load notifications: ${response.statusCode}');
-      }
-    } catch (e) {
-      developer.log('Error loading notifications: $e');
+      developer.log('Network fetch failed: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, Colors.grey.shade50, Colors.white],
-          ),
-        ),
-        child: ClipPath(
-          clipper: DrawerClipper(),
-          child: AnimatedBuilder(
-            animation: _slideAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(_slideAnimation.value * 300, 0),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Column(
-                    children: [
-                      _buildGradientHeader(),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.message_rounded,
-                                  title: 'Messages',
-                                  onTap: () {
-                                    if (!Get.isRegistered<
-                                      FireChatController
-                                    >()) {
-                                      Get.put(FireChatController());
-                                    }
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) =>
-                                                const OptimizedChatHomePage(),
-                                      ),
-                                    );
-                                  },
-                                  delay: 100,
-                                ),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.person_rounded,
-                                  title: 'Profile',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => ProviderScope(
-                                              child: UserProfileScreen(
-                                                userId:
-                                                    AppData().currentUserId ??
-                                                    '',
-                                              ),
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                  delay: 200,
-                                ),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.psychology_rounded,
-                                  title: 'Eliza ChatBot',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ElizaChatScreen(),
-                                      ),
-                                    );
-                                  },
-                                  delay: 300,
-                                ),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.event_available,
-                                  title: 'Events',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => EventsHomePage(),
-                                      ),
-                                    );
-                                  },
-                                  delay: 600,
-                                ),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.report_rounded,
-                                  title: 'Reports',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ReportsScreen(),
-                                      ),
-                                    );
-                                  },
-                                  delay: 400,
-                                ),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.privacy_tip_rounded,
-                                  title: 'Privacy & Policy',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => const ProviderScope(
-                                              child: PrivacyPolicy(),
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                  delay: 500,
-                                ),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.settings,
-                                  title: 'Settings',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const SettingsScreen(),
-                                      ),
-                                    );
-                                  },
-                                  delay: 500,
-                                ),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.help_rounded,
-                                  title: 'FAQ',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const FAQScreen(),
-                                      ),
-                                    );
-                                  },
-                                  delay: 600,
-                                ),
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height * 0.05,
-                                ),
-
-                                _buildGradientDivider(),
-                                _buildAnimatedMenuItem(
-                                  icon: Icons.logout_rounded,
-                                  title: 'Logout',
-                                  isLogout: true,
-                                  onTap: _showLogoutDialog,
-                                  delay: 700,
-                                ),
-                                const SizedBox(height: 15),
-                                _buildFooter(),
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).padding.bottom +
-                                      20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topRight: Radius.circular(28),
+        bottomRight: Radius.circular(28),
+      ),
+      child: Column(
+        children: [
+          _buildHeader(),
+          Expanded(child: _buildMenu()),
+        ],
       ),
     );
   }
 
-  Widget _buildGradientHeader() {
+  Widget _buildHeader() {
     return Container(
       height: MediaQuery.of(context).size.height * 0.34,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFEB6B46),
-            const Color(0xFFFF8A65),
-            const Color(0xFFEB6B46).withOpacity(0.9),
-          ],
+          colors: [Color(0xFFEB6B46), Color(0xFFFF8A65), Color(0xFFEB6B46)],
         ),
-        borderRadius: const BorderRadius.only(
+        borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(50),
           bottomRight: Radius.circular(50),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFEB6B46).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
-      child: Stack(
-        children: [
-          Positioned.fill(child: CustomPaint(painter: HeaderPatternPainter())),
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(50),
-                  bottomRight: Radius.circular(50),
-                ),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.white.withOpacity(0.1), Colors.transparent],
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child:
-                  _isLoading
-                      ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
-                      : _errorMessage != null && _userData == null
-                      ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Lottie.asset('animation/No-Content.json'),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Offline: Please connect to the internet',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                      : _buildAdvancedProfileHeader(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdvancedProfileHeader() {
-    final userData = AppData().currentUser ?? _userData;
-    final String name = userData?['name'] ?? 'User';
-    final String email = userData?['email'] ?? '';
-    const String baseUrl = 'http://182.93.94.210:3066';
-
-    return DefaultTextStyle(
-      style: const TextStyle(
-        decoration: TextDecoration.none,
-        fontFamily: 'Roboto',
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Safe Obx usage with null check
-          Get.isRegistered<UserController>()
-              ? Obx(() {
-                  final picturePath = Get.find<UserController>().profilePicture.value;
-                  return Container(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Profile picture
+              Stack(
+                children: [
+                  Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.white.withOpacity(0.3),
-                          blurRadius: 20,
-                          spreadRadius: 2,
+                          blurRadius: 15,
+                          spreadRadius: 1,
                         ),
                       ],
                     ),
-                    child: CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      child:
-                          picturePath != null && picturePath.isNotEmpty
-                              ? CachedNetworkImage(
-                                imageUrl: '$baseUrl$picturePath',
-                                imageBuilder:
-                                    (context, imageProvider) => CircleAvatar(
-                                      radius: 35,
-                                      backgroundImage: imageProvider,
-                                    ),
-                                placeholder:
-                                    (context, url) => const CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                errorWidget:
-                                    (context, url, error) => const Icon(
-                                      Icons.person,
-                                      size: 35,
-                                      color: Colors.white,
-                                    ),
-                                cacheManager: CacheManager(
-                                  Config(
-                                    'profilePictureCache',
-                                    stalePeriod: const Duration(days: 30),
-                                    maxNrOfCacheObjects: 20,
-                                    repo: JsonCacheInfoRepository(
-                                      databaseName: 'profilePictureCache',
-                                    ),
-                                  ),
-                                ),
-                                placeholderFadeInDuration: const Duration(
-                                  milliseconds: 200,
-                                ),
-                                fadeOutDuration: const Duration(milliseconds: 200),
-                                fadeInDuration: const Duration(milliseconds: 200),
-                              )
-                              : const Icon(
-                                Icons.person,
-                                size: 35,
-                                color: Colors.white,
-                              ),
-                    ),
-                  );
-                })
-              : // Fallback widget when UserController is not registered
-              Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.3),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    child: _buildProfileImage(),
                   ),
-                  child: CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: userData?['picture'] != null
-                        ? CachedNetworkImage(
-                          imageUrl: '$baseUrl${userData!['picture']}',
-                          imageBuilder:
-                              (context, imageProvider) => CircleAvatar(
-                                radius: 35,
-                                backgroundImage: imageProvider,
-                              ),
-                          placeholder:
-                              (context, url) => const CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                          errorWidget:
-                              (context, url, error) => const Icon(
-                                Icons.person,
-                                size: 35,
-                                color: Colors.white,
-                              ),
-                        )
-                        : const Icon(
-                          Icons.person,
-                          size: 35,
+                  // Refresh indicator
+                  if (_isRefreshing)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
                           color: Colors.white,
+                          shape: BoxShape.circle,
                         ),
+                        child: const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            color: Color(0xFFEB6B46),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Welcome text
+              const Text(
+                'Welcome Back',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // User name
+              Text(
+                _userName,
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              // Email
+              if (_userEmail.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    _userEmail,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
-          const SizedBox(height: 20),
-          const Text(
-            'Welcome Back',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.5,
-            ),
+              ],
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 24,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileImage() {
+    const baseUrl = 'http://182.93.94.210:3067';
+    
+    // NO HERO WIDGET - Simple Container to avoid conflicts
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.2),
+        image: _userPicture != null && _userPicture!.isNotEmpty
+            ? DecorationImage(
+                image: CachedNetworkImageProvider('$baseUrl$_userPicture'),
+                fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  // Handle error silently
+                },
+              )
+            : null,
+      ),
+      child: _userPicture == null || _userPicture!.isEmpty
+          ? const Icon(
+              Icons.person,
+              size: 35,
               color: Colors.white,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            )
+          : null,
+    );
+  }
+
+  Widget _buildMenu() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
+          _QuickMenuItem(icon: Icons.person_rounded, title: 'Profile', onTap: _goToProfile),
+          _QuickMenuItem(icon: Icons.psychology_rounded, title: 'Eliza ChatBot', onTap: _goToEliza),
+          _QuickMenuItem(icon: Icons.event_available, title: 'Events', onTap: _goToEvents),
+          _QuickMenuItem(icon: Icons.report_rounded, title: 'Reports', onTap: _goToReports),
+          _QuickMenuItem(icon: Icons.privacy_tip_rounded, title: 'Privacy & Policy', onTap: _goToPrivacy),
+          _QuickMenuItem(icon: Icons.settings, title: 'Settings', onTap: _goToSettings),
+          _QuickMenuItem(icon: Icons.help_rounded, title: 'FAQ', onTap: _goToFAQ),
+          
+          const SizedBox(height: 20),
+          _buildDivider(),
+          
+          _QuickMenuItem(
+            icon: Icons.logout_rounded, 
+            title: 'Logout', 
+            onTap: _showLogout,
+            isLogout: true,
           ),
-          if (email.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Text(
-                email,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
+          
+          const SizedBox(height: 20),
+          _buildFooter(),
         ],
       ),
     );
   }
 
-  Widget _buildAnimatedMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    required int delay,
-    String? badge,
-    bool isLogout = false,
-  }) {
-    return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 800 + delay),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(100 * (1 - value), 0),
-          child: Opacity(
-            opacity: value,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient:
-                    isLogout
-                        ? LinearGradient(
-                          colors: [
-                            Colors.red.withOpacity(0.1),
-                            Colors.red.withOpacity(0.3),
-                          ],
-                        )
-                        : null,
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: onTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color:
-                                isLogout
-                                    ? Colors.red.withOpacity(0.1)
-                                    : const Color(0xFFEB6B46).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            icon,
-                            color:
-                                isLogout ? Colors.red : const Color(0xFFEB6B46),
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  isLogout ? Colors.red : Colors.grey.shade800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        if (badge != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              badge,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          )
-                        else
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: Colors.grey.shade400,
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildGradientDivider() {
+  Widget _buildDivider() {
     return Container(
       height: 1,
       margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.transparent,
-            Colors.grey.shade300,
-            Colors.transparent,
-          ],
+          colors: [Colors.transparent, Colors.grey.shade300, Colors.transparent],
         ),
       ),
     );
   }
 
   Widget _buildFooter() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEB6B46).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.rocket_launch, color: Color(0xFFEB6B46), size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Innovator App v:1.0.27', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
+              Text('Pvt Ltd', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Navigation methods - all instant
+  void _goToMessages() => _quickNavigate(() => const OptimizedChatHomePage());
+  void _goToProfile() => _quickNavigate(() => ProviderScope(child: UserProfileScreen(userId: AppData().currentUserId ?? '')));
+  void _goToEliza() => _quickNavigate(() => ElizaChatScreen());
+  void _goToEvents() => _quickNavigate(() => EventsHomePage());
+  void _goToReports() => _quickNavigate(() => ReportsScreen());
+  void _goToPrivacy() => _quickNavigate(() => const ProviderScope(child: PrivacyPolicy()));
+  void _goToSettings() => _quickNavigate(() => const SettingsScreen());
+  void _goToFAQ() => _quickNavigate(() => const FAQScreen());
+
+  void _quickNavigate(Widget Function() builder) {
+    Navigator.of(context).pop(); // Close drawer
+    Navigator.push(context, MaterialPageRoute(builder: (_) => builder()));
+  }
+
+  void _showLogout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Logout Confirmation'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => _performQuickLogout(context),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performQuickLogout(BuildContext dialogContext) async {
+    Navigator.pop(dialogContext);
+    Navigator.pop(context);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Logging out...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Quick cleanup
+      if (Get.isRegistered<FireChatController>()) {
+        Get.find<FireChatController>().cancelAllStreamSubscriptionsImmediate();
+      }
+      
+      await Future.wait([
+        FirebaseAuth.instance.signOut(),
+        GoogleSignIn().signOut(),
+        AppData().clearAuthToken(),
+      ]);
+      
+      InstantCache.clear();
+      
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+      }
+    }
+  }
+}
+
+// Ultra-lightweight menu item
+class _QuickMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool isLogout;
+
+  const _QuickMenuItem({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.isLogout = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: isLogout
+                ? LinearGradient(colors: [Colors.red.withOpacity(0.1), Colors.red.withOpacity(0.2)])
+                : null,
+          ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEB6B46).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: isLogout
+                      ? Colors.red.withOpacity(0.1)
+                      : const Color(0xFFEB6B46).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.rocket_launch,
-                  color: Color(0xFFEB6B46),
-                  size: 20,
+                child: Icon(
+                  icon,
+                  color: isLogout ? Colors.red : const Color(0xFFEB6B46),
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Innovator App v:1.0.25',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isLogout ? Colors.red : Colors.grey.shade800,
                   ),
-                  Text(
-                    'Pvt Ltd',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
+                ),
               ),
+              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
             ],
           ),
         ),
-      ],
+      ),
     );
-  }
-
-  void _showLogoutDialog() {
-    showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              backgroundColor: Colors.white,
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.logout_rounded,
-                      color: Colors.red,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Logout Confirmation',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              content: const Text(
-                'Are you sure you want to logout from your account?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.grey,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => _performLogout(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Logout',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ),
-    );
-  }
-
-  Future<void> _performLogout(BuildContext dialogContext) async {
-    try {
-      developer.log('🚪 Starting drawer logout process...');
-
-      // Close the confirmation dialog first
-      Navigator.of(dialogContext).pop();
-
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => WillPopScope(
-              onWillPop: () async => false,
-              child: AlertDialog(
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(color: Color(0xFFEB6B46)),
-                    const SizedBox(height: 16),
-                    const Text('Logging out...'),
-                  ],
-                ),
-              ),
-            ),
-      );
-
-      // Execute logout steps with proper stream cancellation FIRST
-      await _executeCompleteLogoutWithStreamCleanup();
-
-      // Close loading dialog
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-
-      // Use Navigator instead of Get for navigation
-      if (mounted) {
-        developer.log('🔄 Navigating to login page...');
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const LoginPage(),
-            settings: const RouteSettings(name: '/login'),
-          ),
-          (route) => false, // Remove all previous routes
-        );
-        developer.log('✅ Navigation to login completed');
-      }
-    } catch (e) {
-      developer.log('❌ Error during logout: $e');
-
-      // Close loading dialog if open
-      if (mounted && Navigator.of(context).canPop()) {
-        try {
-          Navigator.of(context).pop();
-        } catch (popError) {
-          developer.log('Error closing loading dialog: $popError');
-        }
-      }
-
-      // Force navigate to login even if there were errors
-      if (mounted) {
-        try {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const LoginPage(),
-              settings: const RouteSettings(name: '/login'),
-            ),
-            (route) => false,
-          );
-          developer.log('✅ Emergency navigation to login completed');
-        } catch (navError) {
-          developer.log('❌ Emergency navigation failed: $navError');
-        }
-      }
-    }
-  }
-
-  // Updated logout execution with proper stream cleanup order:
-  Future<void> _executeCompleteLogoutWithStreamCleanup() async {
-    developer.log('🧹 Executing complete logout with stream cleanup...');
-
-    // STEP 1: Cancel streams FIRST to prevent permission errors
-    try {
-      if (Get.isRegistered<FireChatController>()) {
-        final chatController = Get.find<FireChatController>();
-        // Cancel streams before anything else
-        await chatController.cancelAllStreamSubscriptionsImmediate();
-        developer.log('✅ Chat streams canceled immediately');
-      }
-    } catch (e) {
-      developer.log('⚠️ Error canceling chat streams: $e');
-    }
-
-    // STEP 2: Update user status to offline (with short timeout)
-    try {
-      final currentUser = AppData().currentUser;
-      if (currentUser != null && currentUser['_id'] != null) {
-        await FirebaseService.updateUserStatus(
-          currentUser['_id'],
-          false,
-        ).timeout(const Duration(seconds: 3));
-        developer.log('✅ User status updated to offline');
-      }
-    } catch (e) {
-      developer.log('⚠️ Failed to update user status (continuing): $e');
-    }
-
-    // STEP 3: Sign out from Firebase Auth (this will invalidate tokens)
-    try {
-      await FirebaseAuth.instance.signOut();
-      await GoogleSignIn().signOut();
-      developer.log('✅ Signed out from Firebase and Google');
-    } catch (e) {
-      developer.log('⚠️ Error signing out from Firebase: $e');
-    }
-
-    // STEP 4: Clear controllers after Firebase signout
-    try {
-      if (Get.isRegistered<FireChatController>()) {
-        final chatController = Get.find<FireChatController>();
-        await chatController.completeLogoutAfterSignout();
-        Get.delete<FireChatController>(force: true);
-        developer.log('✅ Chat controller cleared');
-      }
-    } catch (e) {
-      developer.log('⚠️ Error clearing chat controller: $e');
-    }
-
-    try {
-      if (Get.isRegistered<UserController>()) {
-        Get.delete<UserController>(force: true);
-        developer.log('✅ User controller cleared');
-      }
-    } catch (e) {
-      developer.log('⚠️ Error clearing user controller: $e');
-    }
-
-    // STEP 5: Clear AppData (this will clear tokens and SharedPreferences)
-    try {
-      await AppData().clearAuthToken();
-      developer.log('✅ AppData cleared');
-    } catch (e) {
-      developer.log('⚠️ Error clearing AppData: $e');
-    }
-
-    // STEP 6: Clear caches
-    try {
-      await DrawerProfileCache.clearCache();
-      await DefaultCacheManager().emptyCache();
-      developer.log('✅ Caches cleared');
-    } catch (e) {
-      developer.log('⚠️ Error clearing caches: $e');
-    }
-
-    developer.log('✅ Complete logout execution finished');
   }
 }
 
-class DrawerClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.moveTo(0, 0);
-    path.lineTo(size.width - 30, 0);
-    path.quadraticBezierTo(size.width, 0, size.width, 30);
-    path.lineTo(size.width, size.height - 30);
-    path.quadraticBezierTo(
-      size.width,
-      size.height,
-      size.width - 30,
-      size.height,
-    );
-    path.lineTo(0, size.height);
-    path.close();
-    return path;
+// Public interface
+class SmoothDrawerService {
+  static void showLeftDrawer(BuildContext context) {
+    InstantDrawerService.show(context);
   }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-class HeaderPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = Colors.white.withOpacity(0.1)
-          ..style = PaintingStyle.fill;
+// Compatibility classes
+class CustomDrawer extends TrueInstantDrawer {
+  const CustomDrawer({super.key});
+}
 
-    final path = Path();
-    path.moveTo(0, size.height * 0.3);
-    for (double x = 0; x <= size.width; x += 20) {
-      final y =
-          size.height * 0.3 + 20 * math.sin((x / size.width) * 2 * math.pi);
-      path.lineTo(x, y);
-    }
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-    canvas.drawPath(path, paint);
+class OptimizedCustomDrawer extends TrueInstantDrawer {
+  const OptimizedCustomDrawer({super.key});
+}
 
-    final circlePaint =
-        Paint()
-          ..color = Colors.white.withOpacity(0.05)
-          ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(
-      Offset(size.width * 0.8, size.height * 0.2),
-      40,
-      circlePaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.2, size.height * 0.6),
-      25,
-      circlePaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.9, size.height * 0.8),
-      15,
-      circlePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+class ZeroLagDrawer extends TrueInstantDrawer {
+  const ZeroLagDrawer({super.key});
 }

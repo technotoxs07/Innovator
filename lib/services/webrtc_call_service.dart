@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as webrtc;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,6 +17,15 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
 
 class WebRTCCallService extends GetxService {
+  static Future<WebRTCCallService> initializeForBackground() async {
+    if (!Get.isRegistered<WebRTCCallService>()) {
+      final service = WebRTCCallService();
+      Get.put(service, permanent: true);
+      await service._initializeVideoRenderers();
+      return service;
+    }
+    return Get.find<WebRTCCallService>();
+  }
   static WebRTCCallService get instance => Get.find<WebRTCCallService>();
   
   // WebRTC components
@@ -64,7 +74,65 @@ class WebRTCCallService extends GetxService {
     {'urls': 'stun:stun4.l.google.com:19302'},
     // Add more TURN servers here if needed for production
   ];
+
+
+  Future<void> handleBackgroundCall(Map<String, dynamic> callData) async {
+    try {
+      developer.log('📞 WebRTC handling background call');
+      
+      isIncomingCall.value = true;
+      currentCallData.value = callData;
+      currentCallId.value = callData['callId'] ?? '';
+      
+      // Platform channel to bring app to foreground
+      const platform = MethodChannel('com.innovation.innovator/call');
+      await platform.invokeMethod('showCallScreen');
+      
+      // Wait for app to be ready
+      int attempts = 0;
+      while (Get.context == null && attempts < 10) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        attempts++;
+      }
+      
+      if (Get.context != null) {
+        Get.to(
+          () => IncomingCallScreen(callData: callData),
+          transition: Transition.noTransition,
+          fullscreenDialog: true,
+        );
+        developer.log('✅ Incoming call screen shown');
+      }
+      
+    } catch (e) {
+      developer.log('❌ Error handling background call: $e');
+    }
+  }
+
   
+ Future<void> _showCallScreenFromBackground(Map<String, dynamic> data) async {
+    try {
+      // Use platform channel to bring app to foreground
+      const platform = MethodChannel('com.innovation.innovator/call');
+      await platform.invokeMethod('showCallScreen');
+      
+      // Wait for app to be ready
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Navigate to incoming call screen
+      if (Get.context != null) {
+        Get.to(
+          () => IncomingCallScreen(callData: data),
+          transition: Transition.noTransition,
+          fullscreenDialog: true,
+        );
+      }
+    } catch (e) {
+      developer.log('Show call screen error: $e');
+    }
+  }
+
+
   // Stream subscriptions
   StreamSubscription<DocumentSnapshot>? _callDocSubscription;
   StreamSubscription<QuerySnapshot>? _incomingCallSubscription;

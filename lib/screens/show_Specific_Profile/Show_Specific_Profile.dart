@@ -9,6 +9,7 @@ import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/screens/Feed/Inner_Homepage.dart';
 import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:flutter/services.dart';
+import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/screens/comment/comment_screen.dart';
 import 'package:innovator/screens/show_Specific_Profile/User_Image_Gallery.dart';
 import 'package:innovator/screens/show_Specific_Profile/show_Specific_followers.dart';
@@ -171,11 +172,11 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                               const SliverToBoxAdapter(
                                 child: SizedBox(height: 30),
                               ),
-                              SliverToBoxAdapter(
-                                child: UserImageGallery(
-                                  userEmail: profileData['email'] ?? widget.userId,
-                                ),
-                              ),
+                              // SliverToBoxAdapter(
+                              //   child: UserImageGallery(
+                              //     userEmail: profileData['email'] ?? widget.userId,
+                              //   ),
+                              // ),
                               SliverList(
                                 delegate: SliverChildBuilderDelegate(
                                   (context, index) {
@@ -405,7 +406,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
           // Main content
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -466,7 +467,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                                   backgroundImage: profileData['picture'] != null &&
                                           profileData['picture'].isNotEmpty
                                       ? CachedNetworkImageProvider(
-                                          'http://182.93.94.210:3066${profileData['picture']}',
+                                          'http://182.93.94.210:3067${profileData['picture']}',
                                         )
                                       : null,
                                   child: profileData['picture'] == null ||
@@ -528,7 +529,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                         _getGreeting(),
                         style: TextStyle(
                           fontSize: 16,
-                          color: isDarkMode ? Colors.grey[400] : Colors.white70,
+                          color: isDarkMode ? Colors.grey[700] : Colors.white,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -619,7 +620,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
   Future<Map<String, dynamic>> _fetchUserProfile() async {
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/stalk-profile/${widget.userId}'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/stalk-profile/${widget.userId}'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -721,8 +722,8 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
       }
 
       final url = _lastId == null
-          ? 'http://182.93.94.210:3066/api/v1/getUserContent/${widget.userId}?page=0'
-          : 'http://182.93.94.210:3066/api/v1/getUserContent/${widget.userId}?page=${(_contents.length / 10).ceil()}';
+          ? 'http://182.93.94.210:3067/api/v1/getUserContent/${widget.userId}?page=0'
+          : 'http://182.93.94.210:3067/api/v1/getUserContent/${widget.userId}?page=${(_contents.length / 10).ceil()}';
 
       final response = await http
           .get(
@@ -1011,7 +1012,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(10),
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
@@ -1078,14 +1079,14 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [color.withAlpha(10), color.withAlpha(5)],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: color.withAlpha(30), width: 1),
         ),
         child: Column(
@@ -1125,60 +1126,103 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
     );
   }
 
-  Widget _buildActionButtons(Map<String, dynamic> profileData, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            height: 55,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).primaryColor.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: FollowButton(
-              targetUserEmail: profileData['email'],
-              initialFollowStatus: profileData['followed'] ?? false,
-              onFollowSuccess: () => _refreshProfile(),
-              onUnfollowSuccess: () => _refreshProfile(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSecondaryButton(
-                  'Message',
-                  Icons.message_outlined,
-                  () {
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(
-                    //     builder: (_) => ChatListScreen(
-                    //       currentUserId: AppData().currentUserId ?? '',
-                    //       currentUserName: AppData().currentUserName ?? '',
-                    //       currentUserPicture:
-                    //           AppData().currentUserProfilePicture ?? '',
-                    //       currentUserEmail: AppData().currentUserEmail ?? '',
-                    //     ),
-                    //   ),
-                    // );
-                  },
-                ),
+ Widget _buildActionButtons(Map<String, dynamic> profileData, BuildContext context) {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      children: [
+        Container(
+          width: double.infinity,
+          height: 55,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).primaryColor.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-        ],
-      ),
+          child: FollowButton(
+            targetUserEmail: profileData['email'],
+            initialFollowStatus: profileData['followed'] ?? false,
+            onFollowSuccess: () => _refreshProfile(),
+            onUnfollowSuccess: () => _refreshProfile(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSecondaryButton(
+                'Message',
+                Icons.message_outlined,
+                () => _navigateToChat(profileData), // Updated with actual navigation
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+void _navigateToChat(Map<String, dynamic> profileData) {
+  try {
+    // Get the chat controller instance
+    final FireChatController chatController = Get.find<FireChatController>();
+    
+    // Prepare user data for chat navigation
+    final Map<String, dynamic> receiverUser = {
+      'userId': profileData['_id'] ?? widget.userId,
+      '_id': profileData['_id'] ?? widget.userId,
+      'uid': profileData['_id'] ?? widget.userId,
+      'name': profileData['name'] ?? 'Unknown User',
+      'email': profileData['email'] ?? '',
+      'photoURL': profileData['picture'] != null && profileData['picture'].isNotEmpty
+          ? 'http://182.93.94.210:3067${profileData['picture']}'
+          : null,
+      'picture': profileData['picture'],
+      'isOnline': profileData['isOnline'] ?? false,
+      'lastSeen': profileData['lastSeen'],
+    };
+
+    // Add user to recent users for better UX
+    chatController.addUserToRecent(receiverUser);
+
+    // Navigate to chat screen
+    chatController.navigateToChat(receiverUser);
+    
+    // Optional: Show success feedback
+    Get.snackbar(
+      'Opening Chat',
+      'Starting conversation with ${profileData['name'] ?? 'user'}',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 1),
+      margin: const EdgeInsets.all(16),
+      borderRadius: 8,
+    );
+    
+  } catch (e) {
+    // Handle error if chat controller is not initialized
+    print('Error navigating to chat: $e');
+    
+    // Fallback: Show error message
+    Get.snackbar(
+      'Error',
+      'Unable to open chat. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+      margin: const EdgeInsets.all(16),
+      borderRadius: 8,
     );
   }
+}
 
   Widget _buildSecondaryButton(
     String text,
@@ -1542,7 +1586,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
       case 'expert':
         return Colors.purple;
       default:
-        return Colors.grey;
+        return Colors.brown;
     }
   }
 
@@ -1557,7 +1601,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
       case 'expert':
         return Icons.star;
       default:
-        return Icons.help_outline;
+        return Icons.star;
     }
   }
 }

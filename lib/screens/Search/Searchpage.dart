@@ -129,7 +129,7 @@ class _SearchPageState extends State<SearchPage>
     });
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/users'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/users'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -170,7 +170,7 @@ class _SearchPageState extends State<SearchPage>
  
     try {
       final response = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/users'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/users'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -760,7 +760,7 @@ class _SearchPageState extends State<SearchPage>
                                       backgroundColor: Colors.grey[300],
                                       backgroundImage: user['picture'] != null && user['picture'].isNotEmpty
                                           ? CachedNetworkImageProvider(
-                                              'http://182.93.94.210:3066${user['picture']}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                              'http://182.93.94.210:3067${user['picture']}?t=${DateTime.now().millisecondsSinceEpoch}',
                                             )
                                           : null,
                                       child: user['picture'] == null || user['picture'].isEmpty

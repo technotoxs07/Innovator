@@ -227,7 +227,7 @@ class FeedContent {
     if (url.startsWith('http')) {
       return url;
     }
-    return 'http://182.93.94.210:3066${url.startsWith('/') ? url : '/$url'}';
+    return 'http://182.93.94.210:3067${url.startsWith('/') ? url : '/$url'}';
   }
 
   factory FeedContent.fromJson(Map<String, dynamic> json) {
@@ -454,7 +454,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   final AppData _appData = AppData();
   Set<int> _suggestedUsersShownAt = {}; // Track where suggestions were shown
   bool _suggestionsEnabled = true;
-
+  List<int> _suggestionPositions = [];
   // Loading and error states
   bool _isLoading = false;
   bool _hasError = false;
@@ -627,10 +627,55 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     return false;
   }
 
+  void _updateSuggestionPositions() {
+    if (!_suggestionsEnabled) return;
+
+    int currentLength = _allContents.length;
+    int totalSuggestions = _suggestionPositions.length;
+    if (totalSuggestions >= SuggestedUsersConfig.maxSuggestionsPerSession)
+      return;
+
+    int seed = currentLength;
+    int startPos;
+
+    if (_suggestionPositions.isEmpty) {
+      if (currentLength < SuggestedUsersConfig.minPostsBeforeFirstSuggestion)
+        return;
+      startPos = SuggestedUsersConfig.getRandomInterval(
+        SuggestedUsersConfig.minPostsBeforeFirstSuggestion,
+        SuggestedUsersConfig.maxPostsBeforeFirstSuggestion,
+        seed,
+      );
+    } else {
+      int lastPos = _suggestionPositions.reduce(math.max);
+      int interval = SuggestedUsersConfig.getRandomInterval(
+        SuggestedUsersConfig.minIntervalBetweenSuggestions,
+        SuggestedUsersConfig.maxIntervalBetweenSuggestions,
+        seed,
+      );
+      startPos = lastPos + interval;
+    }
+
+    int position = startPos;
+
+    while (totalSuggestions < SuggestedUsersConfig.maxSuggestionsPerSession) {
+      if (position >= currentLength - 2) break;
+
+      _suggestionPositions.add(position);
+      totalSuggestions++;
+
+      int interval = SuggestedUsersConfig.getRandomInterval(
+        SuggestedUsersConfig.minIntervalBetweenSuggestions,
+        SuggestedUsersConfig.maxIntervalBetweenSuggestions,
+        position + seed,
+      );
+      position += interval;
+    }
+  }
+
   // ENHANCED: Load initial content with cursor format testing
   Future<void> _loadInitialContent() async {
     debugPrint('🔄 Loading initial content...');
-
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -656,6 +701,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
         setState(() {
           _allContents.clear();
           _allContents.addAll(contentData.contents);
+          _updateSuggestionPositions();
           _nextCursor = contentData.nextCursor;
           _hasMoreContent = contentData.hasMore;
           _isLoading = false;
@@ -678,6 +724,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
   // ENHANCED: Load more content with cursor validation
   Future<void> _loadMoreContent() async {
+    // _updateSuggestionPositions();
     if (_isLoading || !_hasMoreContent || _isLoadingMore) {
       debugPrint('⏸️ Load more cancelled - already loading or no more content');
       return;
@@ -747,7 +794,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       if (mounted) {
         setState(() {
           _allContents.addAll(contentData!.contents);
-
+          _updateSuggestionPositions();
           if (_useCursorPagination) {
             _nextCursor = contentData.nextCursor;
           } else {
@@ -850,21 +897,13 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
   }
 
-  void _toggleSuggestions() {
-    setState(() {
-      _suggestionsEnabled = !_suggestionsEnabled;
-      if (!_suggestionsEnabled) {
-        _suggestedUsersShownAt.clear();
-      }
-    });
-  }
-
   // ENHANCED: Refresh with cursor reset
   Future<void> _refresh() async {
     debugPrint('🔄 Refreshing feed...');
 
     // Reset suggestions tracking
     _suggestedUsersShownAt.clear();
+    _suggestionPositions.clear();
     //_SuggestedUsersWidgetState._hasBeenShown = false;
 
     HapticFeedback.mediumImpact();
@@ -1181,30 +1220,12 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
   // NEW: Calculate how many suggested user sections to show
   int _calculateSuggestedUsersCount() {
-    if (!_suggestionsEnabled || _allContents.length < 5) return 0;
-
-    // Show suggestions at multiple random positions
-    return _getSuggestedUsersPositions().length;
+    return _suggestionPositions.length;
   }
 
   // NEW: Get positions where suggested users should appear
   List<int> _getSuggestedUsersPositions() {
-    List<int> positions = [];
-
-    if (_allContents.length >= 5) {
-      // First suggestion after 3-7 posts (random)
-      int firstPosition = 3 + (_allContents.length % 5);
-      positions.add(firstPosition);
-
-      // Additional suggestions every 8-15 posts
-      int nextPosition = firstPosition + 8 + (_allContents.length % 8);
-      while (nextPosition < _allContents.length - 2) {
-        positions.add(nextPosition);
-        nextPosition += 8 + (nextPosition % 8);
-      }
-    }
-
-    return positions;
+    return List.from(_suggestionPositions)..sort();
   }
 
   // NEW: Build individual list items with suggestions
@@ -1239,18 +1260,18 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   bool _shouldShowSuggestedUsersAtIndex(int index) {
     if (!_suggestionsEnabled) return false;
 
-    final positions = _getSuggestedUsersPositions();
-    int adjustedIndex = index;
+    final positions = _getSuggestedUsersPositions(); // already sorted
+    int insertCount = 0;
 
-    // Adjust for previously shown suggestions
     for (int pos in positions) {
-      int actualPosition =
-          pos + _suggestedUsersShownAt.where((shown) => shown <= pos).length;
-      if (adjustedIndex == actualPosition) {
+      int actualPosition = pos + insertCount;
+      if (index == actualPosition) {
         return true;
       }
+      if (actualPosition < index) {
+        insertCount++;
+      }
     }
-
     return false;
   }
 
@@ -1267,17 +1288,16 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
 
   // NEW: Get adjusted content index accounting for suggestions
   int _getAdjustedContentIndex(int listIndex) {
-    int suggestionsBeforeIndex = 0;
     final positions = _getSuggestedUsersPositions();
-
+    int count = 0;
     for (int pos in positions) {
-      int actualPosition = pos + suggestionsBeforeIndex;
-      if (listIndex > actualPosition) {
-        suggestionsBeforeIndex++;
+      if (pos + count < listIndex) {
+        count++;
+      } else {
+        break; // Since positions are sorted, can break early
       }
     }
-
-    return listIndex - suggestionsBeforeIndex;
+    return listIndex - count;
   }
 
   Widget _buildContentItem(FeedContent content) {
@@ -1433,7 +1453,7 @@ class FeedApiResponse {
 
 // UPDATED: FeedApiService methods to handle the response correctly
 class FeedApiService {
-  static const String baseUrl = 'http://182.93.94.210:3066';
+  static const String baseUrl = 'http://182.93.94.210:3067';
 
   // Main method with cursor validation
   static Future<ContentData> fetchContents({
@@ -1766,7 +1786,7 @@ class _FeedItemState extends State<FeedItem>
 
   late AnimationController _controller;
   final ContentLikeService likeService = ContentLikeService(
-    baseUrl: 'http://182.93.94.210:3066',
+    baseUrl: 'http://182.93.94.210:3067',
   );
   late String formattedTimeAgo;
   bool _showComments = false;
@@ -1834,7 +1854,7 @@ class _FeedItemState extends State<FeedItem>
       final response = await http
           .post(
             Uri.parse(
-              'http://182.93.94.210:3066/api/v1/content/view/${widget.content.id}',
+              'http://182.93.94.210:3067/api/v1/content/view/${widget.content.id}',
             ),
             headers: {
               'Content-Type': 'application/json',
@@ -2129,7 +2149,10 @@ class _FeedItemState extends State<FeedItem>
                       builder: (context, constraints) {
                         final span = TextSpan(
                           text: widget.content.status,
-                          style: const TextStyle(fontSize: 15.0),
+                          style: const TextStyle(
+                            fontSize: 15.0,
+                            fontFamily: 'Segoe UI',
+                          ),
                         );
                         final tp = TextPainter(
                           text: span,
@@ -2152,7 +2175,8 @@ class _FeedItemState extends State<FeedItem>
                                   height: 1.5,
                                   color: Color(0xFF2D2D2D),
                                   fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.1,
+                                  letterSpacing: 0.2,
+                                  fontFamily: 'Segoe UI',
                                 ),
                                 maxLines:
                                     _isExpanded ? null : _maxLinesCollapsed,
@@ -2200,7 +2224,7 @@ class _FeedItemState extends State<FeedItem>
             // Media Section
             if (widget.content.files.isNotEmpty)
               Container(
-                margin: EdgeInsets.symmetric(horizontal: 5.0),
+                margin: EdgeInsets.symmetric(horizontal: 1.0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16.0),
                   child: _buildMediaPreview(),
@@ -2227,9 +2251,9 @@ class _FeedItemState extends State<FeedItem>
                             player.playlikeSound();
                           },
                         ),
-                        const SizedBox(width: 8.0),
+                        //const SizedBox(width: .0),
                         Text(
-                          '${widget.content.likes}',
+                          '${widget.content.likes} Like',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Colors.grey.shade700,
@@ -2259,9 +2283,9 @@ class _FeedItemState extends State<FeedItem>
                             size: 20.0,
                           ),
                         ),
-                        const SizedBox(width: 8.0),
+                       const SizedBox(width: 5.0),
                         Text(
-                          '${widget.content.comments}',
+                          '${widget.content.comments} Comment',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color:
@@ -2280,17 +2304,42 @@ class _FeedItemState extends State<FeedItem>
                     },
                   ),
 
-                  // Share Button
-                  _buildActionButton(
-                    child: Icon(
-                      Icons.share_outlined,
+                   _buildActionButton(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                       Icons.share_outlined,
                       color: Colors.grey.shade600,
                       size: 20.0,
                     ),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Share',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                      ],
+                    ),
                     onTap: () {
-                      _showShareOptions(context);
+                     _showShareOptions(context);
                     },
                   ),
+
+                  // Share Button
+                  // _buildActionButton(
+                  //   child: Icon(
+                  //     Icons.share_outlined,
+                  //     color: Colors.grey.shade600,
+                  //     size: 20.0,
+                  //   ),
+                  //   onTap: () {
+                  //     _showShareOptions(context);
+                  //   },
+                  // ),
                 ],
               ),
             ),
@@ -2400,7 +2449,7 @@ class _FeedItemState extends State<FeedItem>
     }
 
     return CachedNetworkImage(
-      imageUrl: 'http://182.93.94.210:3066${widget.content.author.picture}',
+      imageUrl: 'http://182.93.94.210:3067${widget.content.author.picture}',
       imageBuilder:
           (context, imageProvider) =>
               CircleAvatar(backgroundImage: imageProvider),
@@ -2469,13 +2518,7 @@ class _FeedItemState extends State<FeedItem>
       final fileUrl = mediaUrls.first;
 
       if (FileTypeHelper.isImage(fileUrl)) {
-        return LimitedBox(
-          maxHeight: 450.0,
-          child: GestureDetector(
-            onTap: () => _showMediaGallery(context, mediaUrls, 0),
-            child: _OptimizedNetworkImage(url: fileUrl, height: 250.0),
-          ),
-        );
+        return _buildSingleImage(fileUrl); // Use updated _buildSingleImage
       } else if (FileTypeHelper.isVideo(fileUrl)) {
         return FutureBuilder<Size>(
           future: _getVideoSize(fileUrl),
@@ -2518,96 +2561,7 @@ class _FeedItemState extends State<FeedItem>
       }
     }
 
-    return LimitedBox(
-      maxHeight: 300.0,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 4.0,
-              mainAxisSpacing: 4.0,
-            ),
-            itemCount: mediaUrls.length > 4 ? 4 : mediaUrls.length,
-            itemBuilder: (context, index) {
-              final fileUrl = mediaUrls[index];
-
-              if (index == 3 && mediaUrls.length > 4) {
-                return GestureDetector(
-                  onTap: () => _showMediaGallery(context, mediaUrls, index),
-                  child: Container(
-                    color: Colors.black.withAlpha(50),
-                    child: Center(
-                      child: Text(
-                        '+${mediaUrls.length - 4}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              if (FileTypeHelper.isImage(fileUrl)) {
-                return GestureDetector(
-                  onTap: () => _showMediaGallery(context, mediaUrls, index),
-                  child: _OptimizedNetworkImage(url: fileUrl),
-                );
-              } else if (FileTypeHelper.isVideo(fileUrl)) {
-                return GestureDetector(
-                  onTap: () => _showMediaGallery(context, mediaUrls, index),
-                  child: AutoPlayVideoWidget(url: fileUrl),
-                );
-              } else if (FileTypeHelper.isPdf(fileUrl)) {
-                return GestureDetector(
-                  onTap: () => _showMediaGallery(context, mediaUrls, index),
-                  child: Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(
-                        Icons.picture_as_pdf,
-                        size: 32,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ),
-                );
-              } else if (FileTypeHelper.isWordDoc(fileUrl)) {
-                return GestureDetector(
-                  onTap: () => _showMediaGallery(context, mediaUrls, index),
-                  child: Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(
-                        Icons.description,
-                        size: 32,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return Container(
-                color: Colors.grey[200],
-                child: const Center(
-                  child: Icon(
-                    Icons.insert_drive_file,
-                    size: 32,
-                    color: Colors.grey,
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
+    return _buildImageGallery(mediaUrls); // Use updated _buildImageGallery
   }
 
   Widget _buildVideoPreview(String url) {
@@ -2638,7 +2592,7 @@ class _FeedItemState extends State<FeedItem>
         child: CachedNetworkImage(
           filterQuality: FilterQuality.high,
           imageUrl: url,
-          fit: BoxFit.cover, // Changed to cover
+          fit: BoxFit.contain, // Changed to cover
           width: double.infinity,
           memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
           placeholder:
@@ -2668,122 +2622,74 @@ class _FeedItemState extends State<FeedItem>
   }
 
   Widget _buildImageGallery(List<String> urls) {
-    // For single image, don't use grid
+    // For single image, use _buildSingleImage
     if (urls.length == 1) {
-      return _buildSingleImageOptimized(urls[0]);
+      return _buildSingleImage(urls[0]);
     }
 
     // For 2 images, show them side by side
     if (urls.length == 2) {
-      return Container(
-        height: 250,
-        child: Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: 2),
-                child: _buildGridImage(urls[0], 0, urls),
-              ),
+      return Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: 2),
+              child: _buildGridImage(urls[0], 0, urls),
             ),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: 2),
-                child: _buildGridImage(urls[1], 1, urls),
-              ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: 2),
+              child: _buildGridImage(urls[1], 1, urls),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    // For 3 or more images, use a better layout
-    if (urls.length >= 3) {
-      return Container(
-        height: urls.length == 3 ? 250 : 400,
-        child: Column(
-          children: [
-            // First row - single large image or two images
-            if (urls.length == 3)
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 2, bottom: 2),
-                        child: _buildGridImage(urls[0], 0, urls),
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 2, bottom: 2),
-                              child: _buildGridImage(urls[1], 1, urls),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 2, top: 2),
-                              child: _buildGridImage(urls[2], 2, urls),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              // For 4+ images
-              Expanded(
-                child: GridView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  padding: EdgeInsets.zero,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 4.0,
-                    mainAxisSpacing: 4.0,
-                    childAspectRatio: 1.0, // This is fine for grid layout
-                  ),
-                  itemCount: urls.length > 4 ? 4 : urls.length,
-                  itemBuilder: (context, index) {
-                    if (index == 3 && urls.length > 4) {
-                      return GestureDetector(
-                        onTap: () => _showMediaGallery(context, urls, index),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            _buildGridImage(urls[index], index, urls),
-                            Container(
-                              color: Colors.black.withOpacity(0.6),
-                              child: Center(
-                                child: Text(
-                                  '+${urls.length - 4}',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+    // For 3 or more images, use a grid layout
+    return Container(
+      constraints: BoxConstraints(maxHeight: 400), // Maximum height for grid
+      child: GridView.builder(
+        physics: NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 4.0,
+          mainAxisSpacing: 4.0,
+          childAspectRatio: 1.0, // Maintain square cells for consistency
+        ),
+        itemCount: urls.length > 4 ? 4 : urls.length,
+        itemBuilder: (context, index) {
+          if (index == 3 && urls.length > 4) {
+            return GestureDetector(
+              onTap: () => _showMediaGallery(context, urls, index),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildGridImage(urls[index], index, urls),
+                  Container(
+                    color: Colors.black.withOpacity(0.6),
+                    child: Center(
+                      child: Text(
+                        '+${urls.length - 4}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    }
-                    return _buildGridImage(urls[index], index, urls);
-                  },
-                ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-          ],
-        ),
-      );
-    }
-
-    return SizedBox.shrink();
+            );
+          }
+          return _buildGridImage(urls[index], index, urls);
+        },
+      ),
+    );
   }
 
   Widget _buildSingleImageOptimized(String url) {
@@ -2835,7 +2741,8 @@ class _FeedItemState extends State<FeedItem>
         child: CachedNetworkImage(
           imageUrl: url,
           fit:
-              BoxFit.cover, // Ensures image covers container without stretching
+              BoxFit
+                  .contain, // Ensures image covers container without stretching
           memCacheWidth: (MediaQuery.of(context).size.width * 0.75).toInt(),
           placeholder:
               (context, url) => Container(
@@ -3030,7 +2937,7 @@ class _FeedItemState extends State<FeedItem>
       );
 
       final response = await http.post(
-        Uri.parse('http://182.93.94.210:3066/api/v1/new-content'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/new-content'),
         headers: {
           'Content-Type': 'application/json',
           'authorization': 'Bearer $authToken',
@@ -3292,7 +3199,7 @@ class _FeedItemState extends State<FeedItem>
 
       final response = await http
           .post(
-            Uri.parse('http://182.93.94.210:3066/api/v1/report'),
+            Uri.parse('http://182.93.94.210:3067/api/v1/report'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -3554,7 +3461,7 @@ class _FeedItemState extends State<FeedItem>
 
       final response = await http
           .post(
-            Uri.parse('http://182.93.94.210:3066/api/v1/block-user'),
+            Uri.parse('http://182.93.94.210:3067/api/v1/block-user'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',

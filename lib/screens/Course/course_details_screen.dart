@@ -1013,12 +1013,12 @@ Widget _buildCourseInfo(Map<String, dynamic> course) {
                 ),
               ],
             ),
-            trailing: Icon(
-              isSelected ? Icons.expand_less : Icons.expand_more,
-              color: isSelected 
-                  ? const Color.fromRGBO(244, 135, 6, 1)
-                  : Colors.grey,
-            ),
+            // trailing: Icon(
+            //   isSelected ? Icons.expand_less : Icons.expand_more,
+            //   color: isSelected 
+            //       ? const Color.fromRGBO(244, 135, 6, 1)
+            //       : Colors.grey,
+            // ),
           ),
         );
       },

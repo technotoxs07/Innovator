@@ -251,7 +251,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       developer.log('🔓 Unblocking user with data: ${jsonEncode(requestBody)}');
 
       final response = await http.post(
-        Uri.parse('http://182.93.94.210:3066/api/v1/unblock-user'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/unblock-user'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

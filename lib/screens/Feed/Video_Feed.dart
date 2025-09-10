@@ -97,7 +97,7 @@ class StreamingUrls {
       final url = qualityUrls[quality]!;
       // Add base URL if needed
       if (url.startsWith('/')) {
-        return 'http://182.93.94.210:3066$url';
+        return 'http://182.93.94.210:3067$url';
       }
       return url;
     }
@@ -116,7 +116,7 @@ class StreamingUrls {
       if (qualityUrls.containsKey(fallback) && qualityUrls[fallback]!.isNotEmpty) {
         final url = qualityUrls[fallback]!;
         if (url.startsWith('/')) {
-          return 'http://182.93.94.210:3066$url';
+          return 'http://182.93.94.210:3067$url';
         }
         return url;
       }
@@ -124,10 +124,10 @@ class StreamingUrls {
     
     // Final fallback to original or HLS
     if (original.isNotEmpty) {
-      return original.startsWith('/') ? 'http://182.93.94.210:3066$original' : original;
+      return original.startsWith('/') ? 'http://182.93.94.210:3067$original' : original;
     }
     if (hls.isNotEmpty) {
-      return hls.startsWith('/') ? 'http://182.93.94.210:3066$hls' : hls;
+      return hls.startsWith('/') ? 'http://182.93.94.210:3067$hls' : hls;
     }
     
     return '';
@@ -233,27 +233,27 @@ class FeedContent {
     // Add quality 
     streamingUrls.qualityUrls.values.forEach((url) {
       if (url.isNotEmpty) {
-        mediaUrls.add('http://182.93.94.210:3066$url');
+        mediaUrls.add('http://182.93.94.210:3067$url');
       }
     });
     
     // Add HLS URL if available
     if (streamingUrls.hls.isNotEmpty) {
-      mediaUrls.add('http://182.93.94.210:3066${streamingUrls.hls}');
+      mediaUrls.add('http://182.93.94.210:3067${streamingUrls.hls}');
     }
     
     // Add original video URL if available
     if (streamingUrls.original.isNotEmpty) {
-      mediaUrls.add('http://182.93.94.210:3066${streamingUrls.original}');
+      mediaUrls.add('http://182.93.94.210:3067${streamingUrls.original}');
     }
     
     // Add main video URL if available
     if (videoUrl.isNotEmpty) {
-      mediaUrls.add('http://182.93.94.210:3066$videoUrl');
+      mediaUrls.add('http://182.93.94.210:3067$videoUrl');
     }
     
     // Add other files
-    mediaUrls.addAll(allFiles.map((file) => 'http://182.93.94.210:3066$file'));
+    mediaUrls.addAll(allFiles.map((file) => 'http://182.93.94.210:3067$file'));
     
     // Remove duplicates
     return mediaUrls.toSet().toList();
@@ -305,7 +305,7 @@ class FeedContent {
 
   String? get thumbnailUrl {
     if (streamingUrls.thumbnail.isNotEmpty) {
-      return 'http://182.93.94.210:3066${streamingUrls.thumbnail}';
+      return 'http://182.93.94.210:3067${streamingUrls.thumbnail}';
     }
     return null;
   }
@@ -410,7 +410,7 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
   Future<void> _checkConnectivity() async {
     try {
       final testResponse = await http.get(
-        Uri.parse('http://182.93.94.210:3066/api/v1/health'),
+        Uri.parse('http://182.93.94.210:3067/api/v1/health'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -526,7 +526,7 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
   }
 
   Future<http.Response> _makeApiRequest() async {
-    final url = Uri.parse('http://182.93.94.210:3066/api/v1/video-reel');
+    final url = Uri.parse('http://182.93.94.210:3067/api/v1/video-reel');
     
     try {
       final response = await http.get(
@@ -899,7 +899,7 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
   bool _isLiked = false;
   bool _isFollowing = false;
   final ContentLikeService likeService = ContentLikeService(
-    baseUrl: 'http://182.93.94.210:3066',
+    baseUrl: 'http://182.93.94.210:3067',
   );
 
   @override
@@ -1317,7 +1317,7 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
 
   void _copyLink() {
     Clipboard.setData(ClipboardData(
-      text: 'http://182.93.94.210:3066/api/v1/video-reel/${widget.content.id}',
+      text: 'http://182.93.94.210:3067/api/v1/video-reel/${widget.content.id}',
     ));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Link copied to clipboard')),
@@ -1346,7 +1346,7 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
     }
 
     try {
-      final url = Uri.parse('http://182.93.94.210:3066/api/v1/delete-content/${widget.content.id}');
+      final url = Uri.parse('http://182.93.94.210:3067/api/v1/delete-content/${widget.content.id}');
       final response = await http.delete(
         url,
         headers: {

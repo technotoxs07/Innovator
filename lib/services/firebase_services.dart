@@ -734,7 +734,7 @@ class FirebaseService {
       developer.log('🔍 Checking follow status for: $email');
 
       final url = Uri.parse(
-        'http://182.93.94.210:3066/api/v1/check?email=$email',
+        'http://182.93.94.210:3067/api/v1/check?email=$email',
       );
       final headers = {
         'Content-Type': 'application/json',
@@ -813,7 +813,7 @@ class FirebaseService {
               'name': apiUserData['name'], // Use API name
               'picture': apiUserData['picture'], // Use API picture
               'apiPictureUrl':
-                  'http://182.93.94.210:3066${apiUserData['picture']}', // Full picture URL
+                  'http://182.93.94.210:3067${apiUserData['picture']}', // Full picture URL
               'isFollowing': followStatus['isFollowing'],
               'isFollowedBy': followStatus['isFollowedBy'],
               'isMutualFollow': true,
@@ -864,7 +864,7 @@ class FirebaseService {
             'name': apiUserData['name'],
             'picture': apiUserData['picture'],
             'apiPictureUrl':
-                'http://182.93.94.210:3066${apiUserData['picture']}',
+                'http://182.93.94.210:3067${apiUserData['picture']}',
             'isFollowing': followStatus['isFollowing'],
             'isFollowedBy': followStatus['isFollowedBy'],
             'isMutualFollow': followStatus['isMutualFollow'],

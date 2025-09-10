@@ -351,7 +351,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
 Widget _buildProfileAvatar(AppData appData) {
   final profilePictureUrl = appData.currentUserProfilePicture;
-  const String baseUrl = 'http://182.93.94.210:3066';
+  const String baseUrl = 'http://182.93.94.210:3067';
   
   if (profilePictureUrl != null && profilePictureUrl.isNotEmpty) {
     // Build the full URL if it's a relative path

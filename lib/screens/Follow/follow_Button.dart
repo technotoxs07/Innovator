@@ -4,6 +4,8 @@ import 'package:innovator/screens/Follow/Follow_status_Manager.dart';
 import 'package:innovator/screens/Follow/follow-Service.dart';
 import 'dart:async';
 
+import 'package:innovator/screens/chatrrom/sound/soundplayer.dart';
+
 // Include the FollowStatusManager class here or import it
 
 class FollowButton extends StatefulWidget {
@@ -254,6 +256,8 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
       if (widget.onFollowSuccess != null) {
         widget.onFollowSuccess!();
       }
+      SoundPlayer player = SoundPlayer();
+      player.FollowSound(); 
       Get.snackbar("Follow", 'Follow Request Sent', backgroundColor: Colors.green, colorText: Colors.white);
 
       // ScaffoldMessenger.of(context).showSnackBar(
@@ -304,6 +308,8 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
       if (widget.onUnfollowSuccess != null) {
         widget.onUnfollowSuccess!();
       }
+      SoundPlayer player = SoundPlayer();
+      player.FollowSound();
       Get.snackbar("UnFollow", 'Unfollow Successfull', backgroundColor: Colors.green, colorText: Colors.white);
 
       // ScaffoldMessenger.of(context).showSnackBar(

@@ -86,21 +86,46 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+
+    
     
     // Initialize local notifications ONCE
-    if (!_isNotificationInitialized) {
-      await _initializeBackgroundNotifications();
-      _isNotificationInitialized = true;
-    }
+    // if (!_isNotificationInitialized) {
+    //   await _initializeBackgroundNotifications();
+    //   _isNotificationInitialized = true;
+    // }
     
     final messageType = message.data['type']?.toString() ?? '';
 
     if (messageType == 'call') {
-      await _handleBackgroundCallOptimized(message);
-    } else {
-      await _showBackgroundNotification(message);
+      // CRITICAL: Start ringtone immediately
+      flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+      await _initializeBackgroundNotifications();
+      await _startPersistentRinging();
+
+      try {
+        const platform = MethodChannel('com.innovation.innovator/call');
+        await platform.invokeMethod('launchApp', message.data);
+        developer.log('✅ App launch requested via platform channel');
+      } catch (e) {
+        developer.log('⚠️ Platform channel failed, using notification');
+      }
+      
+      // Show full-screen notification
+      await _showFullScreenCallNotification(
+        callId: message.data['callId'] ?? '',
+        callerName: message.data['callerName'] ?? 'Unknown',
+        isVideoCall: message.data['isVideoCall'] == 'true',
+        data: message.data,
+      );
+      
+      // Try to launch app if possible
+      await _launchAppForCall(message.data);
     }
-    
+     else
+     {
+        await _showBackgroundNotification(message);
+     }
     developer.log('Background message processed');
   } catch (e) {
     developer.log('Background handler error: $e');
@@ -108,39 +133,146 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await _showEmergencyCallNotification(message);
   }
 }
+ 
+ 
 
-bool _isNotificationInitialized = false;
-
-// OPTIMIZED: Lightweight background call handling
-Future<void> _handleBackgroundCallOptimized(RemoteMessage message) async {
+Future<void> _showBackgroundNotification(RemoteMessage message) async {
   try {
-    final data = message.data;
-    final callId = data['callId']?.toString() ?? '';
-    final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
-    final isVideoCall = data['isVideoCall']?.toString() == 'true';
+    final title = message.notification?.title ?? 'New Notification';
+    final body = message.notification?.body ?? 'You have a new notification';
     
-    // STEP 1: Enable wakelock
-    await WakelockPlus.enable();
-    
-    // STEP 2: Start SINGLE method ringtone (not multiple)
-    await _startOptimizedRingtone();
-    
-    // STEP 3: Show notification
-    await _showFullScreenCallNotification(
-      callId: callId,
-      callerName: callerName,
-      isVideoCall: isVideoCall,
-      data: data,
+    const androidDetails = AndroidNotificationDetails(
+      'general_notifications',
+      'General Notifications',
+      importance: Importance.high,
+      priority: Priority.high,
     );
     
-    // STEP 4: Auto-stop after 30 seconds (reduced from 45)
-    TimerManager._autoStopTimer = Timer(const Duration(seconds: 30), () async {
-      await _stopAllEmergencyAlerts();
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title,
+      body,
+      const NotificationDetails(android: androidDetails),
+      payload: jsonEncode(message.data),
+    );
+    
+  } catch (e) {
+    developer.log('❌ Background notification error: $e');
+  }
+}
+
+Future<void> _launchAppForCall(Map<String, dynamic> callData) async {
+  try {
+    // Use correct channel name matching MainActivity
+    const platform = MethodChannel('com.innovation.innovator/call');
+    
+    // Call the platform method to launch app
+    await platform.invokeMethod('launchApp', callData);
+    
+    developer.log('✅ App launch requested');
+  } catch (e) {
+    developer.log('❌ Failed to launch app: $e');
+    
+    // Fallback: Try to use the notification to launch
+    await _showFullScreenCallNotification(
+      callId: callData['callId'] ?? '',
+      callerName: callData['callerName'] ?? 'Unknown',
+      isVideoCall: callData['isVideoCall'] == 'true',
+      data: callData,
+    );
+  }
+}
+
+
+Future<void> _startPersistentRinging() async {
+  try {
+    developer.log('🔔 Starting persistent ringing...');
+    
+    // Wake the device
+    await WakelockPlus.enable();
+    
+    // Start ringtone - try multiple methods
+    bool ringtoneStarted = false;
+    
+    // Method 1: FlutterRingtonePlayer with alarm
+    try {
+      await FlutterRingtonePlayer().playRingtone(
+        looping: true,
+        volume: 1.0,
+        asAlarm: true, // Use alarm channel for higher priority
+      );
+      ringtoneStarted = true;
+      developer.log('✅ Ringtone started with alarm priority');
+    } catch (e) {
+      developer.log('⚠️ Primary ringtone failed: $e');
+    }
+    
+    // Method 2: Fallback to regular ringtone
+    if (!ringtoneStarted) {
+      try {
+        await FlutterRingtonePlayer().playRingtone(
+          looping: true,
+          volume: 1.0,
+          asAlarm: false,
+        );
+        ringtoneStarted = true;
+        developer.log('✅ Ringtone started with regular priority');
+      } catch (e) {
+        developer.log('⚠️ Secondary ringtone failed: $e');
+      }
+    }
+    
+    // Method 3: System sound fallback
+    if (!ringtoneStarted) {
+      Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (timer.tick > 45) {
+          timer.cancel();
+        } else {
+          SystemSound.play(SystemSoundType.click);
+          HapticFeedback.heavyImpact();
+        }
+      });
+      developer.log('⚠️ Using system sound fallback');
+    }
+     
+    // Start vibration
+    try {
+      if (await Vibration.hasVibrator() ?? false) {
+       Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+          if (timer.tick > 30) {
+            timer.cancel();
+          } else {
+            Vibration.vibrate(
+              pattern: [0, 800, 200, 800],
+              intensities: [0, 255, 0, 255],
+            );
+          }
+        });
+        developer.log('✅ Vibration started');
+      }
+    } catch (e) {
+      developer.log('⚠️ Vibration failed: $e');
+    }
+    
+    // Auto-stop after 45 seconds
+    Timer(const Duration(seconds: 45), () async {
+      await _stopAllRinging();
     });
     
   } catch (e) {
-    developer.log('Background call handling failed: $e');
-    await _showEmergencyCallNotification(message);
+    developer.log('❌ Failed to start ringing: $e');
+  }
+}
+
+
+Future<void> _stopAllRinging() async {
+  try {
+    await FlutterRingtonePlayer().stop();
+    await Vibration.cancel();
+    await WakelockPlus.disable();
+    developer.log('✅ All ringing stopped');
+  } catch (e) {
+    developer.log('❌ Error stopping ringing: $e');
   }
 }
 
@@ -215,10 +347,29 @@ Future<void> _showFullScreenCallNotification({
   required Map<String, dynamic> data,
 }) async {
   try {
+    // Create incoming_calls channel if not exists
+    final androidPlugin = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'incoming_calls',
+          'Incoming Calls',
+          description: 'Incoming call notifications',
+          importance: Importance.max,
+          enableVibration: true,
+          enableLights: true,
+          playSound: true,
+          showBadge: true,
+        ),
+      );
+    }
+    
     final androidDetails = AndroidNotificationDetails(
       'incoming_calls',
       'Incoming Calls',
-      channelDescription: 'Notifications for incoming calls',
+      channelDescription: 'Incoming call notifications',
       importance: Importance.max,
       priority: Priority.max,
       category: AndroidNotificationCategory.call,
@@ -226,91 +377,48 @@ Future<void> _showFullScreenCallNotification({
       ongoing: true,
       autoCancel: false,
       showWhen: false,
-      timeoutAfter: 30000, // Reduced to 30 seconds
       visibility: NotificationVisibility.public,
-      icon: '@mipmap/ic_launcher',
-      // Simplified styling to reduce memory usage
-      styleInformation: BigTextStyleInformation(
-        'Incoming ${isVideoCall ? 'video' : 'voice'} call from $callerName',
-        contentTitle: 'Call from $callerName',
-      ),
+      playSound: false,
+      enableVibration: false,
       actions: [
         AndroidNotificationAction(
-          'accept_call_$callId',
+          'answer_$callId',
           'Answer',
           showsUserInterface: true,
+          cancelNotification: false,
         ),
         AndroidNotificationAction(
-          'decline_call_$callId',
+          'decline_$callId',
           'Decline',
           cancelNotification: true,
         ),
       ],
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
-      enableLights: true,
-      ledColor: Colors.blue,
-      playSound: true,
-      sound: null,
+      styleInformation: BigTextStyleInformation(
+        'Incoming ${isVideoCall ? "video" : "voice"} call',
+        contentTitle: '$callerName is calling',
+        htmlFormatBigText: true,
+      ),
+      additionalFlags: Int32List.fromList([
+        0x00000020, // FLAG_INSISTENT
+        0x00000040, // FLAG_HIGH_PRIORITY
+        0x00000004, // FLAG_NO_CLEAR
+      ]),
     );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      sound: 'default',
-      interruptionLevel: InterruptionLevel.critical,
-      categoryIdentifier: 'CALL_CATEGORY',
-    );
-
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
+    
     await flutterLocalNotificationsPlugin.show(
       callId.hashCode.abs(),
-      'Call from $callerName',
-      'Incoming ${isVideoCall ? 'video' : 'voice'} call',
-      notificationDetails,
+      '$callerName is calling',
+      'Incoming ${isVideoCall ? "video" : "voice"} call',
+      NotificationDetails(android: androidDetails),
       payload: jsonEncode(data),
     );
     
   } catch (e) {
-    developer.log('Full-screen notification error: $e');
-    await _showSimpleCallNotification(callerName, isVideoCall, data);
+    developer.log('Notification error: $e');
   }
 }
 
 // Simplified fallback notification
-Future<void> _showSimpleCallNotification(
-  String callerName, 
-  bool isVideoCall, 
-  Map<String, dynamic> data
-) async {
-  try {
-    const androidDetails = AndroidNotificationDetails(
-      'incoming_calls',
-      'Calls',
-      importance: Importance.max,
-      priority: Priority.max,
-      fullScreenIntent: true,
-      enableVibration: true,
-      playSound: true,
-    );
-    
-    await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      'Call from $callerName',
-      'Tap to answer',
-      const NotificationDetails(android: androidDetails),
-      payload: jsonEncode(data),
-    );
-    
-  } catch (e) {
-    developer.log('Simple notification failed: $e');
-  }
-}
 
 // OPTIMIZED: Lightweight notification initialization
 Future<void> _initializeBackgroundNotifications() async {
@@ -365,94 +473,80 @@ Future<void> _initializeBackgroundNotifications() async {
 }
 
 // Handle notification taps with cleanup
-void _onNotificationTapped(NotificationResponse response) {
+void _onNotificationTapped(NotificationResponse response) async {
   try {
-    // Stop all emergency alerts immediately
-    _stopAllEmergencyAlerts();
+    developer.log('📱 Notification tapped');
+    
+    // Stop ringing immediately
+    await _stopAllRinging();
     
     final actionId = response.actionId ?? '';
     
-    if (actionId.startsWith('accept_call_')) {
-      _handleCallAccept(response.payload);
-    } else if (actionId.startsWith('decline_call_')) {
-      _handleCallDecline(response.payload);
+    if (actionId.startsWith('answer_')) {
+      // Handle answer action
+      if (response.payload != null) {
+        final data = jsonDecode(response.payload!) as Map<String, dynamic>;
+        
+        // Initialize WebRTC and show call screen
+        final callService = await WebRTCCallService.initializeForBackground();
+        await callService.handleBackgroundCall(data);
+        
+        // Ensure app is ready
+        if (Get.context == null) {
+          runApp(
+            GetMaterialApp(
+              home: IncomingCallScreen(callData: data),
+            ),
+          );
+        } else {
+          Get.to(
+            () => IncomingCallScreen(callData: data),
+            transition: Transition.noTransition,
+            fullscreenDialog: true,
+          );
+        }
+      }
+    } else if (actionId.startsWith('decline_')) {
+      // Handle decline
+      if (response.payload != null) {
+        final data = jsonDecode(response.payload!) as Map<String, dynamic>;
+        final callId = data['callId']?.toString() ?? '';
+        
+        if (callId.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('calls')
+              .doc(callId)
+              .update({'status': 'rejected'});
+        }
+      }
     } else if (response.payload != null) {
-      _handleNotificationTap(response.payload!);
-    }
-    
-  } catch (e) {
-    developer.log('Notification tap error: $e');
-  }
-}
-
-// Handle call accept from notification
-void _handleCallAccept(String? payload) {
-  try {
-    if (payload != null) {
-      final data = jsonDecode(payload) as Map<String, dynamic>;
+      // Regular tap - show incoming call screen
+      final data = jsonDecode(response.payload!) as Map<String, dynamic>;
       
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.to(
-          () => IncomingCallScreen(callData: data),
-          transition: Transition.fadeIn,
-          fullscreenDialog: true,
-        );
-      });
-    }
-  } catch (e) {
-    developer.log('Call accept error: $e');
-  }
-}
-
-// Handle call decline from notification
-void _handleCallDecline(String? payload) {
-  try {
-    if (payload != null) {
-      final data = jsonDecode(payload) as Map<String, dynamic>;
-      final callId = data['callId']?.toString() ?? '';
-      
-      if (callId.isNotEmpty) {
-        FirebaseFirestore.instance
-            .collection('calls')
-            .doc(callId)
-            .update({'status': 'rejected'});
+      if (data['type'] == 'call') {
+        await _handleCallNotificationTap(data);
       }
     }
   } catch (e) {
-    developer.log('Call decline error: $e');
+    developer.log('❌ Notification tap error: $e');
   }
 }
 
-// Handle general notification tap
-void _handleNotificationTap(String payload) {
+Future<void> _handleCallNotificationTap(Map<String, dynamic> data) async {
   try {
-    final data = jsonDecode(payload) as Map<String, dynamic>;
-    final type = data['type']?.toString() ?? '';
-    
-    switch (type) {
-      case 'call':
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.to(
-            () => IncomingCallScreen(callData: data),
-            transition: Transition.fadeIn,
-            fullscreenDialog: true,
-          );
-        });
-        break;
-      case 'chat':
-      case 'message':
-        _navigateToChatFromNotification(data);
-        break;
-      default:
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.toNamed('/home');
-        });
-        break;
-    }
+    final callService = await WebRTCCallService.initializeForBackground();
+    await callService.handleBackgroundCall(data);
   } catch (e) {
-    developer.log('Notification tap error: $e');
+    developer.log('❌ Error handling call tap: $e');
   }
 }
+// Handle call accept from notification
+
+
+// Handle call decline from notification
+
+
+// Handle general notification tap
 
 // Navigate to chat from notification
 void _navigateToChatFromNotification(Map<String, dynamic> data) {
@@ -481,71 +575,10 @@ void _navigateToChatFromNotification(Map<String, dynamic> data) {
 }
 
 // Handle background chat messages
-Future<void> _handleBackgroundChatMessage(RemoteMessage message) async {
-  try {
-    final title = message.notification?.title ?? message.data['senderName'] ?? 'New Message';
-    final body = message.notification?.body ?? message.data['message'] ?? 'You have a new message';
-    
-    await _showBackgroundChatNotification(title, body, message.data);
-    
-  } catch (e) {
-    developer.log('Background chat error: $e');
-  }
-}
 
 // Show background chat notification
-Future<void> _showBackgroundChatNotification(
-  String title, 
-  String body, 
-  Map<String, dynamic> data
-) async {
-  try {
-    const androidDetails = AndroidNotificationDetails(
-      'chat_messages',
-      'Chat Messages',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      enableVibration: true,
-      playSound: true,
-    );
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
 
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
-      notificationDetails,
-      payload: jsonEncode(data),
-    );
-    
-  } catch (e) {
-    developer.log('Chat notification error: $e');
-  }
-}
-
-// Show basic background notification
-Future<void> _showBackgroundNotification(RemoteMessage message) async {
-  try {
-    final title = message.notification?.title ?? 'New Notification';
-    final body = message.notification?.body ?? 'You have a new notification';
-    
-    await _showBackgroundChatNotification(title, body, message.data);
-    
-  } catch (e) {
-    developer.log('Background notification error: $e');
-  }
-}
 
 // Emergency call notification as last resort
 Future<void> _showEmergencyCallNotification(RemoteMessage message) async {
@@ -676,7 +709,7 @@ Future<void> _initializeApp() async {
     
     bool hasInternet = await _checkInternetConnectivity();
     _isAppOnline = hasInternet;
-    
+     
     await _initializeFirebaseWithFallback(hasInternet);
     
     // CRITICAL FIX: Check for Firebase Auth state mismatch after reinstall
@@ -1028,7 +1061,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
 
   @override
   void initState() {
-    super.initState();
+    super.initState();  
     _initializeAppNotifications();
     
     // OPTIMIZED: Less frequent checks to prevent resource exhaustion
@@ -1075,7 +1108,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       }
     } catch (e) {
       developer.log('Connectivity check error: $e');
-    }
+    } 
   }
 
   Future<void> _handleReconnection() async {
@@ -1193,6 +1226,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
           });
         }
       },
+
       getPages: [
         GetPage(
           name: '/home',

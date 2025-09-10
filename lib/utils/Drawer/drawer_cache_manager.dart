@@ -27,7 +27,7 @@ class DrawerProfileCache {
   static Future<void> cacheProfile({
     required String name,
     required String email,
-    String? picturePath,
+    String? picturePath, required userId,
   }) async {
     try {
       final box = await _getBox();

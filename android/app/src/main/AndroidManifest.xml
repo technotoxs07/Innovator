@@ -47,6 +47,7 @@
     <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     
     <!-- Features -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -176,11 +177,14 @@
             android:exported="false" />
 
         <!-- Call Service (if you're using a calling service) -->
+        <!-- Enhanced Call Service -->
         <service
-            android:name="com.innovation.innovator.CallService"
+            android:name=".CallService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="phoneCall|microphone|camera" />
+            android:foregroundServiceType="phoneCall|microphone|camera"
+            android:stopWithTask="false"
+            android:directBootAware="true" />
 
         <!-- CRITICAL: Enhanced notification listener service -->
         <service

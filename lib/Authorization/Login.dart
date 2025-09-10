@@ -84,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> _loginWithAPI() async {
+   Future<void> _loginWithAPI() async {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       Dialogs.showSnackbar(context, 'Please enter both email and password');
       return;
@@ -95,19 +95,44 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
+      // Get fresh FCM token BEFORE login request
+      String? fcmToken;
+      try {
+        // Force token refresh for new login
+        await FirebaseMessaging.instance.deleteToken();
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        fcmToken = await FirebaseMessaging.instance.getToken();
+        developer.log('✅ Got fresh FCM token for login: ${fcmToken?.substring(0, 30)}...');
+      } catch (e) {
+        developer.log('⚠️ Could not get FCM token: $e');
+        // Continue without token - will retry after login
+      }
+
+      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
       final body = jsonEncode({
         'email': emailController.text.trim(),
         'password': passwordController.text.trim(),
+        'fcmToken': fcmToken ?? '',
+        'deviceType': Platform.isAndroid ? 'android' : 'ios',
+        'timestamp': DateTime.now().toIso8601String(),
       });
 
       final headers = {'Content-Type': 'application/json'};
       final response = await http.post(url, headers: headers, body: body);
 
-      developer.log('API Response: ${response.statusCode} - ${response.body}');
+      developer.log('API Response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         await _handleSuccessfulLogin(response.body);
+        
+        // Ensure FCM token is saved after successful login
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await AppData().saveFcmToken(fcmToken);
+        } else {
+          // Try again if we didn't get it earlier
+          await _refreshFcmTokenAfterLogin();
+        }
       } else {
         _handleLoginError(response);
       }
@@ -121,12 +146,75 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _isLoading = false;
       });
-
-      if (!_isLoading) {
-        TextInput.finishAutofillContext(shouldSave: false);
-      }
+      
+      TextInput.finishAutofillContext(shouldSave: false);
     }
   }
+
+    Future<void> _refreshFcmTokenAfterLogin() async {
+    try {
+      developer.log('🔄 Refreshing FCM token after login...');
+      
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        await AppData().saveFcmToken(fcmToken);
+        developer.log('✅ FCM token refreshed and saved');
+        
+        // Also update on backend with correct endpoint
+        await _updateFcmTokenOnBackend(fcmToken);
+      }
+    } catch (e) {
+      developer.log('❌ Error refreshing FCM token after login: $e');
+    }
+  }
+
+  Future<void> _updateFcmTokenOnBackend(String fcmToken) async {
+    try {
+      final userId = AppData().currentUserId;
+      if (userId == null) {
+        developer.log('No user ID available for FCM update');
+        return;
+      }
+
+      // Try port 3067 if API token is available
+      
+
+      // Always try port 3067 with auth token
+      final authToken = AppData().authToken;
+      if (authToken != null && authToken.isNotEmpty) {
+        await _updateFcmTokenPort3067(fcmToken, userId, authToken);
+      }
+    } catch (e) {
+      developer.log('Error updating FCM token on backend: $e');
+    }
+  }
+
+  Future<void> _updateFcmTokenPort3067(String fcmToken, String userId, String authToken) async {
+    try {
+      final url = Uri.parse('http://182.93.94.210:3067/api/v1/update-fcm-token');
+      final body = jsonEncode({
+        'userId': userId,
+        'fcmToken': fcmToken,
+        'deviceType': Platform.isAndroid ? 'android' : 'ios',
+      });
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: body,
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        developer.log('✅ FCM token updated on port 3067');
+      }
+    } catch (e) {
+      developer.log('Error updating FCM token on port 3067: $e');
+    }
+  }
+
 
  Future<void> _handleGoogleSignIn() async {
   // Check platform support first
@@ -187,9 +275,18 @@ class _LoginPageState extends State<LoginPage> {
 Future<void> _handleGoogleAuthOptimized(User user, String idToken) async {
   try {
     developer.log('🚀 Starting optimized Google authentication for: ${user.email}');
-    
+    String? fcmToken;
+
+    try{
+      fcmToken = await FirebaseMessaging.instance.getToken();
+      developer.log('Got FCM token for Google login');
+    }
+    catch(e){
+      developer.log('Could not get FCM token $e');
+    }
+
     // STEP 1: Try login first with the most likely to succeed format
-    final loginSuccess = await _attemptOptimizedGoogleLogin(user, idToken);
+    final loginSuccess = await _attemptOptimizedGoogleLogin(user, idToken, fcmToken);
     
     if (loginSuccess) {
       developer.log('✅ Google login successful');
@@ -198,7 +295,7 @@ Future<void> _handleGoogleAuthOptimized(User user, String idToken) async {
     
     // STEP 2: If login fails, try registration
     developer.log('🔄 Login failed, attempting registration...');
-    final registerSuccess = await _attemptOptimizedGoogleRegister(user, idToken);
+    final registerSuccess = await _attemptOptimizedGoogleRegister(user, idToken, fcmToken);
     
     if (registerSuccess) {
       developer.log('✅ Google registration successful');
@@ -267,16 +364,18 @@ Future<void> _handleFirebaseFallback(User user, String idToken) async {
   }
 }
 
-Future<bool> _attemptOptimizedGoogleLogin(User user, String idToken) async {
+Future<bool> _attemptOptimizedGoogleLogin(User user, String idToken, String? fcmToken) async {
   try {
-    final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
+    final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
     
     // Use the most comprehensive format that's most likely to work
     final body = jsonEncode({
       'email': user.email,
       'firebaseToken': idToken,
       'isGoogleLogin': true,
-      'provider': 'google'
+      'provider': 'google',
+      'fcmToken': fcmToken ?? '',
+      'deviceType': Platform.isAndroid ? 'android' : 'ios',
     });
     
     final headers = {
@@ -302,9 +401,9 @@ Future<bool> _attemptOptimizedGoogleLogin(User user, String idToken) async {
   }
 }
 
-Future<bool> _attemptOptimizedGoogleRegister(User user, String idToken) async {
+Future<bool> _attemptOptimizedGoogleRegister(User user, String idToken, String? fcmToken) async {
   try {
-    final url = Uri.parse('http://182.93.94.210:3066/api/v1/register-user');
+    final url = Uri.parse('http://182.93.94.210:3067/api/v1/register-user');
 
     final body = jsonEncode({
       'email': user.email,
@@ -314,7 +413,9 @@ Future<bool> _attemptOptimizedGoogleRegister(User user, String idToken) async {
       'isEmailVerified': user.emailVerified,
       'uid': user.uid,
       'photoURL': user.photoURL,
-      'provider': 'google'
+      'provider': 'google',
+      'fcmToken': fcmToken ?? '',
+      'deviceType': Platform.isAndroid ? 'android' : 'ios',
     });
 
     final headers = {
@@ -510,7 +611,7 @@ void _initializeFcmInBackground() {
     try {
       developer.log('Trying API login with Firebase token for existing user');
 
-      final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
+      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
       final body = jsonEncode({
         'email': user.email,
         'firebaseToken': idToken ?? '',
@@ -542,7 +643,7 @@ void _initializeFcmInBackground() {
 
   Future<bool> _attemptGoogleLogin(User user, String? idToken) async {
     try {
-      final url = Uri.parse('http://182.93.94.210:3066/api/v1/login');
+      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
 
       // Try multiple request formats to see which one works
       List<Map<String, dynamic>> requestFormats = [
@@ -579,7 +680,7 @@ void _initializeFcmInBackground() {
 
   Future<bool> _attemptGoogleRegister(User user, String? idToken) async {
   try {
-    final url = Uri.parse('http://182.93.94.210:3066/api/v1/register-user');
+    final url = Uri.parse('http://182.93.94.210:3067/api/v1/register-user');
 
     // Prepare registration data with consistent ID fields
     Map<String, dynamic> body = {
@@ -642,88 +743,102 @@ void _initializeFcmInBackground() {
 }
 
   Future<void> _handleSuccessfulLogin(String responseBody) async {
-  try {
-    developer.log('🚀 Processing successful login with follow status...');
-    
-    final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
-    
-    final token = _extractToken(responseData);
-    final userData = _extractUserData(responseData);
-    
-    if (userData != null) {
-      // Ensure proper ID consistency
-      String? userId = userData['_id']?.toString() ?? 
-                      userData['id']?.toString() ?? 
-                      userData['userId']?.toString() ?? 
-                      userData['uid']?.toString();
+    try {
+      developer.log('🚀 Processing successful login...');
       
-      if (userId != null) {
-        userData['_id'] = userId;
-        userData['id'] = userId;
-        userData['userId'] = userId;
-        userData['uid'] = userId;
+      final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
+      
+      // Extract tokens
+      final authToken = _extractToken(responseData);
+      final apiToken = _extractApiToken(responseData); // Extract API token if present
+      final userData = _extractUserData(responseData);
+      
+      if (userData != null) {
+        // Ensure proper ID consistency
+        String? userId = userData['_id']?.toString() ?? 
+                        userData['id']?.toString() ?? 
+                        userData['userId']?.toString();
+        
+        if (userId != null) {
+          userData['_id'] = userId;
+          userData['id'] = userId;
+          userData['userId'] = userId;
+          userData['uid'] = userId;
+        }
+        
+        userData['fcmTokens'] ??= [];
       }
       
-      userData['fcmTokens'] ??= [];
-    }
-    
-    // BATCH save operations
-    await Future.wait([
-      if (token != null) AppData().setAuthToken(token),
-      if (userData != null) AppData().setCurrentUser(userData),
-    ]);
-
-    // 🔥 STEP 1: Create Firebase Auth session for Firestore access
-    developer.log('🔥 Creating Firebase Auth session...');
-    await _createFirebaseAuthSession(userData);
-    
-    // 🔥 STEP 2: Initialize Follow Status Manager and preload statuses
-    developer.log('👥 Initializing Follow Status Manager...');
-    await _initializeFollowStatusManager();
-    
-    // Initialize FCM in background
-    _initializeFcmInBackground();
-    
-    // Create/verify user in Firestore
-    if (userData != null && userData['_id'] != null) {
-      developer.log('👤 Creating/verifying user in Firestore...');
-      try {
-        await FirebaseService.verifyAndCreateUser(
-          userId: userData['_id'],
-          name: userData['name']?.toString() ?? '',
-          email: userData['email']?.toString() ?? '',
-          phone: userData['phone']?.toString(),
-          dob: userData['dob']?.toString(),
-          photoURL: userData['photoURL']?.toString(),
-          provider: userData['provider']?.toString() ?? 'email',
-        );
-        developer.log('✅ User created/verified in Firestore');
-      } catch (e) {
-        developer.log('⚠️ Firestore user creation failed: $e');
-      }
-    }
-    
-    // 🔥 STEP 3: Initialize chat controller with follow status integration
-    developer.log('💬 Initializing chat controller with follow status...');
-    await _initializeChatControllerWithFollowStatus();
-    
-    // Navigate immediately
-    if ((token != null && token.isNotEmpty) || userData != null) {
-      TextInput.finishAutofillContext(shouldSave: true);
+      // Save all data
+      await Future.wait([
+        if (authToken != null) AppData().setAuthToken(authToken),
+        if (apiToken != null) AppData().setApiToken(apiToken),
+        if (userData != null) AppData().setCurrentUser(userData),
+      ]);
+      
+      // Initialize FCM after login data is saved
+      await AppData().initializeFcmAfterLogin();
+      
+      // Additional FCM token refresh to ensure it's saved
+      await _ensureFcmTokenIsSaved();
+      
+      // Firebase Auth session
+      await _createFirebaseAuthSession(userData);
+      
+      // Initialize other services
+      await _initializeFollowStatusManager();
+      await _initializeChatControllerWithFollowStatus();
       
       Navigator.pushAndRemoveUntil(
-        context,
+        context, 
         MaterialPageRoute(builder: (_) => Homepage()),
         (route) => false,
       );
-    } else {
-      Dialogs.showSnackbar(context, 'Login response missing required data');
+      
+    } catch (e) {
+      developer.log('❌ Error in login handler: $e');
+      Dialogs.showSnackbar(context, 'Login processing failed');
     }
-  } catch (e) {
-    developer.log('❌ Error in login handler: $e');
-    Dialogs.showSnackbar(context, 'Login processing failed: $e');
   }
-}
+
+  String? _extractApiToken(Map<String, dynamic> responseData) {
+    return responseData['apiToken'] ?? 
+           responseData['api_token'] ?? 
+           responseData['token'];
+  }
+
+
+  Future<void> _ensureFcmTokenIsSaved() async {
+    try {
+      // Get current token
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+      
+      if (fcmToken == null || fcmToken.isEmpty) {
+        // Force refresh if no token
+        await FirebaseMessaging.instance.deleteToken();
+        await Future.delayed(const Duration(seconds: 1));
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      }
+      
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        await AppData().saveFcmToken(fcmToken);
+        await _updateFcmTokenOnBackend(fcmToken);
+        
+        // Subscribe to user topic
+        final userId = AppData().currentUserId;
+        if (userId != null) {
+          await FirebaseMessaging.instance.subscribeToTopic('user_$userId');
+          await FirebaseMessaging.instance.subscribeToTopic('all_users');
+        }
+        
+        developer.log('✅ FCM token ensured and saved');
+      }
+    } catch (e) {
+      developer.log('Error ensuring FCM token: $e');
+    }
+  }
+
+
 
 Future<void> _initializeFollowStatusManager() async {
   try {
@@ -931,7 +1046,7 @@ Future<String?> _getCustomTokenFromBackend() async {
       return null;
     }
     
-    final url = Uri.parse('http://182.93.94.210:3066/api/v1/firebase-custom-token');
+    final url = Uri.parse('http://182.93.94.210:3067/api/v1/firebase-custom-token');
     final body = jsonEncode({'userId': currentUser['_id']});
     final headers = {
       'Content-Type': 'application/json',

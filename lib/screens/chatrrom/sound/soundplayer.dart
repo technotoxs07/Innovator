@@ -11,6 +11,10 @@ class SoundPlayer {
     await _player.play(AssetSource('icon/LikeSound.wav'));
   }
 
+  Future<void> FollowSound()async{
+    await _player.play(AssetSource('icon/Followsound.mp3'));
+  }
+
   Future<void> stopSound() async {
     await _player.stop();
   }

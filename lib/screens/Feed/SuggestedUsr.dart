@@ -53,13 +53,13 @@ class SuggestedUser {
   String get profilePictureUrl {
     if (picture.isEmpty) return '';
     if (picture.startsWith('http')) return picture;
-    return 'http://182.93.94.210:3066$picture';
+    return 'http://182.93.94.210:3067$picture';
   }
 }
 
 // Suggested Users API Service
 class SuggestedUsersService {
-  static const String baseUrl = 'http://182.93.94.210:3064';
+  static const String baseUrl = 'http://182.93.94.210:3067';
 
   static Future<List<SuggestedUser>> fetchSuggestedUsers({
     int limit = 10,
@@ -144,7 +144,7 @@ class SuggestedUsersService {
   }
 }
 
-// Updated SuggestedUsersWidget with MediaQuery integration
+// Enhanced SuggestedUsersWidget with modern UI
 class SuggestedUsersWidget extends StatefulWidget {
   final String? instanceId;
 
@@ -202,15 +202,15 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
   Color _getLevelColor(String level) {
     switch (level.toLowerCase()) {
       case 'gold':
-        return Colors.amber;
+        return const Color(0xFFFFD700);
       case 'silver':
-        return Colors.grey;
+        return const Color(0xFFC0C0C0);
       case 'bronze':
-        return Colors.orange.shade800;
+        return const Color(0xFFCD7F32);
       case 'platinum':
-        return Colors.purple;
+        return const Color(0xFFE5E4E2);
       default:
-        return Colors.grey;
+        return const Color(0xFF9E9E9E);
     }
   }
 
@@ -220,37 +220,22 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
     final isTablet = screenWidth > 600;
-    final isLargeScreen = screenWidth > 800;
-
-    // Responsive dimensions
-    final cardMargin = EdgeInsets.symmetric(
-      vertical: screenHeight * 0.008,
-      horizontal: screenWidth * 0.027,
-    );
-
-    final cardPadding = EdgeInsets.all(screenWidth * 0.04);
-    final headerPadding = EdgeInsets.all(screenWidth * 0.04);
-
-    final titleFontSize = isTablet ? 17.0 : 15.0;
-    final subtitleFontSize = isTablet ? 15.0 : 13.0;
-
-    final cardWidth = isLargeScreen ? 140.0 : (isTablet ? 130.0 : 120.0);
-    final cardHeight = isLargeScreen ? 160.0 : (isTablet ? 150.0 : 140.0);
-
-    final avatarRadius = isTablet ? 25.0 : 20.0;
 
     if (_isLoading) {
       return Container(
-        margin: cardMargin,
-        padding: EdgeInsets.all(screenWidth * 0.05),
+        margin: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20.0),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 20.0,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -259,19 +244,20 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: screenWidth * 0.1,
-                height: screenWidth * 0.1,
+                width: 40,
+                height: 40,
                 child: Image.asset(
                   'animation/IdeaBulb.gif',
                   fit: BoxFit.contain,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.015),
+              const SizedBox(height: 12),
               Text(
-                'Loading suggestions...',
+                'Finding awesome people...',
                 style: TextStyle(
-                  fontSize: isTablet ? 16.0 : 14.0,
-                  color: Colors.grey,
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -285,285 +271,256 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
     }
 
     return Container(
-      margin: cardMargin,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20.0),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 20.0,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with responsive design
-          Container(
-            padding: headerPadding,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color.fromRGBO(240, 155, 52, 1), // Your brand orange
-                  Color.fromRGBO(255, 204, 128, 1), // Soft amber
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ), //
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20.0),
-                topRight: Radius.circular(20.0),
-              ),
-            ),
+          // Clean and minimal header
+          Padding(
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(screenWidth * 0.02),
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(12.0),
+                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    Icons.people_alt_outlined,
-                    color: Colors.blue.shade700,
-                    size: isTablet ? 24 : 20,
+                  child: const Icon(
+                    Icons.people_outline,
+                    color: Color(0xFF6366F1),
+                    size: 18,
                   ),
                 ),
-                SizedBox(width: screenWidth * 0.03),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Suggested for you',
+                        'People May You Know',
                         style: TextStyle(
-                          fontSize: titleFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A1A1A),
+                          fontSize: isTablet ? 17 : 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1F2937),
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        'People you might want to follow',
+                        'Connect with new people',
                         style: TextStyle(
-                          fontSize: subtitleFontSize,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
+                          fontSize: isTablet ? 14 : 13,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  onPressed: () {
+                GestureDetector(
+                  onTap: () {
                     if (mounted) {
                       setState(() {
                         _suggestedUsers.clear();
                       });
                     }
                   },
-                  icon: Icon(
-                    Icons.close,
-                    size: isTablet ? 22 : 18,
-                    color: Colors.grey.shade600,
-                  ),
-                  padding: EdgeInsets.all(screenWidth * 0.01),
-                  constraints: BoxConstraints(
-                    minWidth: screenWidth * 0.08,
-                    minHeight: screenWidth * 0.08,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          SizedBox(height: screenHeight * 0.02),
-
-          // Horizontal scrolling users with responsive sizing
-          Container(
-            height: cardHeight,
-            padding: EdgeInsets.only(bottom: screenHeight * 0.02),
+          // Users horizontal list
+          SizedBox(
+            height: 160,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: _suggestedUsers.length,
               itemBuilder: (context, index) {
                 final user = _suggestedUsers[index];
                 return Container(
-                  width: cardWidth,
-                  margin: EdgeInsets.only(right: screenWidth * 0.03),
-                  child: _buildCompactUserCard(
-                    user,
-                    screenWidth,
-                    screenHeight,
-                    isTablet,
-                    avatarRadius,
+                  width: 120,
+                  margin: EdgeInsets.only(
+                    right: index == _suggestedUsers.length - 1 ? 0 : 12,
                   ),
+                  child: _buildUserCard(user, isTablet),
                 );
               },
             ),
           ),
+
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildCompactUserCard(
-    SuggestedUser user,
-    double screenWidth,
-    double screenHeight,
-    bool isTablet,
-    double avatarRadius,
-  ) {
-    final nameFontSize = isTablet ? 13.0 : 12.0;
-    final professionFontSize = isTablet ? 11.0 : 9.0;
-    final buttonFontSize = isTablet ? 12.0 : 11.0;
-    final buttonHeight = isTablet ? 32.0 : 28.0;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(screenWidth * 0.02),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Profile Picture with badges
-            Stack(
-              children: [
-                GestureDetector(
-                  onTap: () => _navigateToProfile(user),
-                  child: _buildUserAvatar(user, radius: avatarRadius),
-                ),
-                // Level badge with responsive sizing
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: isTablet ? 18 : 16,
-                    height: isTablet ? 18 : 16,
-                    decoration: BoxDecoration(
-                      color: _getLevelColor(user.level),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    child: Center(
-                      child: Text(
-                        user.level[0].toUpperCase(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isTablet ? 9 : 8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Verified badge with responsive sizing
-                if (user.isVerified)
+  Widget _buildUserCard(SuggestedUser user, bool isTablet) {
+    return GestureDetector(
+      onTap: () => _navigateToProfile(user),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Profile picture with level indicator
+              Stack(
+                children: [
+                  _buildUserAvatar(user, radius: isTablet ? 24 : 22),
+                  // Level badge - cleaner design
                   Positioned(
-                    top: 0,
-                    right: 0,
+                    bottom: -2,
+                    right: -2,
                     child: Container(
-                      width: isTablet ? 16 : 14,
-                      height: isTablet ? 16 : 14,
-                      decoration: const BoxDecoration(
-                        color: Colors.blue,
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: _getLevelColor(user.level),
                         shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.verified,
-                        color: Colors.white,
-                        size: isTablet ? 10 : 8,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
                     ),
                   ),
-              ],
-            ),
-
-            SizedBox(height: screenHeight * 0.008),
-
-            // Name with responsive font size
-            Text(
-              user.name,
-              style: TextStyle(
-                fontSize: nameFontSize,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            // Profession (if available) with responsive font size
-            // if (user.profession.isNotEmpty) ...[
-            //   SizedBox(height: screenHeight * 0.003),
-            //   Text(
-            //     user.profession,
-            //     style: TextStyle(
-            //       fontSize: professionFontSize,
-            //       color: Colors.grey.shade600,
-            //     ),
-            //     textAlign: TextAlign.center,
-            //     maxLines: 1,
-            //     overflow: TextOverflow.ellipsis,
-            //   ),
-            // ],
-
-            SizedBox(height: screenHeight * 0.008),
-
-            // Follow button with responsive sizing
-            SizedBox(
-              width: double.infinity,
-              height: buttonHeight,
-              child: FollowButton(
-                targetUserEmail: user.email,
-                initialFollowStatus: false,
-                onFollowSuccess: () {
-                  debugPrint('Followed user: ${user.name}');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Now following ${user.name}'),
-                        duration: const Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.only(
-                          bottom: screenHeight * 0.02,
-                          left: screenWidth * 0.05,
-                          right: screenWidth * 0.05,
+                  // Verified badge - minimal
+                  if (user.isVerified)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1DA1F2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 10,
                         ),
                       ),
-                    );
-                  }
-                },
-                onUnfollowSuccess: () {
-                  debugPrint('Unfollowed user: ${user.name}');
-                },
+                    ),
+                ],
               ),
-            ),
-          ],
+
+              const SizedBox(height: 8),
+
+              // Name - clean typography
+              Text(
+                user.name,
+                style: TextStyle(
+                  fontSize: isTablet ? 14 : 13,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1F2937),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              // Profession - subtle
+              if (user.profession.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  user.profession,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              const SizedBox(height: 12),
+
+              // Follow button - modern design
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: FollowButton(
+                  targetUserEmail: user.email,
+                  initialFollowStatus: false,
+                  onFollowSuccess: () {
+                    debugPrint('Followed user: ${user.name}');
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Now following ${user.name}'),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: const Color(0xFF10B981),
+                          margin: const EdgeInsets.all(16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  onUnfollowSuccess: () {
+                    debugPrint('Unfollowed user: ${user.name}');
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildUserAvatar(SuggestedUser user, {double radius = 30}) {
+  Widget _buildUserAvatar(SuggestedUser user, {double radius = 22}) {
     if (user.picture.isEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: Colors.white,
-        child: Text(
-          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-          style: TextStyle(
-            fontSize: radius * 0.6,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
+      return Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          color: const Color(0xFF6366F1).withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+            style: TextStyle(
+              fontSize: radius * 0.6,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6366F1),
+            ),
           ),
         ),
       );
@@ -571,45 +528,60 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
 
     return CachedNetworkImage(
       imageUrl: user.profilePictureUrl,
-      imageBuilder:
-          (context, imageProvider) => CircleAvatar(
-            radius: radius,
-            backgroundColor: Colors.white,
-            backgroundImage: imageProvider,
+      imageBuilder: (context, imageProvider) => Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: imageProvider,
+            fit: BoxFit.cover,
           ),
-      placeholder:
-          (context, url) => CircleAvatar(
-            radius: radius,
-            backgroundColor: Colors.white,
-            child: Container(
-              width: radius * 0.8,
-              height: radius * 0.8,
-              child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+        ),
+      ),
+      placeholder: (context, url) => Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: SizedBox(
+            width: radius * 0.8,
+            height: radius * 0.8,
+            child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+          ),
+        ),
+      ),
+      errorWidget: (context, url, error) => Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          color: const Color(0xFF6366F1).withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+            style: TextStyle(
+              fontSize: radius * 0.6,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6366F1),
             ),
           ),
-      errorWidget:
-          (context, url, error) => CircleAvatar(
-            radius: radius,
-            backgroundColor: Colors.white,
-            child: Text(
-              user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-              style: TextStyle(
-                fontSize: radius * 0.6,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ),
+        ),
+      ),
     );
   }
 
   void _navigateToProfile(SuggestedUser user) {
+    HapticFeedback.lightImpact();
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) =>
-                SpecificUserProfilePage(userId: user.id),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            SpecificUserProfilePage(userId: user.id),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: animation.drive(
@@ -618,6 +590,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
             child: child,
           );
         },
+        transitionDuration: const Duration(milliseconds: 300),
       ),
     );
   }
@@ -625,10 +598,10 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
 
 // Configuration class for suggested users behavior
 class SuggestedUsersConfig {
-  static const int minPostsBeforeFirstSuggestion = 3;
-  static const int maxPostsBeforeFirstSuggestion = 7;
-  static const int minIntervalBetweenSuggestions = 8;
-  static const int maxIntervalBetweenSuggestions = 15;
+  static const int minPostsBeforeFirstSuggestion = 5;
+  static const int maxPostsBeforeFirstSuggestion = 10;
+  static const int minIntervalBetweenSuggestions = 10;
+  static const int maxIntervalBetweenSuggestions = 20;
   static const int maxSuggestionsPerSession = 3;
 
   static int getRandomInterval(int min, int max, int seed) {

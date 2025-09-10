@@ -88,6 +88,12 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
   // Replace with your actual API key
   final String _apiKey = 'AIzaSyB12HQAYykp6ZbrpUw50lK-Xa-V4wVPZos';
 
+  // Orange color theme
+  static const Color primaryOrange = Color.fromRGBO(244, 135, 6, 1);
+  static const Color lightOrange = Color.fromRGBO(251, 146, 60, 1);
+  static const Color darkOrange = Color.fromRGBO(194, 65, 12, 1);
+  static const Color orangeAccent = Color.fromRGBO(255, 159, 28, 1);
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late AnimationController _backgroundController;
@@ -228,7 +234,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Chat history cleared'),
-        backgroundColor: const Color(0xFF6366F1),
+        backgroundColor: primaryOrange,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -489,7 +495,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                valueColor: AlwaysStoppedAnimation<Color>(primaryOrange),
               ),
             ),
           ),
@@ -504,7 +510,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
     return Theme(
       data: ThemeData(
         brightness: isDarkMode ? Brightness.dark : Brightness.light,
-        primaryColor: const Color(0xFF6366F1),
+        primaryColor: primaryOrange,
         scaffoldBackgroundColor: isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
         cardColor: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
         textTheme: const TextTheme(
@@ -597,16 +603,16 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF6366F1),
-            const Color(0xFF8B5CF6),
-            const Color(0xFFEC4899),
+            primaryOrange,
+            lightOrange,
+            orangeAccent,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.3),
+            color: primaryOrange.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -704,15 +710,15 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                gradient: LinearGradient(
+                  colors: [primaryOrange, lightOrange],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withOpacity(0.3),
+                    color: primaryOrange.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -737,8 +743,8 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
                     gradient: message.isUser
-                        ? const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        ? LinearGradient(
+                            colors: [primaryOrange, lightOrange],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
@@ -926,11 +932,11 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1),
+                color: primaryOrange,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withOpacity(0.3),
+                    color: primaryOrange.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -996,8 +1002,8 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
           const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              gradient: LinearGradient(
+                colors: [primaryOrange, lightOrange],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1074,7 +1080,7 @@ class _ReportDialogState extends State<ReportDialog> {
                     Icon(
                       category.icon,
                       size: 20,
-                      color: isDarkMode ? Colors.white70 : const Color(0xFF6366F1),
+                      color: isDarkMode ? Colors.white70 : _ElizaChatScreenState.primaryOrange,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1104,7 +1110,7 @@ class _ReportDialogState extends State<ReportDialog> {
                     _selectedCategory = value;
                   });
                 },
-                activeColor: const Color(0xFF6366F1),
+                activeColor: _ElizaChatScreenState.primaryOrange,
               );
             }).toList(),
             const SizedBox(height: 16),
@@ -1158,7 +1164,7 @@ class _ReportDialogState extends State<ReportDialog> {
                   Navigator.pop(context);
                 },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366F1),
+            backgroundColor: _ElizaChatScreenState.primaryOrange,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: const Text(
@@ -1189,7 +1195,7 @@ class BackgroundPainter extends CustomPainter {
             ? [
                 const Color(0xFF0F172A).withOpacity(0.2),
                 const Color(0xFF1E293B).withOpacity(0.2),
-                const Color(0xFF6366F1).withOpacity(0.1),
+                _ElizaChatScreenState.primaryOrange.withOpacity(0.1),
               ]
             : [
                 const Color(0xFFF8FAFC).withOpacity(0.2),
@@ -1207,7 +1213,7 @@ class BackgroundPainter extends CustomPainter {
     final circlePaint = Paint()
       ..color = isDarkMode
           ? Colors.white.withOpacity(0.05)
-          : const Color(0xFF6366F1).withOpacity(0.05)
+          : _ElizaChatScreenState.primaryOrange.withOpacity(0.05)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < 3; i++) {
