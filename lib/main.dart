@@ -33,6 +33,7 @@ import 'package:innovator/screens/chatApp/chatlistpage.dart';
 import 'package:innovator/screens/chatApp/chatscreen.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/screens/chatApp/widgets/call_floating_widget.dart';
+import 'package:innovator/services/Daily_Notifcation.dart';
 import 'package:innovator/services/Firebase_Messaging.dart';
 import 'package:innovator/services/Notification_Like.dart';
 import 'package:innovator/services/background_call_service.dart';
@@ -474,7 +475,20 @@ Future<void> _initializeBackgroundNotifications() async {
 
 // Handle notification taps with cleanup
 void _onNotificationTapped(NotificationResponse response) async {
+  if (response.payload != null && 
+    (response.payload == 'daily_thought' || response.payload!.startsWith('daily_thought_'))) {
+  // User tapped daily notification - could navigate to motivation screen or just dismiss
+  Get.snackbar(
+    'Daily Motivation',
+    'Keep innovating!',
+    backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+    colorText: Colors.white,
+  );
+  return;
+}
   try {
+
+    
     developer.log('📱 Notification tapped');
     
     // Stop ringing immediately
@@ -495,6 +509,7 @@ void _onNotificationTapped(NotificationResponse response) async {
         if (Get.context == null) {
           runApp(
             GetMaterialApp(
+              navigatorKey: navigatorKey,
               home: IncomingCallScreen(callData: data),
             ),
           );
@@ -706,6 +721,13 @@ Future<void> _initializeApp() async {
         statusBarIconBrightness: Brightness.dark,
       ),
     );
+
+    try {
+  await DailyNotificationService.initialize();
+  developer.log('Daily notification service initialized with automatic scheduling');
+} catch (e) {
+  developer.log('Daily notification service failed: $e');
+}
     
     bool hasInternet = await _checkInternetConnectivity();
     _isAppOnline = hasInternet;

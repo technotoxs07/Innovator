@@ -14,6 +14,7 @@ import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/Notification/FCM_Services.dart';
 import 'package:innovator/controllers/user_controller.dart';
+import 'package:innovator/main.dart';
 import 'package:innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
 import 'package:innovator/screens/Events/Events.dart';
 import 'package:innovator/screens/F&Q/F&Qscreen.dart';
@@ -28,6 +29,8 @@ import 'package:innovator/services/firebase_services.dart';
 import 'package:innovator/utils/Drawer/drawer_cache_manager.dart';
 import 'package:lottie/lottie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
+
 
 // Synchronous-only cache for instant access
 class InstantCache {
@@ -504,78 +507,209 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
     Navigator.push(context, MaterialPageRoute(builder: (_) => builder()));
   }
 
-  void _showLogout() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Logout Confirmation'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => _performQuickLogout(context),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
+  
 
-  Future<void> _performQuickLogout(BuildContext dialogContext) async {
-    Navigator.pop(dialogContext);
-    Navigator.pop(context);
-    
+  void _showLogout() {
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Logout Confirmation'),
+      content: const Text('Are you sure you want to logout?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => _performLogout(dialogContext),  // Fixed: Call with dialogContext
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('Logout', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _performLogout(BuildContext dialogContext) async {
+  try {
+    developer.log('🚪 Starting optimized logout process...');
+
+    // Close confirmation dialog immediately
+    Navigator.of(dialogContext).pop();
+
+    // Optionally close drawer to stay on underlying screen (comment out if you want drawer to stay open during loading)
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();  // Pop drawer - now "stays" on the previous screen
+      developer.log('✅ Drawer closed - staying on underlying screen');
+    }
+
+    // Show centered CircularProgressIndicator overlay (non-fullscreen, dismissible only by code)
+    _showGlobalLoading(true);
+
+    // Execute cleanup in background
+    await _executeOptimizedLogout();
+
+    // Brief pause for smooth transition (optional)
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Close loading overlay
+    _showGlobalLoading(false);
+
+    // Direct navigation using GLOBAL KEY (reliable, clears stack)
+    developer.log('🔄 Direct navigation to login page...');
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const LoginPage(),
+        settings: const RouteSettings(name: '/login'),
+      ),
+      (route) => false,  // Clears entire stack
+    );
+    developer.log('✅ Direct navigation to login completed');
+  } catch (e) {
+    developer.log('❌ Error during logout: $e');
+
+    // Emergency: Close loading and force direct navigation
+    _showGlobalLoading(false);
+
+    try {
+      // Brief pause in emergency too
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const LoginPage(),
+          settings: const RouteSettings(name: '/login'),
+        ),
+        (route) => false,
+      );
+      developer.log('✅ Emergency direct navigation to login completed');
+    } catch (navError) {
+      developer.log('❌ Emergency navigation failed: $navError');
+      // Fallback: If global key fails, try root navigator
+      navigatorKey.currentState?.context.findRootAncestorStateOfType<NavigatorState>()?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+}
+
+// Updated: Non-fullscreen, centered CircularProgressIndicator overlay
+void _showGlobalLoading(bool show) {
+  if (show) {
+    // Use showDialog for lightweight, centered overlay (stays on current screen)
     showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Column(
+      context: navigatorKey.currentContext ?? context,  // Fallback to local context
+      barrierDismissible: false,  // Can't dismiss by tapping outside
+      builder: (context) => const Dialog(
+        backgroundColor: Colors.transparent,  // No background dialog color
+        insetPadding: EdgeInsets.symmetric(horizontal: 40, vertical: 200),  // Compact sizing
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Color(0xFFEB6B46)),  // Your app's color
             SizedBox(height: 16),
-            Text('Logging out...'),
+            Text(
+              'Logging out...',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
           ],
         ),
       ),
-    );
-
-    try {
-      // Quick cleanup
-      if (Get.isRegistered<FireChatController>()) {
-        Get.find<FireChatController>().cancelAllStreamSubscriptionsImmediate();
-      }
-      
-      await Future.wait([
-        FirebaseAuth.instance.signOut(),
-        GoogleSignIn().signOut(),
-        AppData().clearAuthToken(),
-      ]);
-      
-      InstantCache.clear();
-      
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-        );
-      }
+    ).then((_) {
+      // Auto-dismiss if needed (but we control it manually)
+    });
+    developer.log('✅ Loading overlay shown');
+  } else {
+    // Dismiss the loading dialog (pops the top route if it's the loading one)
+    if (navigatorKey.currentState?.canPop() ?? false) {
+      navigatorKey.currentState?.pop();
+      developer.log('✅ Loading overlay dismissed');
     }
   }
+}
+
+  // Optimized logout execution
+  Future<void> _executeOptimizedLogout() async {
+    developer.log('🧹 Executing optimized logout...');
+
+    // Step 1: Cancel streams immediately to prevent permission errors
+    try {
+      if (Get.isRegistered<FireChatController>()) {
+        final chatController = Get.find<FireChatController>();
+        await chatController.cancelAllStreamSubscriptionsImmediate();
+        developer.log('✅ Chat streams canceled immediately');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error canceling chat streams: $e');
+    }
+
+    // Step 2: Update user status to offline (with timeout)
+    try {
+      final currentUser = AppData().currentUser;
+      if (currentUser != null && currentUser['_id'] != null) {
+        await FirebaseService.updateUserStatus(
+          currentUser['_id'],
+          false,
+        ).timeout(const Duration(seconds: 3));
+        developer.log('✅ User status updated to offline');
+      }
+    } catch (e) {
+      developer.log('⚠️ Failed to update user status: $e');
+    }
+
+    // Step 3: Sign out from Firebase Auth
+    try {
+      await FirebaseAuth.instance.signOut();
+      await GoogleSignIn().signOut();
+      developer.log('✅ Signed out from Firebase and Google');
+    } catch (e) {
+      developer.log('⚠️ Error signing out from Firebase: $e');
+    }
+
+    // Step 4: Clear controllers
+    try {
+      if (Get.isRegistered<FireChatController>()) {
+        final chatController = Get.find<FireChatController>();
+        await chatController.completeLogoutAfterSignout();
+        Get.delete<FireChatController>(force: true);
+        developer.log('✅ Chat controller cleared');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error clearing chat controller: $e');
+    }
+
+    try {
+      if (Get.isRegistered<UserController>()) {
+        Get.delete<UserController>(force: true);
+        developer.log('✅ User controller cleared');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error clearing user controller: $e');
+    }
+
+    // Step 5: Clear AppData
+    try {
+      await AppData().clearAuthToken();
+      developer.log('✅ AppData cleared');
+    } catch (e) {
+      developer.log('⚠️ Error clearing AppData: $e');
+    }
+
+    // Step 6: Clear all caches
+    try {
+      await DrawerProfileCache.clearCache();
+      await DefaultCacheManager().emptyCache();
+     // OptimizedProfileCache.clearCache();
+      developer.log('✅ All caches cleared');
+    } catch (e) {
+      developer.log('⚠️ Error clearing caches: $e');
+    }
+
+    developer.log('✅ Optimized logout execution finished');
+  }
+
 }
 
 // Ultra-lightweight menu item

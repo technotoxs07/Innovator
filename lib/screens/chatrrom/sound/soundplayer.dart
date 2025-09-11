@@ -18,5 +18,11 @@ class SoundPlayer {
   Future<void> stopSound() async {
     await _player.stop();
   }
+
+  Future<void> feedSound()async{
+    await _player.play(AssetSource('icon/zapsplat_multimedia_ui_refresh_load_new_content_rattle_91307.mp3'));
+  }
+
+  
 }
 

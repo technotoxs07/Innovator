@@ -955,6 +955,9 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
       debugPrint('❌ Error refreshing feed: $e');
       _handleError('Failed to refresh feed');
     }
+    // SoundPlayer player = SoundPlayer();
+    // player.feedSound();
+
   }
 
   // Retry with different parameters
