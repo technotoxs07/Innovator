@@ -110,7 +110,7 @@ class _CustomRefreshIndicatorState extends State<CustomRefreshIndicator>
                   borderRadius: BorderRadius.circular(25),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withAlpha(10),
                       blurRadius: 10,
                       offset: Offset(0, 2),
                     ),

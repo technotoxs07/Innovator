@@ -599,7 +599,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),

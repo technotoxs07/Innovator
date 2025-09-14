@@ -400,7 +400,7 @@ Widget _buildProfileAvatar(AppData appData) {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withAlpha(5),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -529,7 +529,7 @@ Widget _buildProfileAvatar(AppData appData) {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withAlpha(8),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -632,7 +632,7 @@ Widget _buildProfileAvatar(AppData appData) {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withAlpha(8),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -649,7 +649,7 @@ Widget _buildProfileAvatar(AppData appData) {
                 gradient: LinearGradient(
                   colors: [
                     Color((0xFF000000 + (course.title.hashCode * 0x10101) % 0x1000000) | 0xFF000000),
-                    Color((0xFF000000 + (course.title.hashCode * 0x10101) % 0x1000000) | 0xFF000000).withOpacity(0.6),
+                    Color((0xFF000000 + (course.title.hashCode * 0x10101) % 0x1000000) | 0xFF000000).withAlpha(60),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -671,7 +671,7 @@ Widget _buildProfileAvatar(AppData appData) {
                             child: Icon(
                               Icons.play_lesson,
                               size: 40,
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withAlpha(80),
                             ),
                           );
                         },
@@ -682,7 +682,7 @@ Widget _buildProfileAvatar(AppData appData) {
                       child: Icon(
                         Icons.play_lesson,
                         size: 40,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withAlpha(80),
                       ),
                     ),
                   // Price badge
@@ -768,7 +768,7 @@ Widget _buildProfileAvatar(AppData appData) {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _getLevelColor(course.level).withOpacity(0.1),
+                            color: _getLevelColor(course.level).withAlpha(10),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -876,7 +876,7 @@ Widget _buildProfileAvatar(AppData appData) {
               height: 80,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withAlpha(10),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(

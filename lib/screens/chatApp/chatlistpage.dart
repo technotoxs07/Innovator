@@ -33,7 +33,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
     actions: [
       // ENHANCED: Global badge indicator with total count
       Obx(() {
-        final totalUnread = controller.getTotalUnreadCount();
+        final totalUnread = controller.getTotalUnreadCountFromMutualFollowers();
         return Stack(
           children: [
             IconButton(
@@ -54,7 +54,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.4),
+                        color: Colors.red.withAlpha(40),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -168,7 +168,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                       BoxShadow(
                         color: hasUnread
                             ? const Color.fromRGBO(244, 135, 6, 0.1)
-                            : Colors.black.withOpacity(0.03),
+                            : Colors.black.withAlpha(4),
                         blurRadius: hasUnread ? 12 : 8,
                         offset: const Offset(0, 2),
                       ),
@@ -187,7 +187,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Colors.red.withOpacity(0.6),
+                                    color: Colors.red.withAlpha(60),
                                     width: 2,
                                   ),
                                 ),
@@ -212,7 +212,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                                       fontSize: 16,
                                       color: hasUnread
                                           ? Get.theme.textTheme.bodyLarge?.color
-                                          : Get.theme.textTheme.bodyLarge?.color?.withOpacity(0.9),
+                                          : Get.theme.textTheme.bodyLarge?.color?.withAlpha(90),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -295,12 +295,12 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                                               borderRadius: BorderRadius.circular(12),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.red.withOpacity(0.4),
+                                                  color: Colors.red.withAlpha(40),
                                                   blurRadius: 8,
                                                   offset: const Offset(0, 2),
                                                 ),
                                                 BoxShadow(
-                                                  color: Colors.red.withOpacity(0.2),
+                                                  color: Colors.red.withAlpha(20),
                                                   blurRadius: 16,
                                                   offset: const Offset(0, 4),
                                                 ),
@@ -484,7 +484,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
 
  Widget _buildFloatingActionButton() {
   return Obx(() {
-    final totalUnread = controller.getTotalUnreadCount();
+    final totalUnread = controller.getTotalUnreadCountFromMutualFollowers();
     
     return Stack(
       children: [
@@ -520,7 +520,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.red.withOpacity(0.4),
+                    color: Colors.red.withAlpha(40),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -706,7 +706,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
           const SizedBox(height: 16),
           // ENHANCED: Mark All as Read with badge count
           Obx(() {
-            final totalUnread = controller.getTotalUnreadCount();
+            final totalUnread = controller.getTotalUnreadCountFromMutualFollowers();
             return ListTile(
               leading: Stack(
                 children: [
@@ -757,7 +757,7 @@ class OptimizedChatListPage extends GetView<FireChatController> {
 }
 void _markAllAsRead() async {
   try {
-    final totalUnread = controller.getTotalUnreadCount();
+    final totalUnread = controller.getTotalUnreadCountFromMutualFollowers();
     if (totalUnread == 0) {
       Get.snackbar('Info', 'No unread messages');
       return;

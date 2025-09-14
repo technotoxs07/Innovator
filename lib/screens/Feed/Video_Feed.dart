@@ -833,7 +833,7 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withAlpha(70),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -1183,7 +1183,7 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withAlpha(80),
                     Colors.transparent,
                   ],
                 ),
@@ -1208,7 +1208,7 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
           //           Container(
           //             padding: EdgeInsets.all(16),
           //             decoration: BoxDecoration(
-          //               color: Colors.black.withOpacity(0.8),
+          //               color: Colors.black.withAlpha(0.8),
           //               borderRadius: BorderRadius.circular(20),
           //               border: Border.all(color: Colors.deepOrange, width: 2),
           //             ),
@@ -1864,9 +1864,9 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
       right: 20,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.8),
+          color: Colors.black.withAlpha(80),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.deepOrange.withOpacity(0.5)),
+          border: Border.all(color: Colors.deepOrange.withAlpha(50)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1919,9 +1919,9 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.deepOrange.withOpacity(0.3) : null,
+                    color: isSelected ? Colors.deepOrange.withAlpha(30) : null,
                     border: Border(
-                      top: BorderSide(color: Colors.grey.withOpacity(0.3), width: 0.5),
+                      top: BorderSide(color: Colors.grey.withAlpha(30), width: 0.5),
                     ),
                   ),
                   child: Row(
@@ -1993,9 +1993,9 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withAlpha(70),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: speedColor.withOpacity(0.5)),
+              border: Border.all(color: speedColor.withAlpha(50)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -2032,7 +2032,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
               width: 3,
               height: 12 + (8 * animationValue),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withAlpha(80),
                 borderRadius: BorderRadius.circular(2),
               ),
             );
@@ -2050,7 +2050,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
           width: 4,
           height: 20,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withAlpha(30),
             borderRadius: BorderRadius.circular(2),
           ),
           child: Align(
@@ -2245,13 +2245,13 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
             Center(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withAlpha(30),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.play_arrow,
                   size: 50,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withAlpha(90),
                 ),
               ),
             ),
@@ -2271,9 +2271,9 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withAlpha(60),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green.withOpacity(0.5), width: 1),
+                  border: Border.all(color: Colors.green.withAlpha(50), width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -2312,12 +2312,12 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
               child: Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withAlpha(60),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: _showQualitySelector 
                       ? Colors.deepOrange 
-                      : Colors.white.withOpacity(0.3),
+                      : Colors.white.withAlpha(30),
                     width: 1,
                   ),
                 ),
@@ -2340,11 +2340,11 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
               right: 20,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withAlpha(50),
                   shape: BoxShape.circle,
                   border: _isMuted 
                     ? null 
-                    : Border.all(color: Colors.green.withOpacity(0.7), width: 2),
+                    : Border.all(color: Colors.green.withAlpha(70), width: 2),
                 ),
                 child: Stack(
                   children: [
@@ -2371,7 +2371,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
           // Loading overlay during quality change
           if (_isQualityChanging)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withAlpha(50),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -2402,7 +2402,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withAlpha(70),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(

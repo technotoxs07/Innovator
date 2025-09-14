@@ -259,7 +259,7 @@ class _FixedCustomVideoProgressBarState extends State<FixedCustomVideoProgressBa
                                   child: Container(
                                     height: _barAnimation.value,
                                     decoration: BoxDecoration(
-                                      color: widget.bufferedColor.withOpacity(0.5),
+                                      color: widget.bufferedColor.withAlpha(50),
                                       borderRadius: BorderRadius.circular(_barAnimation.value / 2),
                                     ),
                                   ),
@@ -276,14 +276,14 @@ class _FixedCustomVideoProgressBarState extends State<FixedCustomVideoProgressBa
                                     gradient: LinearGradient(
                                       colors: [
                                         widget.playedColor,
-                                        widget.playedColor.withOpacity(0.8),
+                                        widget.playedColor.withAlpha(80),
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(_barAnimation.value / 2),
                                     boxShadow: _isDragging || _isHovering
                                         ? [
                                             BoxShadow(
-                                              color: widget.playedColor.withOpacity(0.3),
+                                              color: widget.playedColor.withAlpha(30),
                                               blurRadius: 8,
                                               spreadRadius: 2,
                                             ),
@@ -311,7 +311,7 @@ class _FixedCustomVideoProgressBarState extends State<FixedCustomVideoProgressBa
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.3),
+                                                color: Colors.black.withAlpha(30),
                                                 blurRadius: 4,
                                                 offset: const Offset(0, 2),
                                               ),
@@ -347,7 +347,7 @@ class _FixedCustomVideoProgressBarState extends State<FixedCustomVideoProgressBa
                 Text(
                   _formatDuration(_totalDuration),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withAlpha(70),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),

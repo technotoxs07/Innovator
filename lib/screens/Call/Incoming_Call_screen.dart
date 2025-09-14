@@ -367,8 +367,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               end: Alignment.bottomCenter,
               colors: [
                 isVideoCall 
-                    ? Colors.blue.shade900.withOpacity(0.8)
-                    : Colors.green.shade900.withOpacity(0.8),
+                    ? Colors.blue.shade900.withAlpha(80)
+                    : Colors.green.shade900.withAlpha(80),
                 Colors.black,
               ],
             ),
@@ -427,7 +427,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(_isMuted ? 0.3 : 0.1),
+                    color: Colors.white.withAlpha(_isMuted ? 30 : 10),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
@@ -446,7 +446,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(_isSpeakerMode ? 0.3 : 0.1),
+                    color: Colors.white.withAlpha(_isSpeakerMode ? 30 : 10),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
@@ -475,7 +475,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               color: Colors.grey.shade900,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withAlpha(10),
                 width: 1,
               ),
             ),
@@ -535,12 +535,12 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withAlpha(50),
                             width: 2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withAlpha(30),
                               blurRadius: 10,
                             ),
                           ],
@@ -581,7 +581,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withAlpha(50),
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: Row(
@@ -648,12 +648,12 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withAlpha(30),
                 width: 3,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isVideoCall ? Colors.blue : Colors.green).withOpacity(0.4),
+                  color: (isVideoCall ? Colors.blue : Colors.green).withAlpha(40),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -710,7 +710,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withAlpha(20),
             borderRadius: BorderRadius.circular(25),
           ),
           child: Row(
@@ -866,7 +866,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           color: color,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.4),
+              color: color.withAlpha(40),
               blurRadius: 20,
               spreadRadius: 3,
             ),
@@ -896,9 +896,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             height: 55,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.3),
+              color: color.withAlpha(30),
               border: Border.all(
-                color: color.withOpacity(0.6),
+                color: color.withAlpha(60),
                 width: 2,
               ),
             ),
@@ -1187,12 +1187,12 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> with TickerProvider
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withAlpha(50),
                           width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withAlpha(30),
                             blurRadius: 10,
                           ),
                         ],
@@ -1256,7 +1256,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> with TickerProvider
                   color: Colors.green,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.green.withOpacity(0.3),
+                      color: Colors.green.withAlpha(30),
                       blurRadius: 30,
                       spreadRadius: 10,
                     ),
@@ -1325,7 +1325,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> with TickerProvider
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.black.withOpacity(0.7),
+                Colors.black.withAlpha(70),
                 Colors.transparent,
               ],
             ),
@@ -1413,7 +1413,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> with TickerProvider
               begin: Alignment.bottomCenter,
               end: Alignment.topCenter,
               colors: [
-                Colors.black.withOpacity(0.8),
+                Colors.black.withAlpha(80),
                 Colors.transparent,
               ],
             ),
@@ -1493,7 +1493,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> with TickerProvider
         height: 50,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isActive ? color.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+          color: isActive ? color.withAlpha(30) : Colors.red.withAlpha(30),
           border: Border.all(
             color: isActive ? color : Colors.red,
             width: 2,
@@ -1524,7 +1524,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> with TickerProvider
           color: color,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withAlpha(30),
               blurRadius: 15,
               spreadRadius: 2,
             ),

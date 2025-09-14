@@ -360,7 +360,7 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(order.status).withOpacity(0.1),
+                      color: _getStatusColor(order.status).withAlpha(10),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(

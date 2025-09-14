@@ -189,7 +189,7 @@ class _CartScreenState extends State<CartScreen>
             Icon(
               Icons.shopping_cart_outlined,
               size: 80,
-              color: _primaryColor.withOpacity(0.5),
+              color: _primaryColor.withAlpha(50),
             ),
             const SizedBox(height: 16),
             Text(
@@ -233,10 +233,10 @@ class _CartScreenState extends State<CartScreen>
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.04),
+            color: _primaryColor.withAlpha(4),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _primaryColor.withOpacity(0.12),
+              color: _primaryColor.withAlpha(12),
             ),
           ),
           child: Row(
@@ -371,7 +371,7 @@ class _CartScreenState extends State<CartScreen>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: _primaryColor.withOpacity(0.08),
+          color: _primaryColor.withAlpha(8),
           width: 1,
         ),
       ),
@@ -387,7 +387,7 @@ class _CartScreenState extends State<CartScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.04),
+                color: _primaryColor.withAlpha(4),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: ClipRRect(
@@ -396,7 +396,7 @@ class _CartScreenState extends State<CartScreen>
                   images: item.images,
                   baseUrl: 'http://182.93.94.210:3067',
                   placeholderIcon: Icons.image,
-                  placeholderColor: _primaryColor.withOpacity(0.2),
+                  placeholderColor: _primaryColor.withAlpha(20),
                   iconSize: 40,
                 ),
               ),
@@ -458,7 +458,7 @@ class _CartScreenState extends State<CartScreen>
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: _accentColor.withOpacity(0.08),
+                          color: _accentColor.withAlpha(8),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         alignment: Alignment.center,
@@ -498,7 +498,7 @@ class _CartScreenState extends State<CartScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _priceColor.withOpacity(0.04),
+                color: _priceColor.withAlpha(4),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(

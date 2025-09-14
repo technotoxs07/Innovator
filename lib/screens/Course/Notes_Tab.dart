@@ -294,7 +294,7 @@ class _NotesTabState extends State<NotesTab> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withAlpha(10),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -347,7 +347,7 @@ class _NotesTabState extends State<NotesTab> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withAlpha(10),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
@@ -411,7 +411,7 @@ class _NotesTabState extends State<NotesTab> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withAlpha(8),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -520,7 +520,7 @@ class _NotesTabState extends State<NotesTab> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.withOpacity(0.2),
+                                      color: Colors.grey.withAlpha(20),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -733,7 +733,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withAlpha(10),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),

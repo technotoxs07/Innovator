@@ -282,6 +282,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: 'Manage blocked accounts',
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BlockedUsersScreen ())),
                 ),
+                _buildSettingsTile(
+                  icon: Icons.block,
+                  title: 'Notification',
+                  subtitle: 'Test Notification',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DailyNotificationSettings ())),
+                ),
                 
                 // _buildSettingsTile(
                 //   icon: Icons.report,

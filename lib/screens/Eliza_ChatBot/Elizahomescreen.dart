@@ -550,12 +550,12 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
                           color: isDarkMode
-                              ? const Color(0xFF1E293B).withOpacity(0.7)
-                              : Colors.white.withOpacity(0.7),
+                              ? const Color(0xFF1E293B).withAlpha(70)
+                              : Colors.white.withAlpha(70),
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withAlpha(10),
                               blurRadius: 20,
                               offset: const Offset(0, -5),
                             ),
@@ -612,7 +612,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryOrange.withOpacity(0.3),
+            color: primaryOrange.withAlpha(30),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -624,9 +624,9 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha(20),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+              border: Border.all(color: Colors.white.withAlpha(30), width: 2),
             ),
             child: IconButton(
               onPressed: () {
@@ -656,7 +656,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                     fontFamily: 'Inter',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withAlpha(90),
                   ),
                 ),
               ],
@@ -664,7 +664,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha(20),
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
@@ -718,7 +718,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryOrange.withOpacity(0.3),
+                    color: primaryOrange.withAlpha(30),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -760,13 +760,13 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withAlpha(8),
                         blurRadius: 15,
                         offset: const Offset(0, 4),
                       ),
                     ],
                     border: message.isReported
-                        ? Border.all(color: Colors.red.withOpacity(0.3), width: 1)
+                        ? Border.all(color: Colors.red.withAlpha(30), width: 1)
                         : null,
                   ),
                   child: Column(
@@ -778,13 +778,13 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                             Icon(
                               Icons.flag_rounded,
                               size: 16,
-                              color: Colors.red.withOpacity(0.8),
+                              color: Colors.red.withAlpha(80),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               'Content Reported',
                               style: TextStyle(
-                                color: Colors.red.withOpacity(0.8),
+                                color: Colors.red.withAlpha(80),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -812,7 +812,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                         _formatTime(message.timestamp),
                         style: TextStyle(
                           color: message.isUser
-                              ? Colors.white.withOpacity(0.7)
+                              ? Colors.white.withAlpha(70)
                               : isDarkMode
                                   ? Colors.grey[400]
                                   : const Color(0xFF64748B),
@@ -838,13 +838,13 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: isDarkMode
-                                  ? const Color(0xFF475569).withOpacity(0.7)
-                                  : const Color(0xFFE2E8F0).withOpacity(0.8),
+                                  ? const Color(0xFF475569).withAlpha(70)
+                                  : const Color(0xFFE2E8F0).withAlpha(80),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isDarkMode
-                                    ? Colors.white.withOpacity(0.1)
-                                    : Colors.black.withOpacity(0.1),
+                                    ? Colors.white.withAlpha(10)
+                                    : Colors.black.withAlpha(10),
                               ),
                             ),
                             child: Row(
@@ -880,17 +880,17 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: message.isReported
-                                  ? Colors.red.withOpacity(0.1)
+                                  ? Colors.red.withAlpha(10)
                                   : (isDarkMode
-                                      ? const Color(0xFF475569).withOpacity(0.7)
-                                      : const Color(0xFFE2E8F0).withOpacity(0.8)),
+                                      ? const Color(0xFF475569).withAlpha(70)
+                                      : const Color(0xFFE2E8F0).withAlpha(80)),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: message.isReported
-                                    ? Colors.red.withOpacity(0.3)
+                                    ? Colors.red.withAlpha(30)
                                     : (isDarkMode
-                                        ? Colors.white.withOpacity(0.1)
-                                        : Colors.black.withOpacity(0.1)),
+                                        ? Colors.white.withAlpha(10)
+                                        : Colors.black.withAlpha(10)),
                               ),
                             ),
                             child: Row(
@@ -936,7 +936,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryOrange.withOpacity(0.3),
+                    color: primaryOrange.withAlpha(30),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -962,7 +962,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
         color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -988,7 +988,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                 ),
                 filled: true,
                 fillColor: isDarkMode
-                    ? const Color(0xFF334155).withOpacity(0.7)
+                    ? const Color(0xFF334155).withAlpha(70)
                     : const Color(0xFFF1F5F9),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -1129,7 +1129,7 @@ class _ReportDialogState extends State<ReportDialog> {
                 ),
                 filled: true,
                 fillColor: isDarkMode
-                    ? const Color(0xFF334155).withOpacity(0.7)
+                    ? const Color(0xFF334155).withAlpha(70)
                     : const Color(0xFFF1F5F9),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1193,14 +1193,14 @@ class BackgroundPainter extends CustomPainter {
       ..shader = LinearGradient(
         colors: isDarkMode
             ? [
-                const Color(0xFF0F172A).withOpacity(0.2),
-                const Color(0xFF1E293B).withOpacity(0.2),
-                _ElizaChatScreenState.primaryOrange.withOpacity(0.1),
+                const Color(0xFF0F172A).withAlpha(20),
+                const Color(0xFF1E293B).withAlpha(20),
+                _ElizaChatScreenState.primaryOrange.withAlpha(10),
               ]
             : [
-                const Color(0xFFF8FAFC).withOpacity(0.2),
-                const Color(0xFFE2E8F0).withOpacity(0.2),
-                const Color(0xFFCBD5E1).withOpacity(0.1),
+                const Color(0xFFF8FAFC).withAlpha(20),
+                const Color(0xFFE2E8F0).withAlpha(20),
+                const Color(0xFFCBD5E1).withAlpha(10),
               ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -1212,8 +1212,8 @@ class BackgroundPainter extends CustomPainter {
     // Add subtle animated circles
     final circlePaint = Paint()
       ..color = isDarkMode
-          ? Colors.white.withOpacity(0.05)
-          : _ElizaChatScreenState.primaryOrange.withOpacity(0.05)
+          ? Colors.white.withAlpha(5)
+          : _ElizaChatScreenState.primaryOrange.withAlpha(5)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < 3; i++) {

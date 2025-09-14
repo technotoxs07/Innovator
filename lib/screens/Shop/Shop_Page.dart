@@ -557,7 +557,7 @@ Future<void> _addToCart(
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+        color: isSelected ? Colors.blue.withAlpha(10) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
@@ -608,7 +608,7 @@ Future<void> _addToCart(
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withAlpha(10),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -902,7 +902,7 @@ Future<void> _addToCart(
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withAlpha(8),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1006,7 +1006,7 @@ Future<void> _addToCart(
                   if (stock <= 0)
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withAlpha(70),
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(20),
                         ),
@@ -1043,7 +1043,7 @@ Future<void> _addToCart(
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withAlpha(10),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -1142,7 +1142,7 @@ Future<void> _addToCart(
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withAlpha(10),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(

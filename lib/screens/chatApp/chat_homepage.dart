@@ -18,11 +18,12 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     });
     return Scaffold(
       backgroundColor: Get.theme.scaffoldBackgroundColor,
-      appBar: _buildAppBar(),
+      //appBar: _buildAppBar(),
       body: Column(
         children: [
-          _buildCurrentUserCard(),
-          //_buildQuickActions(), // NEW: Quick action buttons
+          _buildUserStatus(),
+         // _buildCurrentUserCard(),
+          _buildIntegratedSearchBar(), // NEW: Integrated search bar
           Expanded(child: _buildUsersList()),
         ],
       ),
@@ -62,6 +63,178 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
       IconButton(onPressed: () => controller.refreshUsersAndCache(), icon: Icon(Icons.refresh,color: Colors.white,))
       
      ],
+    );
+  }
+
+  Widget _buildUserStatus() {
+    return Obx(() {
+      // Get online users for status row
+      final onlineUsers = controller.allUsers.where((user) => user['isOnline'] == true).toList();
+      final totalOnline = onlineUsers.length;
+
+      return Container(
+        height: 150,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Get.theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(5),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //   child: Row(
+            //     children: [
+            //       Icon(
+            //         Icons.circle,
+            //         color: Colors.green,
+            //         size: 12,
+            //       ),
+            //       const SizedBox(width: 6),
+            //       Text(
+            //         'Online ($totalOnline)',
+            //         style: TextStyle(
+            //           fontWeight: FontWeight.w600,
+            //           fontSize: 14,
+            //           color: Get.theme.textTheme.bodyLarge?.color,
+            //         ),
+            //       ),
+            //      // const Spacer(),
+            //       // Add ELIZA ChatBot button
+            //       // GestureDetector(
+            //       //   onTap: () => Get.to(() => ElizaChatScreen()),
+            //       //   child: Container(
+            //       //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            //       //     decoration: BoxDecoration(
+            //       //       gradient: LinearGradient(
+            //       //         colors: [
+            //       //           const Color.fromRGBO(244, 135, 6, 1),
+            //       //           const Color.fromRGBO(244, 135, 6, 0.8),
+            //       //         ],
+            //       //       ),
+            //       //       borderRadius: BorderRadius.circular(12),
+            //       //     ),
+            //       //     // child: Row(
+            //       //     //   mainAxisSize: MainAxisSize.min,
+            //       //     //   children: [
+            //       //     //     Icon(
+            //       //     //       Icons.smart_toy,
+            //       //     //       color: Colors.white,
+            //       //     //       size: 16,
+            //       //     //     ),
+                          
+            //       //     //   ],
+            //       //     // ),
+            //       //   ),
+            //       // ),
+            //     ],
+            //   ),
+            // ),
+            Expanded(
+              child: onlineUsers.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No users online',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: onlineUsers.length,
+                      itemBuilder: (context, index) {
+                        final user = onlineUsers[index];
+                        return _buildStatusUserItem(user, index);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildStatusUserItem(Map<String, dynamic> user, int index) {
+    return GestureDetector(
+      onTap: () => controller.navigateToChat(user),
+      child: Container(
+        margin: EdgeInsets.only(right: 12, bottom: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.green,
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withAlpha(30),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: EnhancedUserAvatar(
+                    user: user,
+                    radius: 22,
+                    isOnline: true,
+                    showOnlineIndicator: false,
+                    heroTag: 'status_avatar_${user['id']}_$index',
+                  ),
+                ),
+                // Online indicator
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Get.theme.cardColor,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: 60,
+              child: Text(
+                user['name']?.toString().split(' ').first ?? 'User',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: Get.theme.textTheme.bodyMedium?.color,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -106,7 +279,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withAlpha(10),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -160,7 +333,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withAlpha(20),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -176,98 +349,107 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     });
   }
 
-  // NEW: Quick action buttons
-  Widget _buildQuickActions() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildActionButton(
-              icon: Icons.person_add,
-              label: 'Add to Chat',
-              color: Colors.green,
-              onTap: () {
-                Get.to(() => const AddToChatScreen());
-              },
+  // NEW: Integrated search bar
+  Widget _buildIntegratedSearchBar() {
+    final TextEditingController searchController = TextEditingController();
+
+    return Obx(() {
+      // Update search controller when searchQuery changes
+      if (controller.searchQuery.value != searchController.text) {
+        searchController.text = controller.searchQuery.value;
+        searchController.selection = TextSelection.fromPosition(
+          TextPosition(offset: controller.searchQuery.value.length),
+        );
+      }
+
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Get.theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(5),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: TextField(
+          controller: searchController,
+          decoration: InputDecoration(
+            hintText: 'Search mutual followers...',
+            hintStyle: TextStyle(color: Colors.grey.shade500),
+            prefixIcon: controller.isSearching.value
+                ? Container(
+                    padding: const EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: const Color.fromRGBO(244, 135, 6, 1),
+                      ),
+                    ),
+                  )
+                : const Icon(
+                    Icons.search,
+                    color: Color.fromRGBO(244, 135, 6, 1),
+                  ),
+            suffixIcon: controller.searchQuery.value.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                    onPressed: () {
+                      searchController.clear();
+                      controller.searchQuery.value = '';
+                      controller.searchResults.clear();
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildActionButton(
-              icon: Icons.chat_bubble_outline,
-              label: 'My Chats',
-              color: const Color.fromRGBO(244, 135, 6, 1),
-              onTap: () {
-                // Navigate to chat list or switch to chat tab
-                controller.changeBottomIndex(1);
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildActionButton(
-              icon: Icons.search,
-              label: 'Search',
-              color: Colors.blue,
-              onTap: () {
-                Get.toNamed('/search');
-              },
-            ),
-          ),
-        ],
-      ),
-    );
+          onChanged: (value) {
+            controller.searchQuery.value = value;
+            // Implement local search if needed
+            _performLocalSearch(value);
+          },
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              controller.searchUsers(value.trim());
+            }
+          },
+        ),
+      );
+    });
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: color.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  // NEW: Local search through existing users
+  void _performLocalSearch(String query) {
+    if (query.isEmpty) {
+      controller.searchResults.clear();
+      return;
+    }
+
+    final filteredUsers = controller.allUsers.where((user) {
+      final name = (user['name'] ?? '').toString().toLowerCase();
+      final email = (user['email'] ?? '').toString().toLowerCase();
+      final searchQuery = query.toLowerCase();
+      return name.contains(searchQuery) || email.contains(searchQuery);
+    }).toList();
+
+    controller.searchResults.value = filteredUsers;
   }
 
 Widget _buildUsersList() {
   return Obx(() {
     developer.log('🔄 UI Rebuild - Users count: ${controller.allUsers.length}');
+    
+    // Check if we're in search mode
+    final isSearchMode = controller.searchQuery.value.isNotEmpty;
+    final displayUsers = isSearchMode ? controller.searchResults : controller.allUsers;
     
     // ENHANCED: Better loading state management with follow status
     if (controller.isLoadingFollowStatus.value && controller.allUsers.isEmpty) {
@@ -278,12 +460,24 @@ Widget _buildUsersList() {
       return _buildLoadingState();
     }
 
-    if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
-      return _buildEmptyState();
+    // Search-specific states
+    if (isSearchMode) {
+      if (controller.isSearching.value && controller.searchResults.isEmpty) {
+        return _buildSearchingState();
+      }
+      
+      if (controller.searchResults.isEmpty && !controller.isSearching.value) {
+        return _buildNoSearchResultsState();
+      }
+    } else {
+      // Normal mode empty state
+      if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
+        return _buildEmptyState();
+      }
     }
 
     // Debug log to verify data is available
-    developer.log('📱 Building list with ${controller.allUsers.length} users');
+    developer.log('📱 Building list with ${displayUsers.length} users (search mode: $isSearchMode)');
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -293,16 +487,18 @@ Widget _buildUsersList() {
       color: const Color.fromRGBO(244, 135, 6, 1),
       child: Column(
         children: [
-          //_buildAddToChatStatusBar(),
-          // Show follow status info
-          _buildFollowStatusInfoBar(),
+          // Show search results info or follow status info
+          if (isSearchMode)
+            _buildSearchResultsInfoBar(displayUsers.length)
+          else
+            _buildFollowStatusInfoBar(),
           Expanded(
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: controller.allUsers.length,
+              itemCount: displayUsers.length,
               itemBuilder: (context, index) {
-                final user = controller.allUsers[index];
+                final user = displayUsers[index];
                 developer.log('Building card for user: ${user['name']}');
                 return _buildUserCard(user, index);
               },
@@ -312,6 +508,170 @@ Widget _buildUsersList() {
       ),
     );
   });
+}
+
+// NEW: Search results info bar
+Widget _buildSearchResultsInfoBar(int resultCount) {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.blue.withAlpha(10),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: Colors.blue.withAlpha(30),
+        width: 1,
+      ),
+    ),
+    child: Row(
+      children: [
+        Icon(
+          Icons.search,
+          size: 16,
+          color: Colors.blue,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            resultCount > 0
+                ? '$resultCount result${resultCount != 1 ? 's' : ''} found'
+                : 'No results found',
+            style: const TextStyle(
+              color: Colors.blue,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        if (resultCount > 0)
+          GestureDetector(
+            onTap: () {
+              controller.searchQuery.value = '';
+              controller.searchResults.clear();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.blue.withAlpha(20),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Clear',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+// NEW: Searching state
+Widget _buildSearchingState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: const Color.fromRGBO(244, 135, 6, 1),
+                backgroundColor: const Color.fromRGBO(244, 135, 6, 0.2),
+              ),
+            ),
+            Icon(
+              Icons.search,
+              size: 24,
+              color: const Color.fromRGBO(244, 135, 6, 1),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Searching users...',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Please wait while we find users',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// NEW: No search results state
+Widget _buildNoSearchResultsState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.grey.withAlpha(10),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.search_off,
+            size: 64,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'No users found',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Try searching with a different name',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade500,
+          ),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton.icon(
+          onPressed: () {
+            controller.searchQuery.value = '';
+            controller.searchResults.clear();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25),
+            ),
+          ),
+          icon: const Icon(Icons.refresh),
+          label: const Text('Clear Search'),
+        ),
+      ],
+    ),
+  );
 }
 
 Widget _buildFollowStatusInfoBar() {
@@ -367,68 +727,6 @@ Widget _buildFollowStatusInfoBar() {
   });
 }
 
-
-// NEW: Status bar for Add to Chat screen
-// Widget _buildAddToChatStatusBar() {
-//   return Obx(() {
-//     final totalUsers = controller.allUsers.length;
-//     final onlineUsers = controller.allUsers.where((user) => user['isOnline'] == true).length;
-    
-//     // return Container(
-//     //   margin: const EdgeInsets.all(16),
-//     //   padding: const EdgeInsets.all(12),
-//     //   decoration: BoxDecoration(
-//     //     color: Colors.white,
-//     //     borderRadius: BorderRadius.circular(12),
-//     //     boxShadow: [
-//     //       BoxShadow(
-//     //         color: Colors.black.withOpacity(0.05),
-//     //         blurRadius: 8,
-//     //         offset: const Offset(0, 2),
-//     //       ),
-//     //     ],
-//     //   ),
-//       // child: Row(
-//       //   children: [
-//       //     _buildMiniStatCard('Total', '$totalUsers', Icons.people, Colors.blue),
-//       //     const SizedBox(width: 16),
-//       //     _buildMiniStatCard('Online', '$onlineUsers', Icons.circle, Colors.green),
-//       //     const SizedBox(width: 16),
-//       //     _buildMiniStatCard('Mutual', '$totalUsers', Icons.people_outline, const Color.fromRGBO(244, 135, 6, 1)),
-//       //   ],
-//       // ),
-    
-//   });
-// }
-
-
-Widget _buildMiniStatCard(String label, String value, IconData icon, Color color) {
-  return Expanded(
-    child: Column(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
 Widget _buildFollowStatusLoadingState() {
     return Center(
       child: Column(
@@ -477,171 +775,6 @@ Widget _buildFollowStatusLoadingState() {
     );
   }
 
-// NEW: Status bar showing cache and mutual followers info
-// Widget _buildStatusBar() {
-//   return Obx(() {
-//     final followStatusManager = FollowStatusManager.instance;
-//     final stats = followStatusManager.getCacheStats();
-//     final mutualCount = controller.allUsers.length;
-    
-//     if (mutualCount == 0 && !controller.isLoadingUsers.value) {
-//       return const SizedBox.shrink();
-//     }
-    
-//     return Container(
-//       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-//       decoration: BoxDecoration(
-//         color: const Color.fromRGBO(244, 135, 6, 0.1),
-//         borderRadius: BorderRadius.circular(20),
-//         border: Border.all(
-//           color: const Color.fromRGBO(244, 135, 6, 0.3),
-//           width: 1,
-//         ),
-//       ),
-//       child: Row(
-//         children: [
-//           Icon(
-//             Icons.people,
-//             size: 16,
-//             color: const Color.fromRGBO(244, 135, 6, 1),
-//           ),
-//           const SizedBox(width: 8),
-//           Expanded(
-//             child: Text(
-//               '$mutualCount mutual followers',
-//               style: const TextStyle(
-//                 color: Color.fromRGBO(244, 135, 6, 1),
-//                 fontSize: 12,
-//                 fontWeight: FontWeight.w600,
-//               ),
-//             ),
-//           ),
-//           if (stats['totalCached'] > 0)
-//             Container(
-//               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-//               decoration: BoxDecoration(
-//                 color: Colors.green.withOpacity(0.2),
-//                 borderRadius: BorderRadius.circular(8),
-//               ),
-//               child: Text(
-//                 '${stats['totalCached']} cached',
-//                 style: const TextStyle(
-//                   color: Colors.green,
-//                   fontSize: 10,
-//                   fontWeight: FontWeight.bold,
-//                 ),
-//               ),
-//             ),
-//         ],
-//       ),
-//     );
-//   });
-// }
-
-Widget _buildSearchLoadingState() {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: const Color.fromRGBO(244, 135, 6, 1),
-              ),
-            ),
-            Icon(
-              Icons.search,
-              size: 24,
-              color: const Color.fromRGBO(244, 135, 6, 1),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Searching mutual followers...',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-// NEW: Initial search state with tips
-Widget _buildInitialSearchState() {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color.fromRGBO(244, 135, 6, 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.search,
-            size: 64,
-            color: Color.fromRGBO(244, 135, 6, 1),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Find mutual followers',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Search among users you mutually follow',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey.shade500,
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(25),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.info_outline,
-                color: Colors.blue,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Only mutual followers can chat',
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
   Widget _buildUserCard(Map<String, dynamic> user, int index) {
   final isOnline = user['isOnline'] ?? false;
   final isMutualFollow = user['isMutualFollow'] ?? false;
@@ -649,6 +782,9 @@ Widget _buildInitialSearchState() {
   final userId = user['userId']?.toString() ?? 
                 user['_id']?.toString() ?? 
                 user['id']?.toString() ?? '';
+  
+  // Generate chat ID to get badge count
+  final chatId = controller.generateChatId(controller.currentUserId.value, userId);
   
   final isRecentUser = controller.recentUsers.any((recentUser) {
     final recentUserId = recentUser['userId']?.toString() ?? 
@@ -676,7 +812,6 @@ Widget _buildInitialSearchState() {
                 decoration: BoxDecoration(
                   color: Get.theme.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  // Enhanced border for mutual followers
                   border: isMutualFollow
                       ? Border.all(
                           color: const Color.fromRGBO(244, 135, 6, 0.3),
@@ -687,7 +822,7 @@ Widget _buildInitialSearchState() {
                     BoxShadow(
                       color: isMutualFollow
                           ? const Color.fromRGBO(244, 135, 6, 0.1)
-                          : Colors.black.withOpacity(0.05),
+                          : Colors.black.withAlpha(5),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -695,7 +830,56 @@ Widget _buildInitialSearchState() {
                 ),
                 child: Row(
                   children: [
-                    _buildUserAvatar(user, isOnline),
+                    // Avatar with badge
+                    Stack(
+                      children: [
+                        _buildUserAvatar(user, isOnline),
+                        // Unread message badge
+                        Obx(() {
+                          final badgeCount = controller.getBadgeCountReactive(chatId).value;
+                          if (badgeCount > 0) {
+                            return Positioned(
+                              top: -2,
+                              right: -2,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withAlpha(30),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 20,
+                                  minHeight: 20,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    badgeCount > 99 ? '99+' : badgeCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        }),
+                      ],
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -713,8 +897,35 @@ Widget _buildInitialSearchState() {
                                   ),
                                 ),
                               ),
+                              // Show badge count in text form
+                              Obx(() {
+                                final badgeCount = controller.getBadgeCountReactive(chatId).value;
+                                if (badgeCount > 0) {
+                                  return Container(
+                                    margin: const EdgeInsets.only(left: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      badgeCount > 99 ? '99+' : badgeCount.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }),
                               // Mutual follow indicator
-                              if (isMutualFollow)
+                              if (isMutualFollow) ...[
+                                const SizedBox(width: 4),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 6,
@@ -744,10 +955,11 @@ Widget _buildInitialSearchState() {
                                     ],
                                   ),
                                 ),
+                              ],
                               // Recent user indicator
-                              if (isRecentUser)
+                              if (isRecentUser) ...[
+                                const SizedBox(width: 4),
                                 Container(
-                                  margin: EdgeInsets.only(left: isMutualFollow ? 4 : 0),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 6,
                                     vertical: 2,
@@ -765,6 +977,7 @@ Widget _buildInitialSearchState() {
                                     ),
                                   ),
                                 ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -911,7 +1124,6 @@ Widget _buildInitialSearchState() {
       ),
     );
   }
-
 
   void _showLogoutDialog() {
     Get.dialog(

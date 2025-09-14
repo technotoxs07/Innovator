@@ -131,7 +131,7 @@ Future<void> startVoiceCall(Map<String, dynamic> user) async {
         'Cannot Call User',
         'You can only call users you mutually follow',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange.withOpacity(0.8),
+        backgroundColor: Colors.orange.withAlpha(80),
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
       );
@@ -145,7 +145,7 @@ Future<void> startVoiceCall(Map<String, dynamic> user) async {
         'Permission Required',
         'Microphone permission is required for voice calls',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withAlpha(80),
         colorText: Colors.white,
       );
       return;
@@ -211,7 +211,7 @@ Future<void> startVoiceCall(Map<String, dynamic> user) async {
       'Call Failed',
       'Failed to start voice call. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
     );
   }
@@ -229,7 +229,7 @@ Future<void> startVideoCall(Map<String, dynamic> user) async {
         'Cannot Call User',
         'You can only call users you mutually follow',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange.withOpacity(0.8),
+        backgroundColor: Colors.orange.withAlpha(80),
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
       );
@@ -243,7 +243,7 @@ Future<void> startVideoCall(Map<String, dynamic> user) async {
         'Permissions Required',
         'Camera and microphone permissions are required for video calls',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withAlpha(80),
         colorText: Colors.white,
       );
       return;
@@ -309,7 +309,7 @@ Future<void> startVideoCall(Map<String, dynamic> user) async {
       'Call Failed',
       'Failed to start video call. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
     );
   }
@@ -338,7 +338,7 @@ Widget buildCallButtons(Map<String, dynamic> user) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.3),
+        color: Colors.grey.withAlpha(30),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
@@ -371,7 +371,7 @@ Widget buildCallButtons(Map<String, dynamic> user) {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.green.withOpacity(0.3),
+                color: Colors.green.withAlpha(30),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -397,7 +397,7 @@ Widget buildCallButtons(Map<String, dynamic> user) {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.3),
+                color: Colors.blue.withAlpha(30),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -576,10 +576,74 @@ void _moveChatToTopWithAnimation(String chatId, Map<String, dynamic> messageData
   }
 }
 
+
+Future<String> getOrCreateChatId(Map<String, dynamic> user) async {
+  try {
+    final userId = user['userId']?.toString() ?? 
+                  user['_id']?.toString() ?? 
+                  user['id']?.toString() ?? '';
+    
+    if (userId.isEmpty) throw Exception('Invalid user ID');
+    
+    final chatId = generateChatId(currentUserId.value, userId);
+    
+    // Check if chat exists in local list
+    final existingChat = chatList.firstWhere(
+      (chat) => chat['chatId'] == chatId,
+      orElse: () => {},
+    );
+    
+    if (existingChat.isEmpty) {
+      // Create initial chat document
+      await FirebaseService.createInitialChat(
+        chatId: chatId,
+        currentUserId: currentUserId.value,
+        receiverId: userId,
+        receiverName: user['name']?.toString() ?? 'Unknown User',
+      );
+      
+      developer.log('✅ New chat created: $chatId');
+    }
+    
+    return chatId;
+  } catch (e) {
+    developer.log('❌ Error getting or creating chat: $e');
+    rethrow;
+  }
+}
+
 // Trigger chat move animation
 void _triggerChatMoveAnimation() {
-  // This will be used in UI for smooth list reordering animation
-  chatList.refresh();
+  try {
+    // Trigger smooth animation
+    chatList.refresh();
+    
+    // Optional: Add a subtle pulse animation to the top item
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (chatList.isNotEmpty) {
+        // You can add animation logic here if needed
+        developer.log('🎬 Chat move animation triggered');
+      }
+    });
+  } catch (e) {
+    developer.log('❌ Error triggering chat animation: $e');
+  }
+}
+
+Future<void> refreshChatOrder() async {
+  try {
+    developer.log('🔄 Refreshing chat order...');
+    
+    // Re-sort the existing chats
+    _sortChatListByTime();
+    
+    // Refresh the UI
+    chatList.refresh();
+    
+    developer.log('✅ Chat order refreshed');
+  } catch (e) {
+    developer.log('❌ Error refreshing chat order: $e');
+  }
 }
 
 // Get badge count for chat (reactive)
@@ -602,8 +666,28 @@ void clearAllBadges() {
 }
 
 // Get total unread count across all chats
-int getTotalUnreadCount() {
-  return totalUnreadBadges.value;
+int getTotalUnreadCountFromMutualFollowers() {
+  int total = 0;
+  
+  try {
+    for (var chat in chatList) {
+      final otherUser = chat['otherUser'] as Map<String, dynamic>?;
+      final chatId = chat['chatId']?.toString() ?? '';
+      
+      if (otherUser != null && chatId.isNotEmpty) {
+        // Only count badges from mutual followers
+        if (isMutualFollower(otherUser)) {
+          final badgeCount = chatBadges[chatId]?.value ?? 0;
+          total += badgeCount;
+        }
+      }
+    }
+  } catch (e) {
+    developer.log('❌ Error calculating total unread count from mutual followers: $e');
+  }
+  
+  developer.log('📊 Total unread count from mutual followers: $total');
+  return total;
 }
 
   void _initializeFollowStatusManager() {
@@ -621,16 +705,89 @@ int getTotalUnreadCount() {
     }
   }
 
+  Future<void> _handleOutgoingMessage(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    developer.log('📤 Handling outgoing message: $chatId');
+    
+    // Always move to top when I send a message
+    await _moveChatsToTopOnActivity(chatId, messageData);
+    
+    // Update recent users
+    final receiverId = messageData['receiverId']?.toString() ?? '';
+    if (receiverId.isNotEmpty) {
+      try {
+        final receiverDoc = await FirebaseService.getUserById(receiverId);
+        if (receiverDoc.exists) {
+          final receiverData = receiverDoc.data() as Map<String, dynamic>;
+          receiverData['id'] = receiverId;
+          receiverData['userId'] = receiverId;
+          receiverData['_id'] = receiverId;
+          
+          addUserToRecent(receiverData);
+        }
+      } catch (e) {
+        developer.log('Error adding receiver to recent: $e');
+      }
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error handling outgoing message: $e');
+  }
+}
+
+// ENHANCED: Handle incoming messages (when I receive a message)
+Future<void> _handleIncomingMessageForTop(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    developer.log('📥 Handling incoming message: $chatId from $senderId');
+    
+    // Check if sender is mutual follower
+    final senderDoc = await FirebaseService.getUserById(senderId);
+    if (!senderDoc.exists) return;
+    
+    final senderData = senderDoc.data() as Map<String, dynamic>;
+    senderData['id'] = senderId;
+    senderData['userId'] = senderId;
+    senderData['_id'] = senderId;
+    
+    if (!isMutualFollower(senderData)) {
+      developer.log('🚫 Not moving to top - sender is not mutual follower: $senderId');
+      return;
+    }
+    
+    // Move to top for mutual followers
+    await _moveChatsToTopOnActivity(chatId, messageData);
+    
+    // Add sender to recent users
+    addUserToRecent(senderData);
+    
+    // Handle badge counting (only if not currently viewing this chat)
+    if (currentChatId.value != chatId) {
+      initializeBadgeForChat(chatId);
+      final currentBadge = chatBadges[chatId]?.value ?? 0;
+      chatBadges[chatId]!.value = currentBadge + 1;
+      unreadCounts[chatId] = currentBadge + 1;
+      updateTotalUnreadBadges();
+      _animateNewBadge(chatId);
+    }
+    
+  } catch (e) {
+    developer.log('❌ Error handling incoming message for top: $e');
+  }
+}
+
   // ENHANCED: Clear badge when messages are read
-  @override
+  //@override
 Future<void> markMessagesAsRead(String chatId) async {
   if (chatId.isEmpty) return;
 
   try {
+    developer.log('📖 Marking messages as read for chat: $chatId');
+    
     // Call original Firebase method
     await FirebaseService.markMessagesAsRead(chatId, currentUserId.value);
 
-    // Clear local badge immediately
+    // CRITICAL: Clear local badge immediately
     clearBadgeForChat(chatId);
 
     // Update UI immediately
@@ -663,10 +820,203 @@ Future<void> markMessagesAsRead(String chatId) async {
     super.onReady();
 
     // Initialize with preloading when controller is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async{
       initializeWithPreloading();
+          await refreshBadgeSystemWithFollowFilter();
+
     });
+
+    
   }
+
+
+  Future<void> fixUnreadBadgeCount() async {
+  try {
+    developer.log('🔧 Fixing unread badge count...');
+    
+    // Step 1: Clear all badges
+    clearAllBadges();
+    
+    // Step 2: Refresh with proper filtering
+    await refreshBadgeSystemWithFollowFilter();
+    
+    // Step 3: Force UI refresh
+    chatList.refresh();
+    allUsers.refresh();
+    
+    developer.log('✅ Badge count fixed successfully');
+    
+    // Show success message
+    // Get.snackbar(
+    //   'Badge System Updated', 
+    //   'Unread message count has been refreshed',
+    //   backgroundColor: Colors.green,
+    //   colorText: Colors.white,
+    //   duration: Duration(seconds: 2),
+    // );
+    
+  } catch (e) {
+    developer.log('❌ Error fixing badge count: $e');
+  }
+}
+
+// ENHANCED: Move chat to top for ANY new activity (send/receive)
+Future<void> _moveChatsToTopOnActivity(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    final isMyMessage = senderId == currentUserId.value;
+    
+    developer.log('📤📥 Moving chat to top - ChatID: $chatId, IsMyMessage: $isMyMessage');
+    
+    // Update the chat document in Firestore first to ensure timestamp is current
+    await _updateChatTimestamp(chatId, messageData);
+    
+    // Then move in local list
+    await _moveLocalChatToTop(chatId, messageData);
+    
+  } catch (e) {
+    developer.log('❌ Error moving chat to top on activity: $e');
+  }
+}
+
+Future<void> _updateChatTimestamp(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final chatDocRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+    
+    await chatDocRef.update({
+      'lastMessage': messageData['message']?.toString() ?? '',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+      'lastMessageSender': messageData['senderId']?.toString() ?? '',
+      'lastMessageSenderName': messageData['senderName']?.toString() ?? '',
+      'lastMessageId': messageData['id']?.toString() ?? '',
+      'lastMessageType': messageData['messageType']?.toString() ?? 'text',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    
+    developer.log('✅ Chat timestamp updated in Firestore: $chatId');
+  } catch (e) {
+    developer.log('❌ Error updating chat timestamp: $e');
+  }
+}
+
+// Move chat to top in local list with animation
+Future<void> _moveLocalChatToTop(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final chatIndex = chatList.indexWhere((chat) => chat['chatId'] == chatId);
+    
+    if (chatIndex == -1) {
+      // Chat doesn't exist in list - create it if it's from/to a mutual follower
+      await _createNewChatEntry(chatId, messageData);
+      return;
+    }
+    
+    if (chatIndex == 0) {
+      // Already at top, just update the data
+      final chat = chatList[0];
+      _updateChatData(chat, messageData);
+      chatList.refresh();
+      developer.log('📌 Chat already at top, data updated: $chatId');
+      return;
+    }
+    
+    // Move chat from current position to top
+    final chat = chatList.removeAt(chatIndex);
+    _updateChatData(chat, messageData);
+    chatList.insert(0, chat);
+    
+    developer.log('⬆️ Chat moved to top: $chatId (from position $chatIndex)');
+    
+    // Trigger smooth animation
+    _triggerChatMoveAnimation();
+    
+  } catch (e) {
+    developer.log('❌ Error moving local chat to top: $e');
+  }
+}
+
+void _updateChatData(Map<String, dynamic> chat, Map<String, dynamic> messageData) {
+  chat['lastMessage'] = messageData['message']?.toString() ?? '';
+  chat['lastMessageTime'] = messageData['timestamp'] ?? Timestamp.now();
+  chat['lastMessageSender'] = messageData['senderId']?.toString() ?? '';
+  chat['lastMessageSenderName'] = messageData['senderName']?.toString() ?? '';
+  chat['lastMessageId'] = messageData['id']?.toString() ?? '';
+  chat['lastMessageType'] = messageData['messageType']?.toString() ?? 'text';
+  chat['updatedAt'] = Timestamp.now();
+}
+
+// Create new chat entry for first-time conversations
+Future<void> _createNewChatEntry(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    final receiverId = messageData['receiverId']?.toString() ?? '';
+    final isMyMessage = senderId == currentUserId.value;
+    
+    // Determine the other user ID
+    final otherUserId = isMyMessage ? receiverId : senderId;
+    
+    if (otherUserId.isEmpty) return;
+    
+    // Get other user data
+    final otherUserDoc = await FirebaseService.getUserById(otherUserId);
+    if (!otherUserDoc.exists) return;
+    
+    final otherUserData = Map<String, dynamic>.from(
+      otherUserDoc.data() as Map<String, dynamic>,
+    );
+    otherUserData['id'] = otherUserId;
+    otherUserData['userId'] = otherUserId;
+    otherUserData['_id'] = otherUserId;
+    
+    // Check if mutual follower
+    if (!isMutualFollower(otherUserData)) {
+      developer.log('🚫 Not creating chat entry - user is not mutual follower: $otherUserId');
+      return;
+    }
+    
+    // Enhance user data if possible
+    final email = otherUserData['email']?.toString();
+    if (email != null) {
+      final followStatus = await followStatusManager.checkFollowStatus(email);
+      if (followStatus != null && followStatus['isMutualFollow'] == true) {
+        final apiUserData = followStatus['user'] as Map<String, dynamic>;
+        otherUserData['name'] = apiUserData['name'];
+        otherUserData['picture'] = apiUserData['picture'];
+        otherUserData['apiPictureUrl'] = 'http://182.93.94.210:3067${apiUserData['picture']}';
+        otherUserData['isMutualFollow'] = true;
+      }
+    }
+    
+    // Create new chat entry
+    final newChat = {
+      'id': chatId,
+      'chatId': chatId,
+      'participants': [currentUserId.value, otherUserId],
+      'otherUser': otherUserData,
+      'lastMessage': messageData['message']?.toString() ?? '',
+      'lastMessageTime': messageData['timestamp'] ?? Timestamp.now(),
+      'lastMessageSender': senderId,
+      'lastMessageSenderName': messageData['senderName']?.toString() ?? '',
+      'lastMessageId': messageData['id']?.toString() ?? '',
+      'lastMessageType': messageData['messageType']?.toString() ?? 'text',
+      'createdAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+      'isActive': true,
+    };
+    
+    // Add at the top of the list
+    chatList.insert(0, newChat);
+    
+    // Initialize badge for this chat
+    initializeBadgeForChat(chatId);
+    
+    developer.log('✅ New chat entry created and added to top: $chatId');
+    
+    _triggerChatMoveAnimation();
+    
+  } catch (e) {
+    developer.log('❌ Error creating new chat entry: $e');
+  }
+}
 
   void addUserToRecent(Map<String, dynamic> user) {
     try {
@@ -1152,7 +1502,7 @@ Future<void> markMessagesAsRead(String chatId) async {
         'Error',
         'Failed to search users',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withAlpha(80),
         colorText: Colors.white,
       );
     } finally {
@@ -1294,7 +1644,7 @@ Future<void> searchUsersWithFollowValidation(String query) async {
       'Search Error',
       'Failed to search users. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
     );
   } finally {
@@ -1507,6 +1857,41 @@ void _clearAllReactiveVariables() {
   }
 }
 
+Future<void> cleanupNonMutualFollowerBadges() async {
+  try {
+    developer.log('🧹 Cleaning up badges from non-mutual followers...');
+    
+    final chatIdsToClean = <String>[];
+    
+    // Check each chat's other user
+    for (var chat in chatList) {
+      final otherUser = chat['otherUser'] as Map<String, dynamic>?;
+      final chatId = chat['chatId']?.toString() ?? '';
+      
+      if (otherUser != null && chatId.isNotEmpty) {
+        // If user is not a mutual follower, mark for cleanup
+        if (!isMutualFollower(otherUser)) {
+          chatIdsToClean.add(chatId);
+        }
+      }
+    }
+    
+    // Clean up badges for non-mutual followers
+    for (String chatId in chatIdsToClean) {
+      developer.log('🧹 Clearing badge for non-mutual follower chat: $chatId');
+      chatBadges[chatId]?.value = 0;
+      unreadCounts[chatId] = 0;
+    }
+    
+    // Update total badges
+    updateTotalUnreadBadges();
+    
+    developer.log('✅ Cleaned up ${chatIdsToClean.length} badges from non-mutual followers');
+  } catch (e) {
+    developer.log('❌ Error cleaning up non-mutual follower badges: $e');
+  }
+}
+
   // Setup managed streams with proper cleanup
   void _setupManagedStreams() {
   try {
@@ -1637,7 +2022,7 @@ void _clearAllReactiveVariables() {
             chats.add(chatData);
 
             final chatId = chatData['chatId'] ?? '';
-            _updateUnreadCount(chatId, otherUserId);
+            _updateUnreadCountWithFollowFilter(chatId, otherUserId);
 
             if (!badgeCounts.containsKey(chatId)) {
               badgeCounts[chatId] = 0.obs;
@@ -1680,7 +2065,7 @@ void _clearAllReactiveVariables() {
         switch (change.type) {
           case DocumentChangeType.added:
             if (!isMyMessage) {
-              _handleNewMessage(chatId, messageData);
+              _handleNewMessageWithMutualFollowerCheck(chatId, messageData);
             }
             break;
           case DocumentChangeType.modified:
@@ -1733,9 +2118,30 @@ void _clearAllReactiveVariables() {
     });
   }
 
+  void _sortChatListByTime() {
+  try {
+    chatList.sort((a, b) {
+      final aTime = a['lastMessageTime'] as Timestamp?;
+      final bTime = b['lastMessageTime'] as Timestamp?;
+      
+      // Handle null timestamps
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1; // Move to bottom
+      if (bTime == null) return -1; // Move to top
+      
+      // Most recent first
+      return bTime.compareTo(aTime);
+    });
+    
+    developer.log('📊 Chat list sorted by timestamp');
+  } catch (e) {
+    developer.log('❌ Error sorting chat list: $e');
+  }
+}
+
   // Global message listener for real-time updates
   void _startGlobalMessageListener() {
-  if (currentUserId.value.isEmpty) return;
+   if (currentUserId.value.isEmpty) return;
 
   try {
     FirebaseFirestore.instance
@@ -1757,8 +2163,13 @@ void _clearAllReactiveVariables() {
 
             switch (change.type) {
               case DocumentChangeType.added:
-                // FIXED: Use badge handler for new messages
-                _handleNewMessageWithBadge(chatId, messageData); // ✅ Use badge handler
+                if (isMyMessage) {
+                  // Handle outgoing message
+                  _handleOutgoingMessage(chatId, messageData);
+                } else {
+                  // Handle incoming message
+                  _handleIncomingMessageForTop(chatId, messageData);
+                }
                 break;
               case DocumentChangeType.modified:
                 _handleMessageUpdate(change.doc.id, messageData);
@@ -1768,37 +2179,117 @@ void _clearAllReactiveVariables() {
             }
           }
         });
+        
+    developer.log('✅ Global message listener with top movement started');
   } catch (e) {
-    developer.log('Error setting up global message listener: $e');
+    developer.log('❌ Error setting up global message listener with top movement: $e');
   }
 }
 
   // Handle new incoming messages
-  void _handleNewMessage(String chatId, Map<String, dynamic> messageData) {
-    // Update chat list position (move to top)
-    _moveChatToTop(chatId);
-
-    // Update unread count
-    if (currentChatId.value != chatId) {
-      final currentCount = unreadCounts[chatId] ?? 0;
-      unreadCounts[chatId] = currentCount + 1;
-
-      // Update badge count
-      if (!badgeCounts.containsKey(chatId)) {
-        badgeCounts[chatId] = 0.obs;
-      }
-      badgeCounts[chatId]!.value = unreadCounts[chatId] ?? 0;
-
-      // Show notification badge animation
-      _animateBadge(chatId);
+  void _handleNewMessageWithMutualFollowerCheck(String chatId, Map<String, dynamic> messageData) {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    final isMyMessage = senderId == currentUserId.value;
+    
+    developer.log('📨 New message - Chat: $chatId, IsMyMessage: $isMyMessage, Sender: $senderId');
+    
+    // Only process messages I didn't send
+    if (!isMyMessage) {
+      // Check if sender is a mutual follower
+      _checkSenderMutualFollowStatus(chatId, senderId, messageData);
     }
-
-    // Update last message time
-    final timestamp = messageData['timestamp'] as Timestamp?;
-    if (timestamp != null) {
-      lastMessageTimes[chatId] = timestamp.toDate();
-    }
+    
+    // ALWAYS move chat to top for any new message (if it's from mutual follower)
+    _moveChatToTopWithMutualCheck(chatId, messageData);
+    
+  } catch (e) {
+    developer.log('❌ Error handling new message with mutual follower check: $e');
   }
+}
+
+Future<void> _checkSenderMutualFollowStatus(String chatId, String senderId, Map<String, dynamic> messageData) async {
+  try {
+    // Get sender user data
+    final senderDoc = await FirebaseService.getUserById(senderId);
+    if (!senderDoc.exists) {
+      developer.log('⚠️ Sender user not found: $senderId');
+      return;
+    }
+    
+    final senderData = senderDoc.data() as Map<String, dynamic>;
+    senderData['id'] = senderId;
+    senderData['userId'] = senderId;
+    senderData['_id'] = senderId;
+    
+    // Check if sender is mutual follower
+    if (!isMutualFollower(senderData)) {
+      developer.log('🚫 Ignoring message from non-mutual follower: $senderId');
+      return;
+    }
+    
+    // Initialize badge for this chat if sender is mutual follower
+    initializeBadgeForChat(chatId);
+    
+    // Check if user is currently viewing this chat
+    final isViewingThisChat = currentChatId.value == chatId;
+    
+    if (!isViewingThisChat) {
+      // Increment badge for unread messages from mutual followers
+      final currentBadge = chatBadges[chatId]?.value ?? 0;
+      chatBadges[chatId]!.value = currentBadge + 1;
+      unreadCounts[chatId] = currentBadge + 1;
+      
+      developer.log('🔴 NEW UNREAD MESSAGE from mutual follower - Badge incremented for chat $chatId: ${currentBadge + 1}');
+      
+      // Update total badges
+      updateTotalUnreadBadges();
+      
+      // Animate badge
+      _animateNewBadge(chatId);
+      
+      // Trigger UI refresh
+      chatList.refresh();
+    } else {
+      developer.log('👀 User viewing chat $chatId, auto-marking as read');
+      // Auto-mark as read after short delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        markMessagesAsRead(chatId);
+      });
+    }
+  } catch (e) {
+    developer.log('❌ Error checking sender mutual follow status: $e');
+  }
+}
+
+// Enhanced move chat to top with mutual follower check
+void _moveChatToTopWithMutualCheck(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    
+    // Only move to top if sender is mutual follower (or if it's my message)
+    if (senderId != currentUserId.value) {
+      final senderDoc = await FirebaseService.getUserById(senderId);
+      if (senderDoc.exists) {
+        final senderData = senderDoc.data() as Map<String, dynamic>;
+        senderData['id'] = senderId;
+        senderData['userId'] = senderId;
+        senderData['_id'] = senderId;
+        
+        if (!isMutualFollower(senderData)) {
+          developer.log('🚫 Not moving chat to top - sender is not mutual follower: $senderId');
+          return;
+        }
+      }
+    }
+    
+    // Move chat to top
+    _moveChatToTopWithAnimation(chatId, messageData);
+    
+  } catch (e) {
+    developer.log('❌ Error moving chat to top with mutual check: $e');
+  }
+}
 
   // Handle message status updates (read receipts)
   void _handleMessageUpdate(
@@ -1862,26 +2353,73 @@ void _clearAllReactiveVariables() {
 
   // ENHANCED: Load user chats with real-time updates and sorting
 
-  void _updateUnreadCount(String chatId, String otherUserId) {
-    if (chatId.isEmpty) return;
+  Future<void> _updateUnreadCountWithFollowFilter(String chatId, String otherUserId) async {
+  if (chatId.isEmpty) return;
 
-    try {
-      FirebaseService.getUnreadMessageCount(chatId, currentUserId.value).listen(
-        (snapshot) {
-          final count = snapshot.docs.length;
-          unreadCounts[chatId] = count;
-
-          // Update badge count
-          if (!badgeCounts.containsKey(chatId)) {
-            badgeCounts[chatId] = 0.obs;
-          }
-          badgeCounts[chatId]!.value = count;
-        },
-      );
-    } catch (e) {
-      developer.log('Error updating unread count: $e');
+  try {
+    initializeBadgeForChat(chatId);
+    
+    // Get other user data to check follow status
+    final otherUserDoc = await FirebaseService.getUserById(otherUserId);
+    if (!otherUserDoc.exists) {
+      developer.log('⚠️ Other user not found: $otherUserId');
+      return;
     }
+    
+    final otherUserData = otherUserDoc.data() as Map<String, dynamic>;
+    
+    // Check if user is mutual follower
+    if (!isMutualFollower(otherUserData)) {
+      developer.log('🚫 Skipping badge count for non-mutual follower: $otherUserId');
+      // Clear any existing badge for this non-mutual user
+      chatBadges[chatId]?.value = 0;
+      unreadCounts[chatId] = 0;
+      updateTotalUnreadBadges();
+      return;
+    }
+    
+    // Listen to unread message count only for mutual followers
+    FirebaseService.getUnreadMessageCount(chatId, currentUserId.value).listen(
+      (snapshot) {
+        final count = snapshot.docs.length;
+        
+        // Double-check: verify each unread message is from a mutual follower
+        int validUnreadCount = 0;
+        for (var doc in snapshot.docs) {
+          final messageData = doc.data() as Map<String, dynamic>;
+          final senderId = messageData['senderId']?.toString() ?? '';
+          
+          // Only count if sender is the mutual follower we're checking
+          if (senderId == otherUserId) {
+            validUnreadCount++;
+          }
+        }
+        
+        // Update local cache
+        unreadCounts[chatId] = validUnreadCount;
+        
+        // Update reactive badge count
+        chatBadges[chatId]!.value = validUnreadCount;
+        
+        // Update total unread badges
+        updateTotalUnreadBadges();
+        
+        // Trigger animation if count increased
+        if (validUnreadCount > 0) {
+          _animateNewBadge(chatId);
+          chatList.refresh();
+        }
+        
+        developer.log('📊 Badge updated for mutual follower chat $chatId: $validUnreadCount unread messages');
+      },
+      onError: (error) {
+        developer.log('❌ Error updating badge count: $error');
+      },
+    );
+  } catch (e) {
+    developer.log('❌ Error updating unread count with follow filter: $e');
   }
+}
 
   // ENHANCED: Search users with better error handling and caching
 
@@ -1968,7 +2506,7 @@ void _clearAllReactiveVariables() {
           'Cannot Add User',
           'You can only add users you mutually follow to chat',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange.withOpacity(0.8),
+          backgroundColor: Colors.orange.withAlpha(80),
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
         );
@@ -2016,7 +2554,7 @@ void _clearAllReactiveVariables() {
         'Error',
         'Failed to add user to chat. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withAlpha(80),
         colorText: Colors.white,
       );
       rethrow;
@@ -2093,7 +2631,7 @@ void _clearAllReactiveVariables() {
         'Error',
         'Unable to open chat. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withAlpha(80),
         colorText: Colors.white,
       );
     }
@@ -2161,7 +2699,7 @@ void _clearAllReactiveVariables() {
         'Error',
         'Failed to search users',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withAlpha(80),
         colorText: Colors.white,
       );
     } finally {
@@ -2172,127 +2710,103 @@ void _clearAllReactiveVariables() {
   // ENHANCED: Send message with proper user validation and instant status updates
   @override
   Future<void> sendMessage({
-    required String receiverId,
-    required String message,
-    String? replyToId,
-  }) async {
-    if (message.trim().isEmpty || currentUserId.value.isEmpty) return;
+  required String receiverId,
+  required String message,
+  String? replyToId,
+}) async {
+  if (message.trim().isEmpty || currentUserId.value.isEmpty) return;
 
-    // Validate receiver exists
-    Map<String, dynamic>? receiverUser = userCache[receiverId];
-    if (receiverUser == null) {
-      try {
-        final receiverDoc = await FirebaseService.getUserById(receiverId);
-        if (receiverDoc.exists) {
-          receiverUser = Map<String, dynamic>.from(
-            receiverDoc.data() as Map<String, dynamic>,
-          );
-          receiverUser['id'] = receiverId;
-          receiverUser['userId'] = receiverId;
-          if (!receiverUser.containsKey('_id')) {
-            receiverUser['_id'] = receiverId;
-          }
-          userCache[receiverId] = receiverUser;
-        } else {
-          developer.log('Error: Receiver user not found: $receiverId');
-          Get.snackbar(
-            'Error',
-            'Recipient user not found. Please try again.',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red.withOpacity(0.8),
-            colorText: Colors.white,
-          );
-          return;
-        }
-      } catch (e) {
-        developer.log('Error validating receiver: $e');
+  // Validate receiver exists and is mutual follower
+  Map<String, dynamic>? receiverUser = userCache[receiverId];
+  if (receiverUser == null) {
+    try {
+      final receiverDoc = await FirebaseService.getUserById(receiverId);
+      if (receiverDoc.exists) {
+        receiverUser = Map<String, dynamic>.from(
+          receiverDoc.data() as Map<String, dynamic>,
+        );
+        receiverUser['id'] = receiverId;
+        receiverUser['userId'] = receiverId;
+        receiverUser['_id'] = receiverId;
+        userCache[receiverId] = receiverUser;
+      } else {
+        developer.log('Error: Receiver user not found: $receiverId');
         Get.snackbar(
           'Error',
-          'Failed to validate recipient. Please try again.',
+          'Recipient user not found. Please try again.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.8),
+          backgroundColor: Colors.red.withAlpha(80),
           colorText: Colors.white,
         );
         return;
       }
-    }
-
-    final chatId = FirebaseService.generateChatId(
-      currentUserId.value,
-      receiverId,
-    );
-    final tempMessageId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-
-    // Optimistic update
-    final tempMessage = {
-      'id': tempMessageId,
-      'chatId': chatId,
-      'senderId': currentUserId.value,
-      'receiverId': receiverId,
-      'message': message.trim(),
-      'senderName': currentUser.value?['name']?.toString() ?? 'User',
-      'timestamp': Timestamp.now(),
-      'isRead': false,
-      'messageType': 'text',
-      'isSending': true,
-    };
-
-    messages.insert(0, tempMessage);
-    messageStatuses[tempMessageId] = 'sending';
-
-    // IMMEDIATELY move chat to top when I send a message
-    _moveChatToTopWhenSending(chatId, tempMessage);
-
-    isSendingMessage.value = true;
-
-    try {
-      // Send message to Firebase
-      final sentMessageRef = await FirebaseService.sendMessage(
-        chatId: chatId,
-        senderId: currentUserId.value,
-        receiverId: receiverId,
-        message: message.trim(),
-        senderName: currentUser.value?['name']?.toString() ?? 'User',
-      );
-
-      // Update message status
-      messageStatuses[tempMessageId] = 'delivered';
-
-      // Remove temp message (real one will come through stream)
-      messages.removeWhere((msg) => msg['id'] == tempMessageId);
-
-      // Move chat to top again after successful send
-      _moveChatToTopAfterSending(chatId);
-
-      animateFab();
-
-      developer.log('Message sent successfully: ${sentMessageRef.id}');
     } catch (e) {
-      // Remove failed message
-      messages.removeWhere((msg) => msg['id'] == tempMessageId);
-      messageStatuses.remove(tempMessageId);
-
-      developer.log('Error sending message: $e');
-
-      String errorMessage = 'Failed to send message';
-      if (e.toString().contains('not found')) {
-        errorMessage = 'Recipient not found. They may need to sign up first.';
-      } else if (e.toString().contains('permission')) {
-        errorMessage = 'Permission denied. Please check your connection.';
-      }
-
-      Get.snackbar(
-        'Error',
-        errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-    } finally {
-      isSendingMessage.value = false;
+      developer.log('Error validating receiver: $e');
+      return;
     }
   }
+
+  final chatId = FirebaseService.generateChatId(currentUserId.value, receiverId);
+  final tempMessageId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+
+  // Optimistic update
+  final tempMessage = {
+    'id': tempMessageId,
+    'chatId': chatId,
+    'senderId': currentUserId.value,
+    'receiverId': receiverId,
+    'message': message.trim(),
+    'senderName': currentUser.value?['name']?.toString() ?? 'User',
+    'timestamp': Timestamp.now(),
+    'isRead': false,
+    'messageType': 'text',
+    'isSending': true,
+  };
+
+  messages.insert(0, tempMessage);
+  messageStatuses[tempMessageId] = 'sending';
+
+  // IMMEDIATELY move chat to top when I send a message
+  await _handleOutgoingMessage(chatId, tempMessage);
+
+  isSendingMessage.value = true;
+
+  try {
+    // Send message to Firebase
+    final sentMessageRef = await FirebaseService.sendMessage(
+      chatId: chatId,
+      senderId: currentUserId.value,
+      receiverId: receiverId,
+      message: message.trim(),
+      senderName: currentUser.value?['name']?.toString() ?? 'User',
+    );
+
+    // Update message status
+    messageStatuses[tempMessageId] = 'delivered';
+
+    // Remove temp message (real one will come through stream)
+    messages.removeWhere((msg) => msg['id'] == tempMessageId);
+
+    animateFab();
+
+    developer.log('Message sent successfully and chat moved to top: ${sentMessageRef.id}');
+  } catch (e) {
+    // Remove failed message
+    messages.removeWhere((msg) => msg['id'] == tempMessageId);
+    messageStatuses.remove(tempMessageId);
+
+    developer.log('Error sending message: $e');
+    Get.snackbar(
+      'Error',
+      'Failed to send message. Please try again.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withAlpha(80),
+      colorText: Colors.white,
+    );
+  } finally {
+    isSendingMessage.value = false;
+  }
+}
 
   void _moveChatToTopWhenSending(
     String chatId,
@@ -2540,8 +3054,8 @@ void _clearAllReactiveVariables() {
     selectedBottomIndex.value = index;
   }
 
-  @override
-  void navigateToChat(Map<String, dynamic> user) async {
+  //@override
+void navigateToChat(Map<String, dynamic> user) async {
   try {
     // Check if user is mutual follower
     bool canChat = isMutualFollower(user);
@@ -2570,7 +3084,7 @@ void _clearAllReactiveVariables() {
         'Cannot Chat',
         'You can only chat with users you mutually follow',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange.withOpacity(0.8),
+        backgroundColor: Colors.orange.withAlpha(80),
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
         icon: const Icon(Icons.people_outline, color: Colors.white),
@@ -2578,16 +3092,48 @@ void _clearAllReactiveVariables() {
       return;
     }
 
-    // Proceed with navigation
-    navigateToChatEnhanced(user);
+    // Generate chat ID and clear badges BEFORE navigation
+    final receiverId = user['userId']?.toString() ?? 
+                      user['_id']?.toString() ?? 
+                      user['id']?.toString() ?? '';
+    
+    if (receiverId.isNotEmpty) {
+      final chatId = generateChatId(currentUserId.value, receiverId);
+      
+      // IMPORTANT: Clear badge when opening chat
+      clearBadgeForChat(chatId);
+      
+      // Create mock message data for moving to top (since we're opening the chat)
+      final mockMessageData = {
+        'chatId': chatId,
+        'senderId': currentUserId.value,
+        'receiverId': receiverId,
+        'message': 'Chat opened',
+        'senderName': currentUser.value?['name']?.toString() ?? 'User',
+        'timestamp': Timestamp.now(),
+        'messageType': 'system',
+        'id': 'system_${DateTime.now().millisecondsSinceEpoch}',
+      };
+      
+      // Move to top when opening chat
+      await _moveLocalChatToTop(chatId, mockMessageData);
+      
+      // Add user to recent
+      addUserToRecent(user);
+      
+      // Navigate to chat
+      navigateToChatEnhanced(user);
+      
+      developer.log('✅ Chat opened and moved to top: $chatId');
+    }
     
   } catch (e) {
-    developer.log('❌ Error in navigation with follow validation: $e');
+    developer.log('❌ Error in navigation: $e');
     Get.snackbar(
       'Error',
-      'Unable to verify user status. Please try again.',
+      'Unable to open chat. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
     );
   }
@@ -2760,7 +3306,7 @@ Future<void> loadAllUsersWithSmartCaching() async {
       //   'Loading Error', 
       //   'Failed to load users. Please check your connection and try again.',
       //   snackPosition: SnackPosition.BOTTOM,
-      //   backgroundColor: Colors.red.withOpacity(0.8),
+      //   backgroundColor: Colors.red.withAlpha(0.8),
       //   colorText: Colors.white,
       //   duration: const Duration(seconds: 3),
       // );
@@ -2917,6 +3463,25 @@ Future<void> _loadUsersWithoutFollowFilter() async {
     }
   }
 
+  Future<void> refreshBadgeSystemWithFollowFilter() async {
+  try {
+    developer.log('🔄 Refreshing badge system with follow filter...');
+    
+    // Step 1: Clear all current badges
+    clearAllBadges();
+    
+    // Step 2: Reload chats with proper filtering
+    await loadUserChats();
+    
+    // Step 3: Clean up any remaining non-mutual follower badges
+    await cleanupNonMutualFollowerBadges();
+    
+    developer.log('✅ Badge system refreshed with follow filter');
+  } catch (e) {
+    developer.log('❌ Error refreshing badge system: $e');
+  }
+}
+
   // ENHANCED: Load chats with cached profile data
   Future<void> loadUserChatsWithSmartCaching() async {
     if (isLoadingChats.value || currentUserId.value.isEmpty) return;
@@ -2987,7 +3552,7 @@ Future<void> _loadUsersWithoutFollowFilter() async {
                 chats.add(chatData);
 
                 final chatId = chatData['chatId'] ?? '';
-                _updateUnreadCount(chatId, otherUserId);
+                _updateUnreadCountWithFollowFilter(chatId, otherUserId);
 
                 if (!badgeCounts.containsKey(chatId)) {
                   badgeCounts[chatId] = 0.obs;
@@ -3029,7 +3594,111 @@ Future<void> _loadUsersWithoutFollowFilter() async {
 
   @override
   Future<void> loadUserChats() async {
-    await loadUserChatsWithSmartCaching();
+        await loadAllUsersWithSmartCaching();
+
+     if (isLoadingChats.value || currentUserId.value.isEmpty) return;
+
+  isLoadingChats.value = true;
+  try {
+    developer.log('💬 Loading chats with filtered badges...');
+
+    FirebaseService.getUserChats(currentUserId.value).listen((snapshot) async {
+      final chats = <Map<String, dynamic>>[];
+
+      for (var doc in snapshot.docs) {
+        final chatData = Map<String, dynamic>.from(
+          doc.data() as Map<String, dynamic>,
+        );
+        chatData['id'] = doc.id;
+
+        final participants = List<String>.from(chatData['participants'] ?? []);
+        final otherUserId = participants.firstWhere(
+          (id) => id != currentUserId.value,
+          orElse: () => '',
+        );
+
+        if (otherUserId.isNotEmpty) {
+          // Get user from cache first (which includes follow status)
+          Map<String, dynamic>? otherUser = userCache[otherUserId];
+          
+          if (otherUser == null) {
+            // Get from Firestore if not in cache
+            try {
+              final userDoc = await FirebaseService.getUserById(otherUserId);
+              if (userDoc.exists) {
+                otherUser = Map<String, dynamic>.from(
+                  userDoc.data() as Map<String, dynamic>,
+                );
+                otherUser['id'] = otherUserId;
+                otherUser['userId'] = otherUserId;
+                otherUser['_id'] = otherUserId;
+                
+                // Check follow status for this user
+                final email = otherUser['email']?.toString();
+                if (email != null) {
+                  final followStatus = await followStatusManager.checkFollowStatus(email);
+                  if (followStatus != null && followStatus['isMutualFollow'] == true) {
+                    // Enhance with API data
+                    final apiUserData = followStatus['user'] as Map<String, dynamic>;
+                    otherUser = {
+                      ...otherUser,
+                      'name': apiUserData['name'],
+                      'picture': apiUserData['picture'],
+                      'apiPictureUrl': 'http://182.93.94.210:3067${apiUserData['picture']}',
+                      'isMutualFollow': true,
+                    };
+                    userCache[otherUserId] = otherUser;
+                  } else {
+                    // Not a mutual follower, skip this chat
+                    continue;
+                  }
+                }
+              }
+            } catch (e) {
+              developer.log('Error loading user $otherUserId: $e');
+              continue;
+            }
+          }
+
+          // Only include chats with mutual followers
+          if (otherUser != null && (otherUser['isMutualFollow'] == true || isMutualFollower(otherUser))) {
+            chatData['otherUser'] = otherUser;
+            chats.add(chatData);
+
+            final chatId = chatData['chatId'] ?? '';
+            initializeBadgeForChat(chatId);
+            
+            // CRITICAL: Use filtered badge counting for mutual followers only
+            _updateUnreadCountWithFollowFilter(chatId, otherUserId);
+          }
+        }
+      }
+
+      // Sort chats by last message time (newest first)
+      chats.sort((a, b) {
+        final aTime = a['lastMessageTime'] as Timestamp?;
+        final bTime = b['lastMessageTime'] as Timestamp?;
+
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+
+        return bTime.compareTo(aTime);
+      });
+
+      chatList.assignAll(chats);
+      isLoadingChats.value = false;
+      updateTotalUnreadBadges();
+      
+      // Clean up any remaining badges from non-mutual followers
+      await cleanupNonMutualFollowerBadges();
+      
+      developer.log('✅ Loaded ${chats.length} chats with filtered badges (mutual followers only)');
+    });
+  } catch (e) {
+    isLoadingChats.value = false;
+    developer.log('❌ Error loading chats with filtered badges: $e');
+  }
   }
 
   @override
@@ -3060,7 +3729,7 @@ Future<void> _loadUsersWithoutFollowFilter() async {
       'Search Error',
       'Failed to search users. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
     );
   } finally {
@@ -3094,7 +3763,7 @@ Future<void> refreshUsersWithFollowStatus() async {
       'Refresh Failed',
       'Unable to refresh users. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
     );
   }

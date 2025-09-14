@@ -57,7 +57,7 @@ class ShoppingCartBadge extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withAlpha(20),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),

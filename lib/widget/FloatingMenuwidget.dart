@@ -238,7 +238,7 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
             children: [
               Draggable(
                 feedback: Material(
-                  color: Colors.orange.withOpacity(0.8),
+                  color: Colors.orange.withAlpha(80),
                   borderRadius: _getButtonBorderRadius(),
                   child: Container(
                     width: 50,
@@ -363,7 +363,7 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
         borderRadius: borderRadius,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withAlpha(15),
             blurRadius: 4,
             offset: const Offset(-1, 1),
           ),

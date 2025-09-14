@@ -69,7 +69,7 @@ class OptimizedSearchUsersPage extends GetView<FireChatController> {
         color: Get.theme.scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -81,7 +81,7 @@ class OptimizedSearchUsersPage extends GetView<FireChatController> {
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withAlpha(5),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -339,7 +339,7 @@ class OptimizedSearchUsersPage extends GetView<FireChatController> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withAlpha(5),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),

@@ -275,7 +275,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withAlpha(60),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         return Center(
@@ -286,7 +286,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha(10),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -303,7 +303,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withAlpha(10),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -499,7 +499,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                 end: Alignment.bottomRight,
                 colors: [
                   const Color(0xFFF48706),
-                  const Color(0xFFF48706).withOpacity(0.8),
+                  const Color(0xFFF48706).withAlpha(80),
                 ],
               ),
             ),
@@ -519,7 +519,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withAlpha(20),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -593,7 +593,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withAlpha(20),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
@@ -643,7 +643,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
           ),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: const Color(0xFFF48706).withOpacity(0.3),
+              color: const Color(0xFFF48706).withAlpha(30),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -836,7 +836,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                 border: Border.all(
                   color: notification.read 
                     ? Colors.transparent 
-                    : const Color(0xFFF48706).withOpacity(0.3),
+                    : const Color(0xFFF48706).withAlpha(30),
                   width: 1,
                 ),
               ),
@@ -938,12 +938,12 @@ class _NotificationListScreenState extends State<NotificationListScreen>
               end: Alignment.bottomRight,
               colors: [
                 _getNotificationColor(notification.type),
-                _getNotificationColor(notification.type).withOpacity(0.7),
+                _getNotificationColor(notification.type).withAlpha(70),
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: _getNotificationColor(notification.type).withOpacity(0.3),
+                color: _getNotificationColor(notification.type).withAlpha(30),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -990,7 +990,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
           end: Alignment.bottomRight,
           colors: [
             _getNotificationColor(notification.type),
-            _getNotificationColor(notification.type).withOpacity(0.7),
+            _getNotificationColor(notification.type).withAlpha(70),
           ],
         ),
       ),
@@ -1080,7 +1080,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: _getNotificationColor(notification.type).withOpacity(0.1),
+            color: _getNotificationColor(notification.type).withAlpha(10),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -1106,7 +1106,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
         shape: BoxShape.circle,
         boxShadow: notification.read ? null : [
           BoxShadow(
-            color: const Color(0xFFF48706).withOpacity(0.5),
+            color: const Color(0xFFF48706).withAlpha(50),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -1119,7 +1119,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: _getNotificationColor(notification.type).withOpacity(0.1),
+        color: _getNotificationColor(notification.type).withAlpha(10),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(

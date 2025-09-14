@@ -58,7 +58,7 @@
 //     Get.rawSnackbar(
 //       title: notification.title,
 //       message: notification.body,
-//       backgroundColor: Get.theme.primaryColor.withOpacity(0.9),
+//       backgroundColor: Get.theme.primaryColor.withAlpha(0.9),
 //       //Tex//: Colors.white,
 //       duration: duration,
 //       snackPosition: SnackPosition.TOP,

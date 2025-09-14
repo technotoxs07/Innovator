@@ -187,12 +187,12 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.grey[800]?.withOpacity(0.3) 
+            ? Colors.grey[800]?.withAlpha(30) 
             : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -234,7 +234,7 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withAlpha(1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
@@ -654,7 +654,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.grey[800]?.withOpacity(0.3) 
+            ? Colors.grey[800]?.withAlpha(30) 
             : Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
       ),
@@ -694,7 +694,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withAlpha(10),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(

@@ -453,7 +453,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   shape: BoxShape.circle,
                   color: _currentImageIndex == entry.key
                       ? Colors.blue
-                      : Colors.grey.withOpacity(0.5),
+                      : Colors.grey.withAlpha(50),
                 ),
               );
             }).toList(),
@@ -525,7 +525,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha(10),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

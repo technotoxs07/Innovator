@@ -274,7 +274,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.7),
+                        Colors.black.withAlpha(70),
                         Colors.transparent,
                       ],
                     ),
@@ -346,7 +346,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withAlpha(70),
                           Colors.transparent,
                         ],
                       ),
@@ -494,9 +494,9 @@ Widget _buildVideoControls() {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.black.withOpacity(0.3),
+            Colors.black.withAlpha(30),
             Colors.transparent,
-            Colors.black.withOpacity(0.3),
+            Colors.black.withAlpha(30),
           ],
         ),
       ),
@@ -546,7 +546,7 @@ Widget _buildVideoControls() {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withAlpha(70),
                       Colors.transparent,
                     ],
                   ),
@@ -751,7 +751,7 @@ Widget _buildCourseInfo(Map<String, dynamic> course) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
+      color: color.withAlpha(10),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Row(
@@ -787,7 +787,7 @@ Widget _buildCourseInfo(Map<String, dynamic> course) {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -850,7 +850,7 @@ Widget _buildCourseInfo(Map<String, dynamic> course) {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1371,7 +1371,7 @@ Widget _buildCourseInfo(Map<String, dynamic> course) {
               height: 80,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withAlpha(10),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(

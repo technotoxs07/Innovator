@@ -281,13 +281,13 @@ class _SearchPageState extends State<SearchPage>
                       const Color(0xFF0F0F23),
                       const Color(0xFF1A1A2E),
                       const Color(0xFF16213E),
-                      primaryOrange.withOpacity(0.05),
+                      primaryOrange.withAlpha(5),
                     ]
                   : [
                       const Color(0xFFFFF8E1),
                       const Color(0xFFFFF3E0),
-                      lightOrange.withOpacity(0.3),
-                      primaryOrange.withOpacity(0.1),
+                      lightOrange.withAlpha(30),
+                      primaryOrange.withAlpha(10),
                     ],
             ),
           ),
@@ -326,12 +326,12 @@ class _SearchPageState extends State<SearchPage>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryOrange.withOpacity(0.4),
+                        color: primaryOrange.withAlpha(40),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withAlpha(10),
                         blurRadius: 8,
                         offset: const Offset(-2, -2),
                       ),
@@ -396,28 +396,28 @@ class _SearchPageState extends State<SearchPage>
             gradient: LinearGradient(
               colors: isDarkMode
                   ? [
-                      Colors.grey[800]!.withOpacity(0.4),
-                      Colors.grey[900]!.withOpacity(0.6),
+                      Colors.grey[800]!.withAlpha(40),
+                      Colors.grey[900]!.withAlpha(60),
                     ]
                   : [
-                      Colors.white.withOpacity(0.95),
-                      Colors.grey[50]!.withOpacity(0.95),
+                      Colors.white.withAlpha(95),
+                      Colors.grey[50]!.withAlpha(95),
                     ],
             ),
             border: Border.all(
               color: isDarkMode
-                  ? primaryOrange.withOpacity(0.3)
-                  : primaryOrange.withOpacity(0.1),
+                  ? primaryOrange.withAlpha(30)
+                  : primaryOrange.withAlpha(10),
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
-                color: primaryOrange.withOpacity(0.2),
+                color: primaryOrange.withAlpha(20),
                 blurRadius: 25,
                 offset: const Offset(0, 12),
               ),
               BoxShadow(
-                color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
+                color: Colors.black.withAlpha(isDarkMode ? 30 : 5),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -447,7 +447,7 @@ class _SearchPageState extends State<SearchPage>
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [primaryOrange.withOpacity(0.8), secondaryOrange.withOpacity(0.8)],
+                          colors: [primaryOrange.withAlpha(80), secondaryOrange.withAlpha(80)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -462,7 +462,7 @@ class _SearchPageState extends State<SearchPage>
                             icon: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.2),
+                                color: Colors.grey.withAlpha(20),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -511,7 +511,7 @@ class _SearchPageState extends State<SearchPage>
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryOrange.withOpacity(0.4),
+                    color: primaryOrange.withAlpha(40),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -578,7 +578,7 @@ class _SearchPageState extends State<SearchPage>
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: primaryOrange.withOpacity(0.3),
+                            color: primaryOrange.withAlpha(30),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -678,28 +678,28 @@ class _SearchPageState extends State<SearchPage>
                       gradient: LinearGradient(
                         colors: isDarkMode
                             ? [
-                                Colors.grey[800]!.withOpacity(0.4),
-                                Colors.grey[850]!.withOpacity(0.6),
+                                Colors.grey[800]!.withAlpha(40),
+                                Colors.grey[850]!.withAlpha(60),
                               ]
                             : [
-                                Colors.white.withOpacity(0.95),
-                                Colors.grey[50]!.withOpacity(0.95),
+                                Colors.white.withAlpha(95),
+                                Colors.grey[50]!.withAlpha(95),
                               ],
                       ),
                       border: Border.all(
                         color: isDarkMode
-                            ? primaryOrange.withOpacity(0.2)
-                            : primaryOrange.withOpacity(0.1),
+                            ? primaryOrange.withAlpha(20)
+                            : primaryOrange.withAlpha(10),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: primaryOrange.withOpacity(0.15),
+                          color: primaryOrange.withAlpha(15),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
                         BoxShadow(
-                          color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
+                          color: Colors.black.withAlpha(isDarkMode ? 30 : 5),
                           blurRadius: 15,
                           offset: const Offset(0, 5),
                         ),
@@ -723,7 +723,7 @@ class _SearchPageState extends State<SearchPage>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: primaryOrange.withOpacity(0.4),
+                                    color: primaryOrange.withAlpha(40),
                                     blurRadius: 15,
                                     offset: const Offset(0, 6),
                                   ),
@@ -824,7 +824,7 @@ class _SearchPageState extends State<SearchPage>
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: primaryOrange.withOpacity(0.4),
+                                    color: primaryOrange.withAlpha(40),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -865,7 +865,7 @@ class _SearchPageState extends State<SearchPage>
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: primaryOrange.withOpacity(0.4),
+                  color: primaryOrange.withAlpha(40),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -942,7 +942,7 @@ class EnhancedParticlePainter extends CustomPainter {
       ..strokeWidth = 2
       ..color = (isDarkMode 
           ? const Color.fromRGBO(244, 135, 6, 1) 
-          : const Color.fromRGBO(244, 135, 6, 1)).withOpacity(0.05);
+          : const Color.fromRGBO(244, 135, 6, 1)).withAlpha(5);
     
     for (int i = 0; i < 8; i++) {
       final x = random.nextDouble() * size.width;
@@ -983,7 +983,7 @@ class EnhancedParticlePainter extends CustomPainter {
       );
       
       glowPaint.color = const Color.fromRGBO(244, 135, 6, 1)
-          .withOpacity(isDarkMode ? 0.15 : 0.08);
+          .withAlpha(isDarkMode ? 15 : 8);
       canvas.drawCircle(offset, 15 + random.nextDouble() * 10, glowPaint);
     }
   }

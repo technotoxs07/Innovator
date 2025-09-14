@@ -195,12 +195,12 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withAlpha(30),
                     width: 3,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.green.withOpacity(0.3),
+                      color: Colors.green.withAlpha(30),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -284,7 +284,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withAlpha(10),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -381,7 +381,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
         height: 50,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isActive ? color.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+          color: isActive ? color.withAlpha(30) : Colors.red.withAlpha(30),
           border: Border.all(
             color: isActive ? color : Colors.red,
             width: 2,
@@ -413,7 +413,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           color: color,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withAlpha(30),
               blurRadius: 15,
               spreadRadius: 2,
             ),

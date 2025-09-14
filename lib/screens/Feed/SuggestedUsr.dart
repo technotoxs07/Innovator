@@ -233,7 +233,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withAlpha(4),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -277,7 +277,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(4),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -295,7 +295,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    color: const Color(0xFF6366F1).withAlpha(10),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -510,7 +510,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
         width: radius * 2,
         height: radius * 2,
         decoration: BoxDecoration(
-          color: const Color(0xFF6366F1).withOpacity(0.1),
+          color: const Color(0xFF6366F1).withAlpha(10),
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -558,7 +558,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
         width: radius * 2,
         height: radius * 2,
         decoration: BoxDecoration(
-          color: const Color(0xFF6366F1).withOpacity(0.1),
+          color: const Color(0xFF6366F1).withAlpha(10),
           shape: BoxShape.circle,
         ),
         child: Center(

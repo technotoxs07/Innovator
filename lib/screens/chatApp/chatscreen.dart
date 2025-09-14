@@ -117,7 +117,7 @@ class OptimizedChatScreen extends GetView<FireChatController> {
                     return Text(
                       isOnline ? 'Online' : 'Offline',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withAlpha(80),
                         fontSize: 12,
                       ),
                     );
@@ -294,7 +294,7 @@ class OptimizedChatScreen extends GetView<FireChatController> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withAlpha(10),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),
@@ -319,7 +319,7 @@ class OptimizedChatScreen extends GetView<FireChatController> {
                                         controller.formatMessageTime(timestamp),
                                         style: TextStyle(
                                           color: isMe
-                                              ? Colors.white.withOpacity(0.7)
+                                              ? Colors.white.withAlpha(70)
                                               : Colors.grey.shade600,
                                           fontSize: 12,
                                         ),
@@ -379,7 +379,7 @@ class OptimizedChatScreen extends GetView<FireChatController> {
         height: 12,
         child: CircularProgressIndicator(
           strokeWidth: 1,
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withAlpha(70),
         ),
       );
     }
@@ -400,8 +400,8 @@ class OptimizedChatScreen extends GetView<FireChatController> {
               child: ShaderMask(
                 shaderCallback: (bounds) => LinearGradient(
                   colors: [
-                    Color.lerp(Colors.white.withOpacity(0.7), Colors.blue, animValue)!,
-                    Color.lerp(Colors.white.withOpacity(0.7), Colors.lightBlue, animValue)!,
+                    Color.lerp(Colors.white.withAlpha(70), Colors.blue, animValue)!,
+                    Color.lerp(Colors.white.withAlpha(70), Colors.lightBlue, animValue)!,
                   ],
                 ).createShader(bounds),
                 child: Icon(
@@ -417,13 +417,13 @@ class OptimizedChatScreen extends GetView<FireChatController> {
         return Icon(
           Icons.done_all,
           size: 14,
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withAlpha(70),
         );
       } else {
         return Icon(
           Icons.done,
           size: 14,
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withAlpha(70),
         );
       }
     });
@@ -482,7 +482,7 @@ class OptimizedChatScreen extends GetView<FireChatController> {
                   borderRadius: BorderRadius.circular(25),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withAlpha(5),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -521,7 +521,7 @@ class OptimizedChatScreen extends GetView<FireChatController> {
                       color: (controller.isTyping.value
                               ? const Color.fromRGBO(244, 135, 6, 1)
                               : Colors.grey.shade400)
-                          .withOpacity(0.3),
+                          .withAlpha(30),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -658,7 +658,7 @@ class OptimizedChatScreen extends GetView<FireChatController> {
         'Error',
         'Unable to send message: Invalid receiver',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withAlpha(80),
         colorText: Colors.white,
       );
     }

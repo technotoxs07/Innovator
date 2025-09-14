@@ -300,7 +300,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: primaryColor.withOpacity(0.3),
+                          color: primaryColor.withAlpha(30),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -376,7 +376,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -416,7 +416,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha(1),
                   blurRadius: 10,
                 ),
               ],
@@ -686,7 +686,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: primaryColor.withOpacity(0.3),
+                                      color: primaryColor.withAlpha(30),
                                       blurRadius: 15,
                                       offset: const Offset(0, 8),
                                     ),

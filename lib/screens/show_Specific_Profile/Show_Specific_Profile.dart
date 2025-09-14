@@ -230,8 +230,8 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
         boxShadow: [
           BoxShadow(
             color: isDarkMode 
-                ? Colors.black.withOpacity(0.3) 
-                : Colors.grey.withOpacity(0.1),
+                ? Colors.black.withAlpha(30) 
+                : Colors.grey.withAlpha(10),
             blurRadius: 20,
             spreadRadius: 5,
             offset: const Offset(0, 10),
@@ -244,7 +244,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: primaryColor.withAlpha(10),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -290,7 +290,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: primaryColor.withOpacity(0.3),
+                  color: primaryColor.withAlpha(30),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -311,7 +311,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isDarkMode 
-                  ? Colors.grey[800]?.withOpacity(0.3) 
+                  ? Colors.grey[800]?.withAlpha(30) 
                   : Colors.grey[100],
               borderRadius: BorderRadius.circular(15),
             ),
@@ -543,7 +543,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                           color: isDarkMode ? Colors.white : Colors.white,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withAlpha(30),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -572,10 +572,10 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withAlpha(15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withAlpha(20),
                         ),
                       ),
                       child: Text(
@@ -889,12 +889,12 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: isDarkMode
-                ? Colors.black.withOpacity(0.5)
-                : Colors.white.withOpacity(0.9),
+                ? Colors.black.withAlpha(50)
+                : Colors.white.withAlpha(90),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withAlpha(10),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -919,7 +919,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withAlpha(10),
               shape: BoxShape.circle,
             ),
             child: CircularProgressIndicator(
@@ -961,7 +961,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                 height: 20 + (index * 5),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withAlpha(30),
                 ),
               ),
             ),
@@ -978,13 +978,13 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
         gradient: LinearGradient(
           colors: [
             _getLevelColor(level),
-            _getLevelColor(level).withOpacity(0.8),
+            _getLevelColor(level).withAlpha(80),
           ],
         ),
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: _getLevelColor(level).withOpacity(0.3),
+            color: _getLevelColor(level).withAlpha(30),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -1138,7 +1138,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).primaryColor.withOpacity(0.3),
+                color: Theme.of(context).primaryColor.withAlpha(30),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -1215,7 +1215,7 @@ void _navigateToChat(Map<String, dynamic> profileData) {
       'Error',
       'Unable to open chat. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
       margin: const EdgeInsets.all(16),
@@ -1292,7 +1292,7 @@ void _navigateToChat(Map<String, dynamic> profileData) {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withAlpha(10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -1369,8 +1369,8 @@ void _navigateToChat(Map<String, dynamic> profileData) {
         boxShadow: [
           BoxShadow(
             color: isDarkMode
-                ? Colors.black.withOpacity(0.3)
-                : Colors.grey.withOpacity(0.1),
+                ? Colors.black.withAlpha(30)
+                : Colors.grey.withAlpha(10),
             blurRadius: 20,
             spreadRadius: 5,
             offset: const Offset(0, 10),
@@ -1385,7 +1385,7 @@ void _navigateToChat(Map<String, dynamic> profileData) {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withAlpha(10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -1447,16 +1447,16 @@ void _navigateToChat(Map<String, dynamic> profileData) {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
+            color: color.withAlpha(5),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: color.withOpacity(0.2), width: 1),
+            border: Border.all(color: color.withAlpha(20), width: 1),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withAlpha(10),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -1505,7 +1505,7 @@ void _navigateToChat(Map<String, dynamic> profileData) {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withAlpha(10),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

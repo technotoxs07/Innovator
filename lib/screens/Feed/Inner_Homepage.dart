@@ -1179,7 +1179,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
         if (_isLoading && _allContents.isEmpty)
           Positioned.fill(
             child: Container(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withAlpha(80),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1401,21 +1401,71 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   }
 
   Widget _buildFloatingActionButton() {
-    return CustomFAB(
-      gifAsset: 'animation/chaticon.gif',
-      backgroundColor: Colors.transparent,
-      onPressed: () {
-        // Register controller if not already registered
-        if (!Get.isRegistered<FireChatController>()) {
-          Get.put(FireChatController());
-        }
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const OptimizedChatHomePage()),
+  return GetBuilder<FireChatController>(
+    init: Get.find<FireChatController>(),
+    builder: (chatController) {
+      return Obx(() {
+        // Get total unread count from the chat controller
+        final totalUnreadCount = chatController.getTotalUnreadCountFromMutualFollowers();
+        
+        return Stack(
+          children: [
+            CustomFAB(
+              gifAsset: 'animation/chaticon.gif',
+              backgroundColor: Colors.transparent,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OptimizedChatHomePage()),
+                );
+              },
+            ),
+            // Badge overlay
+            if (totalUnreadCount > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.elasticOut,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withAlpha(40),
+                        blurRadius: 6,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 20,
+                    minHeight: 20,
+                  ),
+                  child: Center(
+                    child: Text(
+                      totalUnreadCount > 99 ? '99+' : totalUnreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
-      },
-    );
-  }
+      });
+    },
+  );
+}
 
   @override
   void dispose() {
@@ -2673,7 +2723,7 @@ class _FeedItemState extends State<FeedItem>
                 children: [
                   _buildGridImage(urls[index], index, urls),
                   Container(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withAlpha(60),
                     child: Center(
                       child: Text(
                         '+${urls.length - 4}',
@@ -2908,7 +2958,7 @@ class _FeedItemState extends State<FeedItem>
   }) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: color.withOpacity(0.1),
+        backgroundColor: color.withAlpha(10),
         child: Icon(icon, color: color),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
@@ -3996,7 +4046,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
                       color: Colors.black54,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withAlpha(30),
                         width: 1,
                       ),
                     ),

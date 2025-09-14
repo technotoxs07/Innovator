@@ -62,14 +62,14 @@ class TimerManager {
   static Timer? _emergencyVibrationTimer;
   static Timer? _autoStopTimer;
   static bool _isEmergencyRinging = false;
-  
+
   static void cancelAllTimers() {
     _emergencyRingtoneTimer?.cancel();
     _emergencyVibrationTimer?.cancel();
     _autoStopTimer?.cancel();
     _isEmergencyRinging = false;
   }
-  
+
   static bool get isRinging => _isEmergencyRinging;
   static void setRinging(bool value) => _isEmergencyRinging = value;
 }
@@ -80,7 +80,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     // Reduce logging to prevent memory issues
     developer.log('Background message: ${message.messageId}');
-    
+
     // CRITICAL: Initialize Firebase if not already done
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -88,14 +88,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       );
     }
 
-    
-    
     // Initialize local notifications ONCE
     // if (!_isNotificationInitialized) {
     //   await _initializeBackgroundNotifications();
     //   _isNotificationInitialized = true;
     // }
-    
+
     final messageType = message.data['type']?.toString() ?? '';
 
     if (messageType == 'call') {
@@ -111,7 +109,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       } catch (e) {
         developer.log('⚠️ Platform channel failed, using notification');
       }
-      
+
       // Show full-screen notification
       await _showFullScreenCallNotification(
         callId: message.data['callId'] ?? '',
@@ -119,14 +117,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         isVideoCall: message.data['isVideoCall'] == 'true',
         data: message.data,
       );
-      
+
       // Try to launch app if possible
       await _launchAppForCall(message.data);
+    } else {
+      await _showBackgroundNotification(message);
     }
-     else
-     {
-        await _showBackgroundNotification(message);
-     }
     developer.log('Background message processed');
   } catch (e) {
     developer.log('Background handler error: $e');
@@ -134,21 +130,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await _showEmergencyCallNotification(message);
   }
 }
- 
- 
 
 Future<void> _showBackgroundNotification(RemoteMessage message) async {
   try {
     final title = message.notification?.title ?? 'New Notification';
     final body = message.notification?.body ?? 'You have a new notification';
-    
+
     const androidDetails = AndroidNotificationDetails(
       'general_notifications',
       'General Notifications',
       importance: Importance.high,
       priority: Priority.high,
     );
-    
+
     await flutterLocalNotificationsPlugin.show(
       DateTime.now().millisecondsSinceEpoch.remainder(100000),
       title,
@@ -156,7 +150,6 @@ Future<void> _showBackgroundNotification(RemoteMessage message) async {
       const NotificationDetails(android: androidDetails),
       payload: jsonEncode(message.data),
     );
-    
   } catch (e) {
     developer.log('❌ Background notification error: $e');
   }
@@ -166,14 +159,14 @@ Future<void> _launchAppForCall(Map<String, dynamic> callData) async {
   try {
     // Use correct channel name matching MainActivity
     const platform = MethodChannel('com.innovation.innovator/call');
-    
+
     // Call the platform method to launch app
     await platform.invokeMethod('launchApp', callData);
-    
+
     developer.log('✅ App launch requested');
   } catch (e) {
     developer.log('❌ Failed to launch app: $e');
-    
+
     // Fallback: Try to use the notification to launch
     await _showFullScreenCallNotification(
       callId: callData['callId'] ?? '',
@@ -184,17 +177,16 @@ Future<void> _launchAppForCall(Map<String, dynamic> callData) async {
   }
 }
 
-
 Future<void> _startPersistentRinging() async {
   try {
     developer.log('🔔 Starting persistent ringing...');
-    
+
     // Wake the device
     await WakelockPlus.enable();
-    
+
     // Start ringtone - try multiple methods
     bool ringtoneStarted = false;
-    
+
     // Method 1: FlutterRingtonePlayer with alarm
     try {
       await FlutterRingtonePlayer().playRingtone(
@@ -207,7 +199,7 @@ Future<void> _startPersistentRinging() async {
     } catch (e) {
       developer.log('⚠️ Primary ringtone failed: $e');
     }
-    
+
     // Method 2: Fallback to regular ringtone
     if (!ringtoneStarted) {
       try {
@@ -222,7 +214,7 @@ Future<void> _startPersistentRinging() async {
         developer.log('⚠️ Secondary ringtone failed: $e');
       }
     }
-    
+
     // Method 3: System sound fallback
     if (!ringtoneStarted) {
       Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -235,11 +227,11 @@ Future<void> _startPersistentRinging() async {
       });
       developer.log('⚠️ Using system sound fallback');
     }
-     
+
     // Start vibration
     try {
       if (await Vibration.hasVibrator() ?? false) {
-       Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+        Timer.periodic(const Duration(milliseconds: 1500), (timer) {
           if (timer.tick > 30) {
             timer.cancel();
           } else {
@@ -254,17 +246,15 @@ Future<void> _startPersistentRinging() async {
     } catch (e) {
       developer.log('⚠️ Vibration failed: $e');
     }
-    
+
     // Auto-stop after 45 seconds
     Timer(const Duration(seconds: 45), () async {
       await _stopAllRinging();
     });
-    
   } catch (e) {
     developer.log('❌ Failed to start ringing: $e');
   }
 }
-
 
 Future<void> _stopAllRinging() async {
   try {
@@ -280,9 +270,9 @@ Future<void> _stopAllRinging() async {
 // OPTIMIZED: Single method ringtone to prevent resource exhaustion
 Future<void> _startOptimizedRingtone() async {
   if (TimerManager.isRinging) return;
-  
+
   TimerManager.setRinging(true);
-  
+
   try {
     // Use ONLY FlutterRingtonePlayer - most reliable method
     await FlutterRingtonePlayer().playRingtone(
@@ -290,22 +280,22 @@ Future<void> _startOptimizedRingtone() async {
       volume: 1.0,
       asAlarm: false,
     );
-    
+
     // Backup vibration pattern (simplified)
     bool? hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator == true) {
       TimerManager._emergencyVibrationTimer = Timer.periodic(
-        const Duration(milliseconds: 2000), 
+        const Duration(milliseconds: 2000),
         (timer) async {
-          if (TimerManager.isRinging && timer.tick <= 15) { // Max 30 seconds
+          if (TimerManager.isRinging && timer.tick <= 15) {
+            // Max 30 seconds
             await Vibration.vibrate(pattern: [0, 500, 300, 500]);
           } else {
             timer.cancel();
           }
-        }
+        },
       );
     }
-    
   } catch (e) {
     developer.log('Optimized ringtone failed: $e');
     // Fallback to system sound only
@@ -318,22 +308,22 @@ Future<void> _stopAllEmergencyAlerts() async {
   try {
     TimerManager.setRinging(false);
     TimerManager.cancelAllTimers();
-    
+
     // Stop ringtone
     try {
       await FlutterRingtonePlayer().stop();
     } catch (e) {}
-    
+
     // Stop vibration
     try {
       await Vibration.cancel();
     } catch (e) {}
-    
+
     // Disable wakelock
     try {
       await WakelockPlus.disable();
     } catch (e) {}
-    
+
     developer.log('Emergency alerts stopped');
   } catch (e) {
     developer.log('Error stopping alerts: $e');
@@ -349,9 +339,12 @@ Future<void> _showFullScreenCallNotification({
 }) async {
   try {
     // Create incoming_calls channel if not exists
-    final androidPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    
+    final androidPlugin =
+        flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
@@ -366,7 +359,7 @@ Future<void> _showFullScreenCallNotification({
         ),
       );
     }
-    
+
     final androidDetails = AndroidNotificationDetails(
       'incoming_calls',
       'Incoming Calls',
@@ -405,7 +398,7 @@ Future<void> _showFullScreenCallNotification({
         0x00000004, // FLAG_NO_CLEAR
       ]),
     );
-    
+
     await flutterLocalNotificationsPlugin.show(
       callId.hashCode.abs(),
       '$callerName is calling',
@@ -413,7 +406,6 @@ Future<void> _showFullScreenCallNotification({
       NotificationDetails(android: androidDetails),
       payload: jsonEncode(data),
     );
-    
   } catch (e) {
     developer.log('Notification error: $e');
   }
@@ -425,22 +417,25 @@ Future<void> _showFullScreenCallNotification({
 Future<void> _initializeBackgroundNotifications() async {
   try {
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    
+
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
     const initSettings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
     );
-    
+
     await flutterLocalNotificationsPlugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
-    
-    final androidPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    
+
+    final androidPlugin =
+        flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+
     if (androidPlugin != null) {
       // Create channels ONLY ONCE
       await androidPlugin.createNotificationChannel(
@@ -455,7 +450,7 @@ Future<void> _initializeBackgroundNotifications() async {
           showBadge: true,
         ),
       );
-      
+
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
           'chat_messages',
@@ -467,7 +462,6 @@ Future<void> _initializeBackgroundNotifications() async {
         ),
       );
     }
-    
   } catch (e) {
     developer.log('Notification initialization failed: $e');
   }
@@ -475,36 +469,35 @@ Future<void> _initializeBackgroundNotifications() async {
 
 // Handle notification taps with cleanup
 void _onNotificationTapped(NotificationResponse response) async {
-  if (response.payload != null && 
-    (response.payload == 'daily_thought' || response.payload!.startsWith('daily_thought_'))) {
-  // User tapped daily notification - could navigate to motivation screen or just dismiss
-  Get.snackbar(
-    'Daily Motivation',
-    'Keep innovating!',
-    backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-    colorText: Colors.white,
-  );
-  return;
-}
+  if (response.payload != null &&
+      (response.payload == 'daily_thought' ||
+          response.payload!.startsWith('daily_thought_'))) {
+    // User tapped daily notification - could navigate to motivation screen or just dismiss
+    Get.snackbar(
+      'Daily Motivation',
+      'Keep innovating!',
+      backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+      colorText: Colors.white,
+    );
+    return;
+  }
   try {
-
-    
     developer.log('📱 Notification tapped');
-    
+
     // Stop ringing immediately
     await _stopAllRinging();
-    
+
     final actionId = response.actionId ?? '';
-    
+
     if (actionId.startsWith('answer_')) {
       // Handle answer action
       if (response.payload != null) {
         final data = jsonDecode(response.payload!) as Map<String, dynamic>;
-        
+
         // Initialize WebRTC and show call screen
         final callService = await WebRTCCallService.initializeForBackground();
         await callService.handleBackgroundCall(data);
-        
+
         // Ensure app is ready
         if (Get.context == null) {
           runApp(
@@ -526,7 +519,7 @@ void _onNotificationTapped(NotificationResponse response) async {
       if (response.payload != null) {
         final data = jsonDecode(response.payload!) as Map<String, dynamic>;
         final callId = data['callId']?.toString() ?? '';
-        
+
         if (callId.isNotEmpty) {
           await FirebaseFirestore.instance
               .collection('calls')
@@ -537,7 +530,7 @@ void _onNotificationTapped(NotificationResponse response) async {
     } else if (response.payload != null) {
       // Regular tap - show incoming call screen
       final data = jsonDecode(response.payload!) as Map<String, dynamic>;
-      
+
       if (data['type'] == 'call') {
         await _handleCallNotificationTap(data);
       }
@@ -557,9 +550,7 @@ Future<void> _handleCallNotificationTap(Map<String, dynamic> data) async {
 }
 // Handle call accept from notification
 
-
 // Handle call decline from notification
-
 
 // Handle general notification tap
 
@@ -569,19 +560,22 @@ void _navigateToChatFromNotification(Map<String, dynamic> data) {
     final senderId = data['senderId']?.toString() ?? '';
     final senderName = data['senderName']?.toString() ?? 'Unknown';
     final chatId = data['chatId']?.toString() ?? '';
-    
+
     if (senderId.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.toNamed('/chat', arguments: {
-          'receiverUser': {
-            'id': senderId,
-            'userId': senderId,
-            '_id': senderId,
-            'name': senderName,
+        Get.toNamed(
+          '/chat',
+          arguments: {
+            'receiverUser': {
+              'id': senderId,
+              'userId': senderId,
+              '_id': senderId,
+              'name': senderName,
+            },
+            'chatId': chatId,
+            'fromNotification': true,
           },
-          'chatId': chatId,
-          'fromNotification': true,
-        });
+        );
       });
     }
   } catch (e) {
@@ -593,16 +587,14 @@ void _navigateToChatFromNotification(Map<String, dynamic> data) {
 
 // Show background chat notification
 
-
-
 // Emergency call notification as last resort
 Future<void> _showEmergencyCallNotification(RemoteMessage message) async {
   try {
     // Start emergency alerts
     await _startOptimizedRingtone();
-    
+
     final callerName = message.data['callerName'] ?? 'Unknown Caller';
-    
+
     const androidDetails = AndroidNotificationDetails(
       'incoming_calls',
       'Emergency Calls',
@@ -614,9 +606,9 @@ Future<void> _showEmergencyCallNotification(RemoteMessage message) async {
       enableVibration: true,
       playSound: true,
     );
-    
+
     const notificationDetails = NotificationDetails(android: androidDetails);
-    
+
     await flutterLocalNotificationsPlugin.show(
       999999,
       'EMERGENCY CALL',
@@ -624,7 +616,6 @@ Future<void> _showEmergencyCallNotification(RemoteMessage message) async {
       notificationDetails,
       payload: jsonEncode(message.data),
     );
-    
   } catch (e) {
     developer.log('Emergency notification failed: $e');
   }
@@ -634,16 +625,19 @@ Future<void> _showEmergencyCallNotification(RemoteMessage message) async {
 Future<bool> _checkInternetConnectivity() async {
   try {
     final connectivityResults = await Connectivity().checkConnectivity();
-    
-    if (connectivityResults.every((result) => result == ConnectivityResult.none)) {
+
+    if (connectivityResults.every(
+      (result) => result == ConnectivityResult.none,
+    )) {
       return false;
     }
-    
+
     // Quick connectivity test (reduced timeout)
     try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
-      
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 3));
+
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (e) {
       return false;
@@ -659,16 +653,16 @@ Future<void> _initializeFirebaseWithFallback(bool hasInternet) async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    
+
     if (hasInternet) {
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
     }
   } catch (e) {
     developer.log('Firebase initialization failed: $e');
   }
 }
-
-
 
 // OPTIMIZED: AppData initialization
 Future<void> _initializeAppDataWithFallback(bool hasInternet) async {
@@ -710,7 +704,7 @@ Future<void> _initializeCallServices() async {
 Future<void> _initializeApp() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     try {
       AdaptiveVideoSystem.initialize();
     } catch (e) {}
@@ -723,30 +717,32 @@ Future<void> _initializeApp() async {
     );
 
     try {
-  await DailyNotificationService.initialize();
-  developer.log('Daily notification service initialized with automatic scheduling');
-} catch (e) {
-  developer.log('Daily notification service failed: $e');
-}
-    
+      await DailyNotificationService.initialize();
+      developer.log(
+        'Daily notification service initialized with automatic scheduling',
+      );
+    } catch (e) {
+      developer.log('Daily notification service failed: $e');
+    }
+
     bool hasInternet = await _checkInternetConnectivity();
     _isAppOnline = hasInternet;
-     
+
     await _initializeFirebaseWithFallback(hasInternet);
-    
+
     // CRITICAL FIX: Check for Firebase Auth state mismatch after reinstall
     await _handleReinstallAuthState(hasInternet);
-    
+
     await _initializeAppDataWithFallback(hasInternet);
     await _initializeCallServices();
-    
+
     // Initialize notification service only if online
-     if (hasInternet) {
+    if (hasInternet) {
       try {
         // FIXED: Register the service with GetX BEFORE using it
         final notificationService = FirebaseNotificationService();
         Get.put(notificationService, permanent: true); // Add this line
-        
+
         await notificationService.initialize();
         await AppData().initializeFcmAfterLogin();
         _setupNotificationListeners();
@@ -754,16 +750,16 @@ Future<void> _initializeApp() async {
         developer.log('Online services failed: $e');
       }
     }
-    
+
     // Initialize offline-capable services
     try {
       await DrawerProfileCache.initialize();
     } catch (e) {}
-    
+
     try {
       await CacheManager.initialize();
     } catch (e) {}
-    
+
     try {
       Get.put(FollowStatusManager(), permanent: true);
     } catch (e) {}
@@ -778,20 +774,21 @@ Future<void> _initializeApp() async {
 Future<bool> _restoreUserDataFromFirebase(User firebaseUser) async {
   try {
     developer.log('🔄 Attempting to restore user data from Firebase...');
-    
+
     // Get fresh ID token
     final idToken = await firebaseUser.getIdToken(true);
     if (idToken == null) return false;
-    
+
     // Try to get user data from Firestore
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(firebaseUser.uid)
-        .get();
-    
+    final userDoc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .get();
+
     if (userDoc.exists) {
       final userData = userDoc.data() ?? {};
-      
+
       // Ensure all required fields
       userData['_id'] = firebaseUser.uid;
       userData['id'] = firebaseUser.uid;
@@ -801,11 +798,11 @@ Future<bool> _restoreUserDataFromFirebase(User firebaseUser) async {
       userData['name'] = userData['name'] ?? firebaseUser.displayName ?? 'User';
       userData['photoURL'] = userData['photoURL'] ?? firebaseUser.photoURL;
       userData['fcmTokens'] = userData['fcmTokens'] ?? [];
-      
+
       // Save to AppData
       await AppData().setAuthToken(idToken);
       await AppData().setCurrentUser(userData);
-      
+
       // Get fresh FCM token
       try {
         final fcmToken = await FirebaseMessaging.instance.getToken();
@@ -815,12 +812,12 @@ Future<bool> _restoreUserDataFromFirebase(User firebaseUser) async {
       } catch (e) {
         developer.log('FCM token error: $e');
       }
-      
+
       developer.log('✅ User data successfully restored from Firestore');
       return true;
     } else {
       developer.log('❌ User document not found in Firestore');
-      
+
       // Try to create basic user data from Firebase Auth
       final basicUserData = {
         '_id': firebaseUser.uid,
@@ -828,12 +825,15 @@ Future<bool> _restoreUserDataFromFirebase(User firebaseUser) async {
         'userId': firebaseUser.uid,
         'uid': firebaseUser.uid,
         'email': firebaseUser.email ?? '',
-        'name': firebaseUser.displayName ?? firebaseUser.email?.split('@')[0] ?? 'User',
+        'name':
+            firebaseUser.displayName ??
+            firebaseUser.email?.split('@')[0] ??
+            'User',
         'photoURL': firebaseUser.photoURL,
         'provider': 'google',
         'fcmTokens': [],
       };
-      
+
       // Create user document in Firestore
       await FirebaseService.verifyAndCreateUser(
         userId: firebaseUser.uid,
@@ -842,15 +842,14 @@ Future<bool> _restoreUserDataFromFirebase(User firebaseUser) async {
         photoURL: firebaseUser.photoURL,
         provider: 'google',
       );
-      
+
       // Save to AppData
       await AppData().setAuthToken(idToken);
       await AppData().setCurrentUser(basicUserData);
-      
+
       developer.log('✅ Created new user data from Firebase Auth');
       return true;
     }
-    
   } catch (e) {
     developer.log('❌ Failed to restore user data: $e');
     return false;
@@ -858,10 +857,13 @@ Future<bool> _restoreUserDataFromFirebase(User firebaseUser) async {
 }
 
 // Verify and update Firestore user document
-Future<void> _verifyAndUpdateFirestoreUser(User firebaseUser, String localUserJson) async {
+Future<void> _verifyAndUpdateFirestoreUser(
+  User firebaseUser,
+  String localUserJson,
+) async {
   try {
     final userData = jsonDecode(localUserJson) as Map<String, dynamic>;
-    
+
     // Ensure user document exists in Firestore
     await FirebaseService.verifyAndCreateUser(
       userId: userData['_id'] ?? firebaseUser.uid,
@@ -872,7 +874,7 @@ Future<void> _verifyAndUpdateFirestoreUser(User firebaseUser, String localUserJs
       photoURL: userData['photoURL'] ?? firebaseUser.photoURL,
       provider: userData['provider'] ?? 'email',
     );
-    
+
     developer.log('✅ Firestore user document verified/updated');
   } catch (e) {
     developer.log('❌ Error verifying Firestore user: $e');
@@ -882,20 +884,22 @@ Future<void> _verifyAndUpdateFirestoreUser(User firebaseUser, String localUserJs
 Future<void> _handleReinstallAuthState(bool hasInternet) async {
   try {
     developer.log('🔍 Checking for reinstall auth state mismatch...');
-    
+
     // Check if Firebase Auth has a user but local storage doesn't
     final firebaseUser = FirebaseAuth.instance.currentUser;
     final prefs = await SharedPreferences.getInstance();
     final localToken = prefs.getString('auth_token');
     final localUserJson = prefs.getString('current_user');
-    
+
     if (firebaseUser != null && (localToken == null || localUserJson == null)) {
-      developer.log('⚠️ Detected app reinstall - Firebase user exists but local data missing');
-      
+      developer.log(
+        '⚠️ Detected app reinstall - Firebase user exists but local data missing',
+      );
+
       if (hasInternet) {
         // Try to restore user data from Firebase
         final restored = await _restoreUserDataFromFirebase(firebaseUser);
-        
+
         if (!restored) {
           // If restoration fails, sign out to force fresh login
           developer.log('📤 Restoration failed, signing out Firebase user');
@@ -907,9 +911,11 @@ Future<void> _handleReinstallAuthState(bool hasInternet) async {
         developer.log('📤 Offline - signing out Firebase user');
         await FirebaseAuth.instance.signOut();
       }
-    } else if (firebaseUser != null && localToken != null && localUserJson != null) {
+    } else if (firebaseUser != null &&
+        localToken != null &&
+        localUserJson != null) {
       developer.log('✅ Auth state consistent - user properly logged in');
-      
+
       // Verify and update Firestore user document
       await _verifyAndUpdateFirestoreUser(firebaseUser, localUserJson);
     } else {
@@ -931,10 +937,10 @@ Future<void> _handleReinstallAuthState(bool hasInternet) async {
 void _setupNotificationListeners() {
   try {
     final notificationService = FirebaseNotificationService();
-    
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final messageType = message.data['type']?.toString() ?? '';
-      
+
       if (messageType == 'call') {
         _handleForegroundCallMessage(message);
       } else {
@@ -947,14 +953,15 @@ void _setupNotificationListeners() {
       _handleNotificationTapFromMessage(message);
     });
 
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+    FirebaseMessaging.instance.getInitialMessage().then((
+      RemoteMessage? message,
+    ) {
       if (message != null) {
         Future.delayed(const Duration(seconds: 2), () {
           _handleNotificationTapFromMessage(message);
         });
       }
     });
-    
   } catch (e) {
     developer.log('Notification listeners setup failed: $e');
   }
@@ -964,7 +971,7 @@ void _setupNotificationListeners() {
 void _handleForegroundCallMessage(RemoteMessage message) {
   try {
     final data = message.data;
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.to(
         () => IncomingCallScreen(callData: data),
@@ -972,7 +979,6 @@ void _handleForegroundCallMessage(RemoteMessage message) {
         fullscreenDialog: true,
       );
     });
-    
   } catch (e) {
     developer.log('Foreground call message error: $e');
   }
@@ -981,9 +987,13 @@ void _handleForegroundCallMessage(RemoteMessage message) {
 // OPTIMIZED: Lightweight immediate feedback
 void _showImmediateFeedback(RemoteMessage message) {
   try {
-    final title = message.notification?.title ?? message.data['senderName'] ?? 'New Message';
-    final body = message.notification?.body ?? message.data['message'] ?? 'New message';
-    
+    final title =
+        message.notification?.title ??
+        message.data['senderName'] ??
+        'New Message';
+    final body =
+        message.notification?.body ?? message.data['message'] ?? 'New message';
+
     Get.snackbar(
       title,
       body,
@@ -1001,16 +1011,12 @@ void _showImmediateFeedback(RemoteMessage message) {
         },
         child: const Text(
           'View',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
-    
+
     HapticFeedback.lightImpact(); // Reduced impact
-    
   } catch (e) {
     developer.log('Immediate feedback error: $e');
   }
@@ -1021,7 +1027,7 @@ void _handleNotificationTapFromMessage(RemoteMessage message) {
   try {
     final data = message.data;
     final type = data['type']?.toString() ?? '';
-    
+
     switch (type) {
       case 'chat':
       case 'message':
@@ -1043,7 +1049,7 @@ void _handleNotificationTapFromMessage(RemoteMessage message) {
 void _handleCallNotificationTapFromMessage(Map<String, dynamic> data) {
   try {
     _stopAllEmergencyAlerts();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.to(
         () => IncomingCallScreen(callData: data),
@@ -1051,7 +1057,6 @@ void _handleCallNotificationTapFromMessage(Map<String, dynamic> data) {
         fullscreenDialog: true,
       );
     });
-    
   } catch (e) {
     developer.log('Call notification tap error: $e');
   }
@@ -1064,7 +1069,7 @@ void main() async {
   } catch (e) {
     developer.log('Critical initialization error: $e');
   }
-  
+
   runApp(const ProviderScope(child: InnovatorHomePage()));
 }
 
@@ -1083,9 +1088,9 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
 
   @override
   void initState() {
-    super.initState();  
+    super.initState();
     _initializeAppNotifications();
-    
+
     // OPTIMIZED: Less frequent checks to prevent resource exhaustion
     if (_isAppOnline) {
       _setupPeriodicChecks();
@@ -1107,7 +1112,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     _notificationTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
       _testNotificationHealth();
     });
-    
+
     // Connectivity check every 2 minutes (was 1)
     _connectivityTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
       _checkAndUpdateConnectivity();
@@ -1118,10 +1123,10 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     try {
       final wasOnline = _isAppOnline;
       final isOnline = await _checkInternetConnectivity();
-      
+
       if (wasOnline != isOnline) {
         _isAppOnline = isOnline;
-        
+
         if (isOnline) {
           _handleReconnection();
         } else {
@@ -1130,17 +1135,17 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       }
     } catch (e) {
       developer.log('Connectivity check error: $e');
-    } 
+    }
   }
 
   Future<void> _handleReconnection() async {
     try {
       developer.log('Handling reconnection...');
-      
+
       final notificationService = FirebaseNotificationService();
       await notificationService.initialize();
       await AppData().refreshFcmToken();
-      
+
       Get.snackbar(
         'Back Online',
         'All features are now available',
@@ -1150,12 +1155,11 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
         duration: const Duration(seconds: 2),
         icon: const Icon(Icons.wifi, color: Colors.white),
       );
-      
+
       // Restart periodic checks if they were stopped
       if (_notificationTimer?.isActive != true) {
         _setupPeriodicChecks();
       }
-      
     } catch (e) {
       developer.log('Reconnection handling error: $e');
     }
@@ -1163,10 +1167,10 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
 
   void _handleDisconnection() {
     developer.log('Handling disconnection...');
-    
+
     // Cancel resource-heavy periodic tests
     _notificationTimer?.cancel();
-    
+
     Get.snackbar(
       'Offline',
       'Some features may be limited',
@@ -1181,10 +1185,10 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
   Future<void> _testNotificationHealth() async {
     try {
       if (!_isAppOnline) return;
-      
+
       final notificationService = FirebaseNotificationService();
       await notificationService.debugNotificationStatus();
-      
+
       final token = await notificationService.getFCMToken();
       if (token == null) {
         developer.log('FCM token lost, reinitializing...');
@@ -1215,32 +1219,28 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       debugShowCheckedModeBanner: false,
       home: SplashScreen(),
       builder: (context, child) {
-        return Stack(
-          children: [
-            child!,
-            const CallFloatingWidget(),
-          ],
-        );
+        return Stack(children: [child!, const CallFloatingWidget()]);
       },
       onInit: () {
         // Initialize controllers with better error handling
         try {
-        Get.put<FireChatController>(FireChatController(), permanent: true);
-        Get.put<CartStateManager>(CartStateManager(), permanent: true);
-        
-        // FIXED: Register notification service here too as backup
-        if (!Get.isRegistered<FirebaseNotificationService>()) {
-          try {
-            Get.put(FirebaseNotificationService(), permanent: true);
-          } catch (e) {
-            developer.log('Failed to register notification service in onInit: $e');
+          Get.put<FireChatController>(FireChatController(), permanent: true);
+          Get.put<CartStateManager>(CartStateManager(), permanent: true);
+
+          // FIXED: Register notification service here too as backup
+          if (!Get.isRegistered<FirebaseNotificationService>()) {
+            try {
+              Get.put(FirebaseNotificationService(), permanent: true);
+            } catch (e) {
+              developer.log(
+                'Failed to register notification service in onInit: $e',
+              );
+            }
           }
+        } catch (e) {
+          developer.log('Controller initialization error: $e');
         }
-        
-      } catch (e) {
-        developer.log('Controller initialization error: $e');
-      }
-        
+
         // OPTIMIZED: Delayed notification test only if online
         if (_isAppOnline) {
           Future.delayed(const Duration(seconds: 5), () {
@@ -1258,7 +1258,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
             Get.lazyPut<CartStateManager>(() => CartStateManager());
           }),
         ),
-        
+
         GetPage(
           name: '/chat-list',
           page: () => const OptimizedChatListPage(),
@@ -1266,7 +1266,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
             Get.lazyPut<FireChatController>(() => FireChatController());
           }),
         ),
-        
+
         GetPage(
           name: '/add-to-chat',
           page: () => const AddToChatScreen(),
@@ -1274,7 +1274,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
             Get.lazyPut<FireChatController>(() => FireChatController());
           }),
         ),
-        
+
         GetPage(
           name: '/search',
           page: () => const OptimizedSearchUsersPage(),
@@ -1290,7 +1290,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
             Get.lazyPut<CartStateManager>(() => CartStateManager());
           }),
         ),
-        
+
         GetPage(
           name: '/chat',
           page: () {
@@ -1312,16 +1312,15 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
   void _performAppReadyNotificationTest() async {
     try {
       if (!_isAppOnline) return;
-      
+
       final notificationService = FirebaseNotificationService();
-      
+
       // Simple test notification
       await notificationService.showNotification(
         title: 'System Ready',
         body: 'Notifications are active',
         data: {'type': 'system_ready'},
       );
-      
     } catch (e) {
       developer.log('App-ready notification test failed: $e');
     }
@@ -1339,7 +1338,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
           color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 19,
-        ), 
+        ),
         backgroundColor: Color.fromRGBO(244, 135, 6, 1),
         iconTheme: IconThemeData(color: Colors.white),
       ),

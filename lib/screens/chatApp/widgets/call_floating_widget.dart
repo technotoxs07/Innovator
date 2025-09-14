@@ -36,7 +36,7 @@ class CallFloatingWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(isVideoCall ? 16 : 35),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withAlpha(30),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -83,7 +83,7 @@ class CallFloatingWidget extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withAlpha(70),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(

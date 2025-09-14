@@ -120,7 +120,7 @@ class AddToChatScreen extends GetView<FireChatController> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withAlpha(5),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -263,7 +263,7 @@ class AddToChatScreen extends GetView<FireChatController> {
                     BoxShadow(
                       color: isMutualFollow
                           ? const Color.fromRGBO(244, 135, 6, 0.1)
-                          : Colors.black.withOpacity(0.05),
+                          : Colors.black.withAlpha(5),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -456,7 +456,7 @@ class AddToChatScreen extends GetView<FireChatController> {
       borderRadius: BorderRadius.circular(25),
       boxShadow: [
         BoxShadow(
-          color: Colors.green.withOpacity(0.3),
+          color: Colors.green.withAlpha(30),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
@@ -697,7 +697,7 @@ class AddToChatScreen extends GetView<FireChatController> {
       'Error',
       'Failed to add $userName to chat. Please try again.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.8),
+      backgroundColor: Colors.red.withAlpha(80),
       colorText: Colors.white,
       duration: const Duration(seconds: 3),
       margin: const EdgeInsets.all(16),

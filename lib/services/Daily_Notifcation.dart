@@ -17,7 +17,7 @@ class DailyNotificationService {
   // AUTOMATIC NOTIFICATION TIMES - No user input needed
   static const List<Map<String, dynamic>> _notificationTimes = [
     {'hour': 9, 'minute': 0, 'id': 1001, 'label': 'Morning Motivation'},
-    {'hour': 14, 'minute': 30, 'id': 1002, 'label': 'Afternoon Inspiration'},
+    {'hour': 14, 'minute': 32, 'id': 1002, 'label': 'Afternoon Inspiration'},
     {'hour': 19, 'minute': 0, 'id': 1003, 'label': 'Evening Reflection'},
   ];
   
@@ -251,44 +251,63 @@ class DailyNotificationService {
   }
 
   // Show test notification
-  static Future<void> showTestNotification() async {
-    try {
-      const androidDetails = AndroidNotificationDetails(
-        'test_thoughts',
-        'Test Thoughts',
-        channelDescription: 'Test notifications for daily thoughts',
-        importance: Importance.high,
-        priority: Priority.high,
-        showWhen: true,
-        icon: '@mipmap/ic_launcher',
+  // Show test notification
+static Future<void> showTestNotification() async {
+  try {
+    // Create the test notification channel (similar to _createNotificationChannel)
+    final androidPlugin = _notifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'test_thoughts',
+          'Test Thoughts',
+          description: 'Test notifications for daily thoughts',
+          importance: Importance.high,
+          enableVibration: true,
+          playSound: true,
+          showBadge: true,
+        ),
       );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      final randomThought = _getRandomThought();
-
-      await _notifications.show(
-        1999, // Test notification ID
-        'Innovator Social 🚀',
-        randomThought,
-        notificationDetails,
-        payload: 'test_thought',
-      );
-
-      developer.log('Test notification sent');
-    } catch (e) {
-      developer.log('Failed to send test notification: $e');
     }
+
+    const androidDetails = AndroidNotificationDetails(
+      'test_thoughts',
+      'Test Thoughts',
+      channelDescription: 'Test notifications for daily thoughts',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    final randomThought = _getRandomThought();
+
+    await _notifications.show(
+      1999, // Test notification ID
+      'Innovator Social 🚀',
+      randomThought,
+      notificationDetails,
+      payload: 'test_thought',
+    );
+
+    developer.log('Test notification sent');
+  } catch (e) {
+    developer.log('Failed to send test notification: $e');
   }
+}
 
   // Check if daily notifications are enabled
   static Future<bool> areNotificationsEnabled() async {

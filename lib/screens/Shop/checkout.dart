@@ -333,7 +333,7 @@ bool _isValidImageExtension(String extension) {
               Container(
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _accentColor.withOpacity(0.1),
+                  color: _accentColor.withAlpha(10),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -357,7 +357,7 @@ bool _isValidImageExtension(String extension) {
                 response.data?.message ?? 'Your order has been received and is being processed.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: _textColor.withOpacity(0.7),
+                  color: _textColor.withAlpha(70),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -366,7 +366,7 @@ bool _isValidImageExtension(String extension) {
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _primaryColor.withOpacity(0.1),
+                    color: _primaryColor.withAlpha(10),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -485,7 +485,7 @@ bool _isValidImageExtension(String extension) {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -508,7 +508,7 @@ bool _isValidImageExtension(String extension) {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _accentColor.withOpacity(0.1),
+                  color: _accentColor.withAlpha(10),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -560,7 +560,7 @@ bool _isValidImageExtension(String extension) {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withAlpha(5),
                 blurRadius: 10,
                 offset: Offset(0, 2),
               ),
@@ -721,7 +721,7 @@ bool _isValidImageExtension(String extension) {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withAlpha(5),
                   blurRadius: 10,
                   offset: Offset(0, 2),
                 ),
@@ -744,14 +744,14 @@ bool _isValidImageExtension(String extension) {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withAlpha(10),
                           blurRadius: 4,
                           offset: Offset(0, 2),
                         ),
                       ],
                     ),
                     labelColor: _textColor,
-                    unselectedLabelColor: _textColor.withOpacity(0.6),
+                    unselectedLabelColor: _textColor.withAlpha(60),
                     labelStyle: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -803,7 +803,7 @@ bool _isValidImageExtension(String extension) {
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _primaryColor.withOpacity(0.05),
+              color: _primaryColor.withAlpha(5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -895,7 +895,7 @@ bool _isValidImageExtension(String extension) {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.green.withOpacity(0.3),
+                color: Colors.green.withAlpha(30),
                 width: 2,
               ),
             ),
@@ -911,7 +911,7 @@ bool _isValidImageExtension(String extension) {
                       width: 140,
                       height: 140,
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withAlpha(10),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -920,13 +920,13 @@ bool _isValidImageExtension(String extension) {
                           Icon(
                             Icons.qr_code,
                             size: 35,
-                            color: Colors.green.withOpacity(0.5),
+                            color: Colors.green.withAlpha(50),
                           ),
                           SizedBox(height: 6),
                           Text(
                             'eSewa QR Code',
                             style: TextStyle(
-                              color: Colors.green.withOpacity(0.7),
+                              color: Colors.green.withAlpha(70),
                               fontWeight: FontWeight.w500,
                               fontSize: 12,
                             ),
@@ -940,7 +940,7 @@ bool _isValidImageExtension(String extension) {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withAlpha(10),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Text(
@@ -981,7 +981,7 @@ bool _isValidImageExtension(String extension) {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.purple.withOpacity(0.3),
+                color: Colors.purple.withAlpha(30),
                 width: 2,
               ),
             ),
@@ -997,7 +997,7 @@ bool _isValidImageExtension(String extension) {
                       width: 140,
                       height: 140,
                       decoration: BoxDecoration(
-                        color: Colors.purple.withOpacity(0.1),
+                        color: Colors.purple.withAlpha(10),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -1006,13 +1006,13 @@ bool _isValidImageExtension(String extension) {
                           Icon(
                             Icons.qr_code,
                             size: 35,
-                            color: Colors.purple.withOpacity(0.5),
+                            color: Colors.purple.withAlpha(50),
                           ),
                           SizedBox(height: 6),
                           Text(
                             'Laxmi Bank QR Code',
                             style: TextStyle(
-                              color: Colors.purple.withOpacity(0.7),
+                              color: Colors.purple.withAlpha(70),
                               fontWeight: FontWeight.w500,
                               fontSize: 12,
                             ),
@@ -1026,7 +1026,7 @@ bool _isValidImageExtension(String extension) {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
+                    color: Colors.purple.withAlpha(10),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Text(
@@ -1055,7 +1055,7 @@ bool _isValidImageExtension(String extension) {
           Text(
             label,
             style: TextStyle(
-              color: _textColor.withOpacity(0.7),
+              color: _textColor.withAlpha(70),
               fontSize: 13,
             ),
           ),
@@ -1064,7 +1064,7 @@ bool _isValidImageExtension(String extension) {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.1),
+                color: _primaryColor.withAlpha(10),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -1106,7 +1106,7 @@ bool _isValidImageExtension(String extension) {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withAlpha(5),
                   blurRadius: 10,
                   offset: Offset(0, 2),
                 ),
@@ -1178,23 +1178,23 @@ bool _isValidImageExtension(String extension) {
                     height: 200,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: _primaryColor.withOpacity(0.02),
+                      color: _primaryColor.withAlpha(2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _primaryColor.withOpacity(0.3),
+                        color: _primaryColor.withAlpha(30),
                         width: 2,
                       ),
                     ),
                     child: CustomPaint(
                       painter: DashedBorderPainter(
-                        color: _primaryColor.withOpacity(0.5),
+                        color: _primaryColor.withAlpha(50),
                         strokeWidth: 2,
                         dashPattern: [8, 4],
                       ),
                       child: Container(
                         margin: EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: _primaryColor.withOpacity(0.02),
+                          color: _primaryColor.withAlpha(2),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
@@ -1203,7 +1203,7 @@ bool _isValidImageExtension(String extension) {
                             Icon(
                               Icons.cloud_upload,
                               size: 48,
-                              color: _primaryColor.withOpacity(0.5),
+                              color: _primaryColor.withAlpha(50),
                             ),
                             SizedBox(height: 16),
                             Text(
@@ -1218,7 +1218,7 @@ bool _isValidImageExtension(String extension) {
                             Text(
                               'PNG, JPG up to 5MB',
                               style: TextStyle(
-                                color: _textColor.withOpacity(0.5),
+                                color: _textColor.withAlpha(50),
                               ),
                             ),
                           ],
@@ -1322,7 +1322,7 @@ bool _isValidImageExtension(String extension) {
         color: _cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: Offset(0, -2),
           ),

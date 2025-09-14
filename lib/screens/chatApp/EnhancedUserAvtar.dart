@@ -42,14 +42,14 @@ class EnhancedUserAvatar extends StatelessWidget {
             boxShadow: showOnlineIndicator && isOnline
                 ? [
                     BoxShadow(
-                      color: Colors.green.withOpacity(0.3),
+                      color: Colors.green.withAlpha(30),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withAlpha(10),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -76,7 +76,7 @@ class EnhancedUserAvatar extends StatelessWidget {
                 boxShadow: isOnline
                     ? [
                         BoxShadow(
-                          color: Colors.green.withOpacity(0.6),
+                          color: Colors.green.withAlpha(60),
                           blurRadius: 4,
                           spreadRadius: 1,
                         ),
@@ -124,7 +124,7 @@ class EnhancedUserAvatar extends StatelessWidget {
                 height: radius * 0.6,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withAlpha(70),
                 ),
               ),
             ),

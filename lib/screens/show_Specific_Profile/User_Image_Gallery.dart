@@ -292,7 +292,7 @@ class _UserImageGalleryState extends State<UserImageGallery> {
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withAlpha(10),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -400,7 +400,7 @@ class _UserImageGalleryState extends State<UserImageGallery> {
       context: context,
       builder: (context) => Dialog(
         insetPadding: EdgeInsets.zero,
-        backgroundColor: Colors.black.withOpacity(0.9),
+        backgroundColor: Colors.black.withAlpha(90),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -426,7 +426,7 @@ class _UserImageGalleryState extends State<UserImageGallery> {
               right: 20,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withAlpha(50),
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(

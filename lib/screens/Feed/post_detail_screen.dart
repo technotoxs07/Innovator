@@ -60,7 +60,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
       vsync: this,
     );
     _highlightAnimation = ColorTween(
-      begin: Colors.blue.withOpacity(0.3),
+      begin: Colors.blue.withAlpha(30),
       end: Colors.transparent,
     ).animate(CurvedAnimation(
       parent: _highlightController,

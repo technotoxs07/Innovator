@@ -246,7 +246,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
                         color: Colors.blue,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
+                            color: Colors.blue.withAlpha(30),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),
@@ -324,12 +324,12 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withAlpha(50),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withAlpha(50),
                       blurRadius: 15,
                       spreadRadius: 2,
                     ),
@@ -352,7 +352,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withAlpha(50),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -379,7 +379,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
                   color: Colors.grey.shade800,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withAlpha(30),
                     width: 2,
                   ),
                 ),
@@ -399,7 +399,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withAlpha(50),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -459,7 +459,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
                         color: Colors.green,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.green.withOpacity(0.4),
+                            color: Colors.green.withAlpha(40),
                             blurRadius: 30,
                             spreadRadius: 10,
                           ),
@@ -512,7 +512,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withAlpha(10),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -548,7 +548,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.7),
+              Colors.black.withAlpha(70),
               Colors.transparent,
             ],
           ),
@@ -663,7 +663,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
             colors: [
-              Colors.black.withOpacity(0.8),
+              Colors.black.withAlpha(80),
               Colors.transparent,
             ],
           ),
@@ -829,7 +829,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
         height: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isActive ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          color: isActive ? color.withAlpha(30) : Colors.grey.withAlpha(30),
           border: Border.all(
             color: isActive ? color : Colors.grey,
             width: 2,
@@ -860,7 +860,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
           color: color,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.4),
+              color: color.withAlpha(40),
               blurRadius: 20,
               spreadRadius: 3,
             ),
@@ -892,9 +892,9 @@ class _ActiveCallScreenState extends State<ActiveCallScreen>
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withAlpha(10),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withAlpha(30),
                 width: 1,
               ),
             ),

@@ -194,7 +194,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(_order!.status).withOpacity(0.1),
+                          color: _getStatusColor(_order!.status).withAlpha(10),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(

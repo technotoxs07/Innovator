@@ -137,7 +137,7 @@ class _InstantDrawerOverlay extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: Colors.black.withAlpha(8),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -282,6 +282,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
   Widget _buildHeader() {
     return Container(
       height: MediaQuery.of(context).size.height * 0.34,
+      width: MediaQuery.of(context).size.width * 0.68,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -307,7 +308,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withAlpha(30),
                           blurRadius: 15,
                           spreadRadius: 1,
                         ),
@@ -371,7 +372,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withAlpha(20),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Text(
@@ -400,7 +401,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       height: 70,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withAlpha(20),
         image: _userPicture != null && _userPicture!.isNotEmpty
             ? DecorationImage(
                 image: CachedNetworkImageProvider('$baseUrl$_userPicture'),
@@ -474,7 +475,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFEB6B46).withOpacity(0.1),
+              color: const Color(0xFFEB6B46).withAlpha(10),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.rocket_launch, color: Color(0xFFEB6B46), size: 20),
@@ -739,7 +740,7 @@ class _QuickMenuItem extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: isLogout
-                ? LinearGradient(colors: [Colors.red.withOpacity(0.1), Colors.red.withOpacity(0.2)])
+                ? LinearGradient(colors: [Colors.red.withAlpha(10), Colors.red.withAlpha(20)])
                 : null,
           ),
           child: Row(
@@ -748,8 +749,8 @@ class _QuickMenuItem extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: isLogout
-                      ? Colors.red.withOpacity(0.1)
-                      : const Color(0xFFEB6B46).withOpacity(0.1),
+                      ? Colors.red.withAlpha(10)
+                      : const Color(0xFFEB6B46).withAlpha(10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

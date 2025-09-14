@@ -591,7 +591,7 @@ class FirebaseNotificationService {
         title,
         body,
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red.withOpacity(0.9),
+        backgroundColor: Colors.red.withAlpha(90),
         colorText: Colors.white,
         duration: const Duration(seconds: 4),
         margin: const EdgeInsets.all(16),
@@ -699,7 +699,7 @@ class FirebaseNotificationService {
       try {
         if (Get.isRegistered<FireChatController>()) {
           final chatController = Get.find<FireChatController>();
-          totalBadges = chatController.getTotalUnreadCount();
+          totalBadges = chatController.getTotalUnreadCountFromMutualFollowers();
         }
       } catch (e) {
         developer.log('📱 Could not get total badge count: $e');

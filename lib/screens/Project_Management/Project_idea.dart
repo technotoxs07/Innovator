@@ -257,7 +257,7 @@ class _Project_HomeScreenState extends State<Project_HomeScreen> with TickerProv
                   Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(project.status).withOpacity(0.1),
+                      color: _getStatusColor(project.status).withAlpha(10),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -283,7 +283,7 @@ class _Project_HomeScreenState extends State<Project_HomeScreen> with TickerProv
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(project.status).withOpacity(0.2),
+                            color: _getStatusColor(project.status).withAlpha(20),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -1040,7 +1040,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _getStatusColor(currentProject.status).withOpacity(0.1),
+                color: _getStatusColor(currentProject.status).withAlpha(10),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
@@ -1584,7 +1584,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   Text(
                     'Congratulations! Your mentor has approved your project.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withAlpha(90),
                       fontSize: 14,
                     ),
                     textAlign: TextAlign.center,

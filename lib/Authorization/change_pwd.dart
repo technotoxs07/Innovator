@@ -148,7 +148,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withAlpha(10),
                       spreadRadius: 1,
                       blurRadius: 10,
                       offset: const Offset(0, 5),
@@ -194,7 +194,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withAlpha(10),
                       spreadRadius: 1,
                       blurRadius: 10,
                       offset: const Offset(0, 5),
@@ -332,13 +332,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   gradient: LinearGradient(
-                    colors: [appColor, appColor.withOpacity(0.8)],
+                    colors: [appColor, appColor.withAlpha(10)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: appColor.withOpacity(0.3),
+                      color: appColor.withAlpha(30),
                       spreadRadius: 1,
                       blurRadius: 8,
                       offset: const Offset(0, 4),
@@ -380,9 +380,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: appColor.withOpacity(0.1),
+                  color: appColor.withAlpha(10),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: appColor.withOpacity(0.3)),
+                  border: Border.all(color: appColor.withAlpha(30)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

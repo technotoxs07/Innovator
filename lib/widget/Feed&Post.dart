@@ -74,7 +74,7 @@ class __SwipeIndicatorState extends State<_SwipeIndicator>
             child: Container(
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withAlpha(20),
                 shape: BoxShape.circle,
               ),
               child: Icon(
