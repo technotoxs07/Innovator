@@ -957,7 +957,6 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
     // SoundPlayer player = SoundPlayer();
     // player.feedSound();
-
   }
 
   // Retry with different parameters
@@ -1401,71 +1400,76 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   }
 
   Widget _buildFloatingActionButton() {
-  return GetBuilder<FireChatController>(
-    init: Get.find<FireChatController>(),
-    builder: (chatController) {
-      return Obx(() {
-        // Get total unread count from the chat controller
-        final totalUnreadCount = chatController.getTotalUnreadCountFromMutualFollowers();
-        
-        return Stack(
-          children: [
-            CustomFAB(
-              gifAsset: 'animation/chaticon.gif',
-              backgroundColor: Colors.transparent,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const OptimizedChatHomePage()),
-                );
-              },
-            ),
-            // Badge overlay
-            if (totalUnreadCount > 0)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.elasticOut,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
+    return GetBuilder<FireChatController>(
+      init: Get.find<FireChatController>(),
+      builder: (chatController) {
+        return Obx(() {
+          // Get total unread count from the chat controller
+          final totalUnreadCount =
+              chatController.getTotalUnreadCountFromMutualFollowers();
+
+          return Stack(
+            children: [
+              CustomFAB(
+                gifAsset: 'animation/chaticon.gif',
+                backgroundColor: Colors.transparent,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const OptimizedChatHomePage(),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withAlpha(40),
-                        blurRadius: 6,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 20,
-                    minHeight: 20,
-                  ),
-                  child: Center(
-                    child: Text(
-                      totalUnreadCount > 99 ? '99+' : totalUnreadCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                  );
+                },
+              ),
+              // Badge overlay
+              if (totalUnreadCount > 0)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.elasticOut,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withAlpha(40),
+                          blurRadius: 6,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 20,
+                      minHeight: 20,
+                    ),
+                    child: Center(
+                      child: Text(
+                        totalUnreadCount > 99
+                            ? '99+'
+                            : totalUnreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        );
-      });
-    },
-  );
-}
+            ],
+          );
+        });
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -2142,7 +2146,7 @@ class _FeedItemState extends State<FeedItem>
                                     fontSize: 13.0,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.3,
-                                    fontFamily: 'Segoe UI',
+                                    fontFamily: 'InterThin',
                                   ),
                                 ),
                               ),
@@ -2204,7 +2208,7 @@ class _FeedItemState extends State<FeedItem>
                           text: widget.content.status,
                           style: const TextStyle(
                             fontSize: 15.0,
-                            fontFamily: 'Segoe UI',
+                            fontFamily: 'InterThin',
                           ),
                         );
                         final tp = TextPainter(
@@ -2229,7 +2233,7 @@ class _FeedItemState extends State<FeedItem>
                                   color: Color(0xFF2D2D2D),
                                   fontWeight: FontWeight.w500,
                                   letterSpacing: 0.2,
-                                  fontFamily: 'Segoe UI',
+                                  fontFamily: 'InterThin',
                                 ),
                                 maxLines:
                                     _isExpanded ? null : _maxLinesCollapsed,
@@ -2336,7 +2340,7 @@ class _FeedItemState extends State<FeedItem>
                             size: 20.0,
                           ),
                         ),
-                       const SizedBox(width: 5.0),
+                        const SizedBox(width: 5.0),
                         Text(
                           '${widget.content.comments} Comment',
                           style: TextStyle(
@@ -2357,15 +2361,15 @@ class _FeedItemState extends State<FeedItem>
                     },
                   ),
 
-                   _buildActionButton(
+                  _buildActionButton(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                       Icons.share_outlined,
-                      color: Colors.grey.shade600,
-                      size: 20.0,
-                    ),
+                          Icons.share_outlined,
+                          color: Colors.grey.shade600,
+                          size: 20.0,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           'Share',
@@ -2378,7 +2382,7 @@ class _FeedItemState extends State<FeedItem>
                       ],
                     ),
                     onTap: () {
-                     _showShareOptions(context);
+                      _showShareOptions(context);
                     },
                   ),
 

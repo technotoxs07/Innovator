@@ -81,6 +81,7 @@ dependencies:
   vibration: ^3.1.3
   flutter_ringtone_player: ^4.0.0+4
   smooth_page_indicator: ^1.2.1
+  device_preview: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -127,12 +128,19 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
+  # fonts:
+  #   - family: InterThin
+  #     fonts:
+  #       - asset: assets/fonts/Segoe-UI.ttf
+  #       - asset: assets/fonts/Segoe-UI-Bold.ttf
+  #       - asset: assets/fonts/Segoe-UI-Italic.ttf
   fonts:
-    - family: Segoe UI
-      fonts:
-        - asset: assets/fonts/Segoe-UI.ttf
-        - asset: assets/fonts/Segoe-UI-Bold.ttf
-        - asset: assets/fonts/Segoe-UI-Italic.ttf
+    - family: Inter
+      fonts: 
+        - asset: assets/fonts/Inter-Black.ttf
+    - family: InterThin
+      fonts: 
+        - asset: assets/fonts/Inter-Regular.ttf          
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf
