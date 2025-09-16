@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,9 +19,11 @@ import 'package:innovator/services/firebase_services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key, this.clearFields = false});
+  final bool clearFields;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -31,10 +32,11 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final Color preciseGreen = Color.fromRGBO(244, 135, 6, 1);
   bool _isPasswordVisible = false;
-  bool isLogin = true;
+
   bool _isLoading = false;
   bool _isGoogleLoading = false;
   bool isRememberMe = false;
+  bool rememberMe = false;
 
   // Create focus nodes for email and password fields
   final FocusNode _emailFocusNode = FocusNode();
@@ -56,6 +58,48 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _requestNotificationPermission();
+    if (widget.clearFields) {
+      emailController.clear();
+      passwordController.clear();
+    } else {
+      _loadSavedCredentials();
+    }
+  }
+
+  void _loadSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('email');
+      final savedPassword = prefs.getString('password');
+      final remember = prefs.getBool('rememberMe') ?? false;
+
+      if (remember && mounted) {
+        setState(() {
+          rememberMe = true;
+          emailController.text = savedEmail ?? '';
+          passwordController.text = savedPassword ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading saved credentials: $e');
+    }
+  }
+
+  Future<void> _saveCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (rememberMe) {
+        await prefs.setString('email', emailController.text.trim());
+        await prefs.setString('password', passwordController.text.trim());
+        await prefs.setBool('rememberMe', true);
+      } else {
+        await prefs.remove('email');
+        await prefs.remove('password');
+        await prefs.setBool('rememberMe', false);
+      }
+    } catch (e) {
+      debugPrint('Error saving credentials: $e');
+    }
   }
 
   // Request notification permission for FCM
@@ -862,6 +906,7 @@ class _LoginPageState extends State<LoginPage> {
       // Initialize other services
       await _initializeFollowStatusManager();
       await _initializeChatControllerWithFollowStatus();
+      await _saveCredentials();
 
       Navigator.pushAndRemoveUntil(
         context,
@@ -1130,100 +1175,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<String?> _getCustomTokenFromBackend() async {
-    try {
-      developer.log('🔑 Attempting to get custom token from backend...');
-
-      final currentUser = AppData().currentUser;
-      if (currentUser == null || currentUser['_id'] == null) {
-        return null;
-      }
-
-      final url = Uri.parse(
-        'http://182.93.94.210:3067/api/v1/firebase-custom-token',
-      );
-      final body = jsonEncode({'userId': currentUser['_id']});
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${AppData().authToken}',
-      };
-
-      final response = await http
-          .post(url, headers: headers, body: body)
-          .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final customToken = responseData['customToken'];
-        developer.log('✅ Custom token received from backend');
-        return customToken;
-      }
-
-      developer.log('⚠️ Custom token not available: ${response.statusCode}');
-      return null;
-    } catch (e) {
-      developer.log('⚠️ Error getting custom token: $e');
-      return null;
-    }
-  }
-
-  Future<void> _forceFreshFCMToken() async {
-    try {
-      developer.log('🔄 Force refreshing FCM token on login...');
-
-      // Step 1: Delete any existing token
-      await FirebaseMessaging.instance.deleteToken();
-      developer.log('🗑️ Deleted existing FCM token');
-
-      // Step 2: Wait a moment for the deletion to process
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Step 3: Get a completely fresh token
-      final freshToken = await FirebaseMessaging.instance.getToken();
-      if (freshToken != null) {
-        developer.log(
-          '✅ Got fresh FCM token: ${freshToken.substring(0, 20)}...',
-        );
-
-        // Step 4: Save the fresh token
-        await AppData().saveFcmToken(freshToken);
-
-        // Step 5: Verify it was saved correctly
-        final savedToken = AppData().getMostRecentFcmToken();
-        if (savedToken == freshToken) {
-          developer.log('✅ Fresh FCM token verified and saved correctly');
-        } else {
-          developer.log('❌ FCM token save verification failed');
-        }
-      } else {
-        developer.log('❌ Failed to get fresh FCM token');
-      }
-    } catch (e) {
-      developer.log('❌ Error forcing fresh FCM token: $e');
-    }
-  }
-
-  Future<void> _clearExistingSession() async {
-    try {
-      developer.log('🧹 Clearing existing session...');
-
-      // Clear any existing chat controller
-      if (Get.isRegistered<FireChatController>()) {
-        final chatController = Get.find<FireChatController>();
-        await chatController.completeLogout();
-        Get.delete<FireChatController>();
-      }
-
-      // Clear any cached data
-      await AppData().clearAuthToken();
-      await AppData().clearCurrentUser();
-
-      developer.log('✅ Existing session cleared');
-    } catch (e) {
-      developer.log('❌ Error clearing existing session: $e');
-    }
-  }
-
   // Extract token from response
   String? _extractToken(Map<String, dynamic> responseData) {
     if (responseData['token'] is String) {
@@ -1252,66 +1203,6 @@ class _LoginPageState extends State<LoginPage> {
       return Map<String, dynamic>.from(responseData['data']);
     }
     return null;
-  }
-
-  // Initialize and save FCM token
-  Future<void> _initializeAndSaveFcmToken() async {
-    try {
-      developer.log('🔥 Initializing FCM for new session...');
-
-      final fcmToken = await _firebaseMessaging.getToken();
-      if (fcmToken != null) {
-        await AppData().saveFcmToken(fcmToken);
-        developer.log(
-          'FCM token saved after login: ${fcmToken.substring(0, 20)}...',
-        );
-
-        // Verify the save
-        final updatedUserData = AppData().currentUser;
-        if (updatedUserData?['fcmTokens']?.contains(fcmToken) == true) {
-          developer.log('✅ FCM token successfully added to fcmTokens array');
-        } else {
-          developer.log('❌ FCM token not found in fcmTokens array');
-        }
-      } else {
-        developer.log('❌ Failed to retrieve FCM token');
-      }
-    } catch (e) {
-      developer.log('❌ Error initializing FCM: $e');
-    }
-  }
-
-  // Initialize chat controller with fresh data
-  Future<void> _initializeChatController() async {
-    try {
-      developer.log('💬 Initializing chat controller...');
-
-      // Wait for Firebase Auth to be fully ready
-      await Future.delayed(const Duration(milliseconds: 1000));
-
-      // Import and initialize the chat controller
-      if (!Get.isRegistered<FireChatController>()) {
-        Get.put(FireChatController(), permanent: true);
-        developer.log('💬 Chat controller registered');
-      }
-
-      final chatController = Get.find<FireChatController>();
-
-      // Initialize user data
-      chatController.initializeUser();
-      developer.log('💬 Chat controller user initialized');
-
-      // Load users and chats
-      await Future.wait([
-        chatController.loadAllUsersWithSmartCaching(),
-        chatController.loadUserChats(),
-      ]);
-
-      developer.log('✅ Chat controller fully initialized');
-    } catch (e) {
-      developer.log('❌ Error initializing chat controller: $e');
-      // Don't throw - let the app continue even if chat has issues
-    }
   }
 
   void _handleLoginError(http.Response response) {
@@ -1347,55 +1238,10 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Widget _buildGoogleSignInButton() {
-    if (!CrossPlatformAuth.isGoogleSignInSupported) {
-      return SizedBox.shrink(); // Don't show the button on unsupported platforms
-    }
-
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-        shape: StadiumBorder(),
-        elevation: 1,
-      ),
-      onPressed: _isGoogleLoading ? null : _showAccountPicker,
-      icon:
-          _isGoogleLoading
-              ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-              : Lottie.asset(
-                'animation/Googlesignup.json',
-                height: MediaQuery.of(context).size.height * .05,
-              ),
-      label: RichText(
-        text: TextSpan(
-          style: TextStyle(color: Colors.black, fontSize: 19),
-          children: [
-            TextSpan(
-              text: 'Sign In with ',
-              style: TextStyle(color: Colors.white),
-            ),
-            TextSpan(
-              text: 'Google',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
     final mq = MediaQuery.of(context).size;
-    final theme = Theme.of(context);
 
     return Theme(
       data: ThemeData(primaryColor: preciseGreen),
@@ -1407,31 +1253,36 @@ class _LoginPageState extends State<LoginPage> {
               height: MediaQuery.of(context).size.height / 2.0,
               decoration: BoxDecoration(
                 color: Color.fromRGBO(244, 135, 6, 1),
+                // color: Color(0xffFFC067),
+                // color: Colors.orange.shade800,
                 borderRadius: BorderRadius.only(
                   bottomRight: Radius.circular(70),
                 ),
               ),
               child: Padding(
-                padding: EdgeInsets.only(left: mq.width * 0.05),
+                padding: EdgeInsets.only(
+                  left: mq.width * 0.03,
+                  top: mq.height * 0.02,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Text(
-                      'Welcome\nBack',
+                      'Welcome\nBack,',
                       style: TextStyle(
                         fontSize: 30,
-                        fontFamily: 'InterThin',
+                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
-                    // Image.asset('animation/login.gif'),
+
                     Align(
-                      alignment: Alignment.topCenter,
+                      alignment: Alignment.topRight,
                       child: Image.asset(
                         'animation/loginimage.gif',
-                        width: screenSize.width * 0.6,
-                        fit: BoxFit.cover,
+                        width: screenSize.width * 0.5,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ],
@@ -1452,6 +1303,7 @@ class _LoginPageState extends State<LoginPage> {
                     top: mq.height * 0.05,
                     right: mq.width * 0.05,
                     left: mq.width * 0.05,
+                    bottom: mq.height * 0.02,
                   ),
                   child: SingleChildScrollView(
                     child: AutofillGroup(
@@ -1588,44 +1440,37 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ],
                             ),
+                            SizedBox(height: mq.height * 0.01),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 // Checkbox(value: false, onChanged: (value) {}),
-                                TextButton.icon(
-                                  style: ButtonStyle(
-                                    padding: WidgetStatePropertyAll(
-                                      EdgeInsets.zero,
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      activeColor: Color.fromRGBO(
+                                        244,
+                                        135,
+                                        6,
+                                        1,
+                                      ),
+                                      checkColor: Colors.white,
+                                      value: rememberMe,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          rememberMe = value!;
+                                        });
+                                      },
                                     ),
-                                    shadowColor: WidgetStatePropertyAll(
-                                      Colors.transparent,
+                                    InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          rememberMe = !rememberMe;
+                                        });
+                                      },
+                                      child: Text('Remember Me'),
                                     ),
-                                    overlayColor: WidgetStatePropertyAll(
-                                      Colors.transparent,
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      isRememberMe = !isRememberMe;
-                                    });
-                                  },
-                                  icon: Icon(
-                                    isRememberMe
-                                        ? Icons.check_box
-                                        : Icons.check_box_outline_blank,
-                                    color:
-                                        isRememberMe
-                                            ? Color.fromRGBO(244, 135, 6, 1)
-                                            : Colors.black,
-                                  ),
-                                  label: Text(
-                                    'Remember Me',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 15,
-                                      fontFamily: 'InterThin',
-                                    ),
-                                  ),
+                                  ],
                                 ),
                                 TextButton(
                                   onPressed: (() => Get.to(Forgot_PWD())),
@@ -1640,10 +1485,12 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ],
                             ),
+                            SizedBox(height: mq.height * 0.02),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-                                foregroundColor: Colors.white,
+                                // backgroundColor: Color(0xffFFC067),
+                                // foregroundColor: Colors.white,
                                 elevation: 10,
                                 shadowColor: Colors.transparent,
                                 minimumSize: Size(200, 50),
@@ -1668,20 +1515,25 @@ class _LoginPageState extends State<LoginPage> {
                                         ),
                                       )
                                       : Text(
-                                        isLogin ? 'Login' : 'Sign Up',
+                                        'Login',
                                         style: TextStyle(
                                           fontSize: 16,
+
+                                          color: Colors.white,
+
+                                          fontWeight: FontWeight.bold,
                                           fontFamily: 'InterThin',
                                           letterSpacing: 1.1,
                                         ),
                                       ),
                             ),
-                            SizedBox(height: 10),
+                            SizedBox(height: mq.height * 0.02),
 
                             //_buildGoogleSignInButton(),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color.fromRGBO(244, 135, 6, 1),
+                                // backgroundColor: Color(0xffFFC067),
                                 shape: StadiumBorder(),
                                 elevation: 1,
                               ),
@@ -1697,9 +1549,11 @@ class _LoginPageState extends State<LoginPage> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                      : Lottie.asset(
-                                        'animation/Googlesignup.json',
-                                        height: mq.height * .05,
+                                      : Image.asset(
+                                        // 'animation/Googlesignup.json',
+                                        'assets/icon/google.png',
+
+                                        height: mq.height * .02,
                                       ),
                               label: RichText(
                                 text: TextSpan(
@@ -1726,28 +1580,46 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                             ),
-
-                            TextButton(
-                              onPressed: () {
-                                TextInput.finishAutofillContext(
-                                  shouldSave: false,
-                                );
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => Signup()),
-                                );
-                              },
-                              child: Text(
-                                isLogin
-                                    ? 'Create new account'
-                                    : 'Already have an account?',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'InterThin',
+                            SizedBox(height: mq.height * 0.02),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Don\'t have an account?',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'InterThin',
+                                  ),
                                 ),
-                              ),
+                                SizedBox(width: mq.width * 0.01),
+                                InkWell(
+                                  onTap: () {
+                                    TextInput.finishAutofillContext(
+                                      shouldSave: false,
+                                    );
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => Signup(),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    'Sign Up',
+
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: Colors.blue,
+                                      fontSize: 15,
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'InterThin',
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,7 +18,6 @@ import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:innovator/screens/Likes/Content-Like-Service.dart';
 import 'package:innovator/screens/Likes/content-Like-Button.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:innovator/screens/SHow_Specific_Profile/Show_Specific_Profile.dart';
 import 'package:innovator/screens/chatApp/chat_homepage.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
@@ -1061,6 +1061,7 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: CustomRefreshIndicator(
         onRefresh: _refresh,
         gifPath: 'animation/IdeaBulb.gif', // Update with your GIF path
@@ -1869,15 +1870,15 @@ class _FeedItemState extends State<FeedItem>
     final difference = DateTime.now().difference(dateTime);
 
     if (difference.inDays > 365) {
-      return '${(difference.inDays / 365).floor()} year(s) ago';
+      return '${(difference.inDays / 365).floor()} years ago';
     } else if (difference.inDays > 30) {
-      return '${(difference.inDays / 30).floor()} month(s) ago';
+      return '${(difference.inDays / 30).floor()} months ago';
     } else if (difference.inDays > 0) {
-      return '${difference.inDays} day(s) ago';
+      return '${difference.inDays} days ago';
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour(s) ago';
+      return '${difference.inHours} hours ago';
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minute(s) ago';
+      return '${difference.inMinutes} minutes ago';
     } else {
       return 'Just now';
     }
@@ -1964,10 +1965,20 @@ class _FeedItemState extends State<FeedItem>
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade200, width: 1.0),
+          bottom: BorderSide(color: Colors.grey.shade200, width: 3.0),
+        ),
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20.0),
+        // borderRadius: BorderRadius.circular(20.0),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(20.0),
+          bottomRight: Radius.circular(20.0),
+          topLeft: Radius.circular(5.0),
+          topRight: Radius.circular(5.0),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(8),
@@ -2065,29 +2076,20 @@ class _FeedItemState extends State<FeedItem>
                         children: [
                           Row(
                             children: [
-                              Flexible(
+                              FittedBox(
                                 child: Text(
                                   widget.content.author.name,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16.0,
-                                    color: Color(0xFF1A1A1A),
-                                    letterSpacing: -0.3,
+
+                                    fontFamily: 'InterThin',
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (!isOwnContent) ...[
-                                const SizedBox(width: 8.0),
-                                Container(
-                                  width: 4.0,
-                                  height: 4.0,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade400,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8.0),
+                                const SizedBox(width: 12.0),
                                 AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   key: ValueKey(
@@ -2123,33 +2125,30 @@ class _FeedItemState extends State<FeedItem>
                                   ),
                                 ),
                               ],
-                            ],
-                          ),
-                          const SizedBox(height: 4.0),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0,
-                                  vertical: 2.0,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _getTypeColor(
-                                    widget.content.type,
-                                  ).withAlpha(50),
-                                  borderRadius: BorderRadius.circular(12.0),
-                                ),
-                                child: Text(
-                                  widget.content.type,
-                                  style: TextStyle(
-                                    color: _getTypeColor(widget.content.type),
-                                    fontSize: 13.0,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.3,
-                                    fontFamily: 'InterThin',
+                              Spacer(),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(12.0),
+                                onTap: () {
+                                  if (_isAuthorCurrentUser()) {
+                                    _showQuickSuggestions(context);
+                                  } else {
+                                    _showQuickspecificSuggestions(context);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Icon(
+                                    Icons.more_vert_rounded,
+                                    color: Colors.grey.shade600,
+                                    size: 20.0,
                                   ),
                                 ),
                               ),
+                            ],
+                          ),
+
+                          Row(
+                            children: [
                               const SizedBox(width: 8.0),
                               Text(
                                 formattedTimeAgo,
@@ -2159,32 +2158,35 @@ class _FeedItemState extends State<FeedItem>
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
+                              const SizedBox(width: 8.0),
+                              Container(
+                                width: 4.0,
+                                height: 4.0,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade400,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8.0),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                  vertical: 2.0,
+                                ),
+                                child: Text(
+                                  widget.content.type.toUpperCase(),
+                                  style: TextStyle(
+                                    color: _getTypeColor(widget.content.type),
+                                    fontSize: 12.0,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.7,
+                                    fontFamily: 'InterThin',
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-
-                  // Menu Button
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12.0),
-                      onTap: () {
-                        if (_isAuthorCurrentUser()) {
-                          _showQuickSuggestions(context);
-                        } else {
-                          _showQuickspecificSuggestions(context);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Icon(
-                          Icons.more_horiz_rounded,
-                          color: Colors.grey.shade600,
-                          size: 20.0,
-                        ),
                       ),
                     ),
                   ),
@@ -2227,12 +2229,14 @@ class _FeedItemState extends State<FeedItem>
                               curve: Curves.easeInOut,
                               child: _LinkifyText(
                                 text: widget.content.status,
-                                style: const TextStyle(
+
+                                style: TextStyle(
                                   fontSize: 16.0,
                                   height: 1.5,
                                   color: Color(0xFF2D2D2D),
                                   fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.2,
+                                  letterSpacing: 0.5,
+                                  fontStyle: FontStyle.normal,
                                   fontFamily: 'InterThin',
                                 ),
                                 maxLines:
@@ -2250,22 +2254,12 @@ class _FeedItemState extends State<FeedItem>
                                       _isExpanded = !_isExpanded;
                                     });
                                   },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12.0,
-                                      vertical: 6.0,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade50,
-                                      borderRadius: BorderRadius.circular(16.0),
-                                    ),
-                                    child: Text(
-                                      _isExpanded ? 'Show Less' : 'Show More',
-                                      style: TextStyle(
-                                        color: Colors.blue.shade700,
-                                        fontSize: 13.0,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  child: Text(
+                                    _isExpanded ? 'Show Less' : 'Show More',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontSize: 11.0,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -2288,116 +2282,106 @@ class _FeedItemState extends State<FeedItem>
                 ),
               ),
 
-            // Action Buttons Section
             Container(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Like Button
-                  _buildActionButton(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 4.0,
+                  right: 16.0,
+                  bottom: 4.0,
+                  top: 7.0,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        LikeButton(
-                          contentId: widget.content.id,
-                          initialLikeStatus: widget.content.isLiked,
-                          likeService: likeService,
-                          onLikeToggled: (isLiked) {
-                            widget.onLikeToggled(isLiked);
-                            SoundPlayer player = SoundPlayer();
-                            player.playlikeSound();
+                        Row(
+                          children: [
+                            IconButton(
+                              color: Colors.black,
+                              icon: LikeButton(
+                                contentId: widget.content.id,
+                                initialLikeStatus: widget.content.isLiked,
+                                likeService: likeService,
+                                onLikeToggled: (isLiked) {
+                                  widget.onLikeToggled(isLiked);
+                                  SoundPlayer player = SoundPlayer();
+                                  player.playlikeSound();
+                                },
+                              ),
+                              onPressed: () {},
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                _showComments
+                                    ? Icons.chat_bubble
+                                    : Icons.chat_bubble_outline,
+                                color: Colors.black,
+                                size: 20.0,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _showComments = !_showComments;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        InkWell(
+                          onTap: () {
+                            _showShareOptions(context);
                           },
-                        ),
-                        //const SizedBox(width: .0),
-                        Text(
-                          '${widget.content.likes} Like',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                            fontSize: 14.0,
+                          child: Column(
+                            children: [
+                              Column(
+                                children: [
+                                  Image.asset(
+                                    'assets/icon/send.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 10.0),
+                              Text(
+                                'Share',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                  fontSize: 14.0,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    onTap: () {},
-                  ),
-
-                  // Comment Button
-                  _buildActionButton(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            _showComments
-                                ? Icons.chat_bubble
-                                : Icons.chat_bubble_outline,
-                            color:
-                                _showComments
-                                    ? Colors.blue.shade600
-                                    : Colors.grey.shade600,
-                            size: 20.0,
+                    Padding(
+                      padding: EdgeInsets.only(left: 20.0, bottom: 8.0),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${widget.content.likes} Likes',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                              fontSize: 11.0,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 5.0),
-                        Text(
-                          '${widget.content.comments} Comment',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color:
-                                _showComments
-                                    ? Colors.blue.shade600
-                                    : Colors.grey.shade700,
-                            fontSize: 14.0,
+                          SizedBox(width: 10.0),
+                          Text(
+                            '${widget.content.comments} Comments',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                              fontSize: 11.0,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    onTap: () {
-                      setState(() {
-                        _showComments = !_showComments;
-                      });
-                    },
-                  ),
-
-                  _buildActionButton(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.share_outlined,
-                          color: Colors.grey.shade600,
-                          size: 20.0,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Share',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                            fontSize: 14.0,
-                          ),
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      _showShareOptions(context);
-                    },
-                  ),
-
-                  // Share Button
-                  // _buildActionButton(
-                  //   child: Icon(
-                  //     Icons.share_outlined,
-                  //     color: Colors.grey.shade600,
-                  //     size: 20.0,
-                  //   ),
-                  //   onTap: () {
-                  //     _showShareOptions(context);
-                  //   },
-                  // ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -2433,22 +2417,22 @@ class _FeedItemState extends State<FeedItem>
     );
   }
 
-  Widget _buildActionButton({
-    required Widget child,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12.0),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-          child: child,
-        ),
-      ),
-    );
-  }
+  // Widget _buildActionButton({
+  //   required Widget child,
+  //   required VoidCallback onTap,
+  // }) {
+  //   return Material(
+  //     color: Colors.transparent,
+  //     child: InkWell(
+  //       borderRadius: BorderRadius.circular(12.0),
+  //       onTap: onTap,
+  //       child: Container(
+  //         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+  //         child: child,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Color _getTypeColor(String type) {
     switch (type.toLowerCase()) {
@@ -2645,12 +2629,13 @@ class _FeedItemState extends State<FeedItem>
     return GestureDetector(
       onTap: () => _showMediaGallery(context, [url], 0),
       child: Container(
-        constraints: BoxConstraints(maxHeight: 450, minHeight: 200),
+        // constraints: BoxConstraints(maxHeight: 450, minHeight: 200),
         child: CachedNetworkImage(
           filterQuality: FilterQuality.high,
+
           imageUrl: url,
-          fit: BoxFit.contain, // Changed to cover
-          width: double.infinity,
+          fit: BoxFit.contain,
+          // width: double.infinity,
           memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
           placeholder:
               (context, url) => Container(
