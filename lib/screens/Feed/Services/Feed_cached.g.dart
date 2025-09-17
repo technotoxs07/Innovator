@@ -1,5 +1,8 @@
 import 'package:hive/hive.dart';
+import 'package:innovator/models/Feed_Content_Model.dart';
 import 'package:innovator/screens/Feed/Inner_Homepage.dart';
+
+import '../../../models/Author_model.dart';
 
 @HiveType(typeId: 0)
 class FeedContentAdapter extends TypeAdapter<FeedContent> {

@@ -17,17 +17,19 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
       _handlePageVisible();
     });
     return Scaffold(
-      backgroundColor: Get.theme.scaffoldBackgroundColor,
-      //appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildUserStatus(),
-         // _buildCurrentUserCard(),
-          _buildIntegratedSearchBar(), // NEW: Integrated search bar
-          Expanded(child: _buildUsersList()),
-        ],
-      ),
-    );
+    backgroundColor: Get.theme.scaffoldBackgroundColor,
+    //appBar: _buildAppBar(),
+    body: CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: _buildUserStatus()),
+        // SliverToBoxAdapter(child: _buildCurrentUserCard()), // Uncomment if needed
+        SliverToBoxAdapter(child: _buildIntegratedSearchBar()),
+        SliverFillRemaining(
+          child: _buildUsersList(),
+        ),
+      ],
+    ),
+  );
   }
 
   void _handlePageVisible() {
@@ -74,7 +76,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
 
       return Container(
         height: 150,
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+       // margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: Get.theme.cardColor,
           borderRadius: BorderRadius.circular(16),
@@ -350,81 +352,94 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
   }
 
   // NEW: Integrated search bar
-  Widget _buildIntegratedSearchBar() {
-    final TextEditingController searchController = TextEditingController();
+  // ...existing code...
+Widget _buildIntegratedSearchBar() {
+  final TextEditingController searchController = TextEditingController();
 
-    return Obx(() {
-      // Update search controller when searchQuery changes
-      if (controller.searchQuery.value != searchController.text) {
-        searchController.text = controller.searchQuery.value;
-        searchController.selection = TextSelection.fromPosition(
-          TextPosition(offset: controller.searchQuery.value.length),
-        );
-      }
-
-      return AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Get.theme.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(5),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: TextField(
-          controller: searchController,
-          decoration: InputDecoration(
-            hintText: 'Search mutual followers...',
-            hintStyle: TextStyle(color: Colors.grey.shade500),
-            prefixIcon: controller.isSearching.value
-                ? Container(
-                    padding: const EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: const Color.fromRGBO(244, 135, 6, 1),
-                      ),
-                    ),
-                  )
-                : const Icon(
-                    Icons.search,
-                    color: Color.fromRGBO(244, 135, 6, 1),
-                  ),
-            suffixIcon: controller.searchQuery.value.isNotEmpty
-                ? IconButton(
-                    icon: Icon(Icons.clear, color: Colors.grey.shade600),
-                    onPressed: () {
-                      searchController.clear();
-                      controller.searchQuery.value = '';
-                      controller.searchResults.clear();
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          ),
-          onChanged: (value) {
-            controller.searchQuery.value = value;
-            // Implement local search if needed
-            _performLocalSearch(value);
-          },
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              controller.searchUsers(value.trim());
-            }
-          },
-        ),
+  return Obx(() {
+    // Update search controller when searchQuery changes
+    if (controller.searchQuery.value != searchController.text) {
+      searchController.text = controller.searchQuery.value;
+      searchController.selection = TextSelection.fromPosition(
+        TextPosition(offset: controller.searchQuery.value.length),
       );
-    });
-  }
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Get.theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(5),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: 'Search mutual followers...',
+                hintStyle: TextStyle(color: Colors.grey.shade500),
+                prefixIcon: controller.isSearching.value
+                    ? Container(
+                        padding: const EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: const Color.fromRGBO(244, 135, 6, 1),
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.search,
+                        color: Color.fromRGBO(244, 135, 6, 1),
+                      ),
+                suffixIcon: controller.searchQuery.value.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                        onPressed: () {
+                          searchController.clear();
+                          controller.searchQuery.value = '';
+                          controller.searchResults.clear();
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              ),
+              onChanged: (value) {
+                controller.searchQuery.value = value;
+                // Implement local search if needed
+                _performLocalSearch(value);
+              },
+              onSubmitted: (value) {
+                if (value.trim().isNotEmpty) {
+                  controller.searchUsers(value.trim());
+                }
+              },
+            ),
+          ),
+          IconButton(
+            onPressed: () => controller.refreshUsersAndCache(),
+            icon: Icon(Icons.refresh, color: const Color.fromRGBO(244, 135, 6, 1)),
+            tooltip: 'Refresh users',
+          ),
+        ],
+      ),
+    );
+  });
+}
+// ...existing code...
 
   // NEW: Local search through existing users
   void _performLocalSearch(String query) {

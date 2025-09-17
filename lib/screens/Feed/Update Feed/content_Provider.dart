@@ -41,12 +41,12 @@ class ContentProvider extends ChangeNotifier {
   }
   
   // Delete files
-  Future<bool> deleteFiles(List<String> filePaths) async {
+  Future<bool> deleteFiles(String postId) async {
     _isLoading = true;
     notifyListeners();
     
     try {
-      final success = await ApiService.deleteFiles(filePaths);
+      final success = await ApiService.deleteFiles(postId);
       
       _isLoading = false;
       notifyListeners();

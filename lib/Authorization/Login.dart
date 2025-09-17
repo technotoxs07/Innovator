@@ -904,9 +904,9 @@ class _LoginPageState extends State<LoginPage> {
       await _createFirebaseAuthSession(userData);
 
       // Initialize other services
-      await _initializeFollowStatusManager();
-      await _initializeChatControllerWithFollowStatus();
-      await _saveCredentials();
+
+     // await _initializeFollowStatusManager();
+      //await _initializeChatControllerWithFollowStatus();
 
       Navigator.pushAndRemoveUntil(
         context,

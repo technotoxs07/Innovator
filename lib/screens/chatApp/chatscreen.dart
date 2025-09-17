@@ -129,14 +129,14 @@ class OptimizedChatScreen extends GetView<FireChatController> {
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.videocam, color: Colors.white),
-          onPressed: () => _startVideoCall(),
-        ),
-        IconButton(
-          icon: const Icon(Icons.call, color: Colors.white),
-          onPressed: () => _startVoiceCall(),
-        ),
+        // IconButton(
+        //   icon: const Icon(Icons.videocam, color: Colors.white),
+        //   onPressed: () => _startVideoCall(),
+        // ),
+        // IconButton(
+        //   icon: const Icon(Icons.call, color: Colors.white),
+        //   onPressed: () => _startVoiceCall(),
+        // ),
         PopupMenuButton(
           icon: const Icon(Icons.more_vert, color: Colors.white),
           itemBuilder: (context) => [
@@ -771,21 +771,21 @@ class OptimizedChatScreen extends GetView<FireChatController> {
     return message['senderId']?.toString() == currentUserId;
   }
 
-  void _startVideoCall() async {
-  try {
-    await controller.startVideoCall(receiverUser);
-  } catch (e) {
-    Get.snackbar('Error', 'Failed to start video call');
-  }
-}
+//   void _startVideoCall() async {
+//   try {
+//     await controller.startVideoCall(receiverUser);
+//   } catch (e) {
+//     Get.snackbar('Error', 'Failed to start video call');
+//   }
+// }
 
-void _startVoiceCall() async {
-  try {
-    await controller.startVoiceCall(receiverUser);
-  } catch (e) {
-    Get.snackbar('Error', 'Failed to start voice call');
-  }
-}
+// void _startVoiceCall() async {
+//   try {
+//     await controller.startVoiceCall(receiverUser);
+//   } catch (e) {
+//     Get.snackbar('Error', 'Failed to start voice call');
+//   }
+// }
 
   void _showClearChatDialog() {
     Get.dialog(

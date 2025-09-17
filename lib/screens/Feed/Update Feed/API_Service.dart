@@ -44,12 +44,11 @@ class ApiService {
   }
   
   // Delete files
-  static Future<bool> deleteFiles(List<String> filePaths) async {
+  static Future<bool> deleteFiles(String postId) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/delete-files'),
+        Uri.parse('$baseUrl/delete-content/$postId'),
         headers: _headers,
-        body: jsonEncode(filePaths),
       );
       
       if (response.statusCode == 200) {

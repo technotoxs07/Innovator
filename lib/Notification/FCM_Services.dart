@@ -1,16 +1,12 @@
 import 'dart:convert';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/innovator_home.dart';
-import 'package:innovator/screens/Profile/profile_page.dart';
 import 'package:innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
 import 'package:intl/intl.dart';
-import 'package:innovator/screens/comment/comment_screen.dart';
 import 'package:innovator/screens/Feed/post_detail_screen.dart';
-import 'package:innovator/screens/Profile/profile_screen.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key});
@@ -467,70 +463,10 @@ class _NotificationListScreenState extends State<NotificationListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          _buildSliverAppBar(),
-          _buildFilterChips(),
-          _buildNotificationList(),
-        ],
-      ),
-      floatingActionButton: _buildFloatingActionButtons(),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    final unreadCount = notifications.where((n) => !n.read).length;
-    
-    return SliverAppBar(
-      expandedHeight: 140,
-      floating: false,
-      pinned: true,
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      flexibleSpace: FlexibleSpaceBar(
-        background: SlideTransition(
-          position: _headerSlideAnimation,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFFF48706),
-                  const Color(0xFFF48706).withAlpha(80),
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => Homepage()),
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(20),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        if (notifications.isNotEmpty) ...[
+      appBar: AppBar(
+        title: Text('Notification', style: TextStyle(color: Colors.white),),
+        actions: [
+          if (notifications.isNotEmpty) ...[
                           _buildHeaderAction(
                             Icons.mark_email_read,
                             'Mark all read',
@@ -543,49 +479,110 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                             deleteAllNotifications,
                           ),
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        const Text(
-                          'Notifications',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (unreadCount > 0) ...[
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '$unreadCount new',
-                              style: const TextStyle(
-                                color: Color(0xFFF48706),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+        ],
       ),
-      leading: const SizedBox(),
+      backgroundColor: Colors.grey[50],
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+         // _buildSliverAppBar(),
+          _buildFilterChips(),
+          _buildNotificationList(),
+        ],
+      ),
+      floatingActionButton: _buildFloatingActionButtons(),
     );
   }
+
+  // Widget _buildSliverAppBar() {
+  //   final unreadCount = notifications.where((n) => !n.read).length;
+    
+  //   return SliverAppBar(
+  //     //expandedHeight: 140,
+  //     //floating: false,
+  //     //pinned: true,
+  //     elevation: 0,
+  //     backgroundColor: Colors.transparent,
+  //     flexibleSpace: FlexibleSpaceBar(
+  //       background: SlideTransition(
+  //         position: _headerSlideAnimation,
+  //         child: Container(
+  //           decoration: BoxDecoration(
+  //             gradient: LinearGradient(
+  //               begin: Alignment.topLeft,
+  //               end: Alignment.bottomRight,
+  //               colors: [
+  //                 const Color(0xFFF48706),
+  //                 const Color(0xFFF48706).withAlpha(80),
+  //               ],
+  //             ),
+  //           ),
+            
+
+  //               child: Column(
+  //                 //crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Row(
+  //                     children: [
+  //                       GestureDetector(
+  //                         onTap: () => Navigator.pushReplacement(
+  //                           context,
+  //                           MaterialPageRoute(builder: (_) => Homepage()),
+  //                         ),
+  //                         child: Container(
+  //                           padding: const EdgeInsets.all(8),
+  //                           decoration: BoxDecoration(
+  //                             color: Colors.white.withAlpha(20),
+  //                             borderRadius: BorderRadius.circular(12),
+  //                           ),
+  //                           child: const Icon(
+  //                             Icons.arrow_back_ios_new,
+  //                             color: Colors.white,
+  //                             size: 20,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                       const Text(
+  //                         'Notifications',
+  //                         style: TextStyle(
+  //                           fontSize: 14,
+  //                           fontWeight: FontWeight.bold,
+  //                           color: Colors.white,
+  //                         ),
+  //                       ),
+  //                       if (unreadCount > 0) ...[
+  //                         const SizedBox(width: 12),
+  //                         Container(
+  //                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //                           decoration: BoxDecoration(
+  //                             color: Colors.white,
+  //                             borderRadius: BorderRadius.circular(20),
+  //                           ),
+  //                           child: Text(
+  //                             '$unreadCount new',
+  //                             style: const TextStyle(
+  //                               color: Color(0xFFF48706),
+  //                               fontSize: 11,
+  //                               fontWeight: FontWeight.w600,
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       ],
+                        
+                        
+  //                     ],
+  //                   ),
+                    
+  //                 ],
+                
+  //             ),
+            
+  //         ),
+  //       ),
+  //     ),
+  //     //leading: const SizedBox(),
+  //   );
+  // }
 
   Widget _buildHeaderAction(IconData icon, String tooltip, VoidCallback onTap) {
     return GestureDetector(
@@ -733,20 +730,20 @@ class _NotificationListScreenState extends State<NotificationListScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: fetchNotifications,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF48706),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-            ),
-          ),
+          // const SizedBox(height: 32),
+          // ElevatedButton.icon(
+          //   onPressed: fetchNotifications,
+          //   icon: const Icon(Icons.refresh),
+          //   label: const Text('Refresh'),
+          //   style: ElevatedButton.styleFrom(
+          //     backgroundColor: const Color(0xFFF48706),
+          //     foregroundColor: Colors.white,
+          //     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          //     shape: RoundedRectangleBorder(
+          //       borderRadius: BorderRadius.circular(25),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

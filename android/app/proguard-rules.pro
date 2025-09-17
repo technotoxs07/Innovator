@@ -9,3 +9,5 @@
 -keepattributes *Annotation*
 -keepattributes Signature
 -keep class com.google.firebase.messaging.** { *; }
+
+-keep class com.hiennv.flutter_callkit_incoming.** { *; }
