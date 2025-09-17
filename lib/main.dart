@@ -1,14 +1,15 @@
 // Optimized main.dart - MEMORY LEAK FIXES AND CRASH PREVENTION
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_preview/device_preview.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -1070,7 +1071,12 @@ void main() async {
     developer.log('Critical initialization error: $e');
   }
 
-  runApp(const ProviderScope(child: InnovatorHomePage()));
+  runApp(
+    DevicePreview(
+      enabled: kDebugMode,
+      builder: (context) => const ProviderScope(child: InnovatorHomePage()),
+    ),
+  );
 }
 
 // OPTIMIZED: Main app class with better memory management
@@ -1326,9 +1332,9 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     }
   }
 
-  ThemeData _buildAppTheme() {
+  _buildAppTheme() {
     return ThemeData(
-      fontFamily: 'Segoe UI',
+      fontFamily: 'InterThin',
       primarySwatch: Colors.orange,
       primaryColor: const Color.fromRGBO(244, 135, 6, 1),
       appBarTheme: const AppBarTheme(

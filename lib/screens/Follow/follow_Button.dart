@@ -28,10 +28,12 @@ class FollowButton extends StatefulWidget {
   _FollowButtonState createState() => _FollowButtonState();
 }
 
-class _FollowButtonState extends State<FollowButton> with SingleTickerProviderStateMixin {
+class _FollowButtonState extends State<FollowButton>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = false;
   bool _isInitializing = true;
-  int _state = 0; // 0 = plus, 1 = requested text, 2 = following (checkmark), 3 = unfollow hover
+  int _state =
+      0; // 0 = plus, 1 = requested text, 2 = following (checkmark), 3 = unfollow hover
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
   bool _isHovering = false;
@@ -41,11 +43,13 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    
+
     // Check cached status first
-    final cachedStatus = _statusManager.getCachedFollowStatus(widget.targetUserEmail);
+    final cachedStatus = _statusManager.getCachedFollowStatus(
+      widget.targetUserEmail,
+    );
     _state = (cachedStatus ?? widget.initialFollowStatus) ? 2 : 0;
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -53,19 +57,21 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
     _widthAnimation = Tween<double>(begin: 1, end: 2.5).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    
+
     // Listen to status changes from other parts of the app
-    _statusSubscription = _statusManager.getFollowStatusStream(widget.targetUserEmail).listen(
-      (isFollowing) {
-        if (mounted) {
-          setState(() {
-            _state = isFollowing ? 2 : 0;
-          });
-          debugPrint('📢 FollowButton: Received status update for ${widget.targetUserEmail}: $isFollowing');
-        }
-      },
-    );
-    
+    _statusSubscription = _statusManager
+        .getFollowStatusStream(widget.targetUserEmail)
+        .listen((isFollowing) {
+          if (mounted) {
+            setState(() {
+              _state = isFollowing ? 2 : 0;
+            });
+            debugPrint(
+              '📢 FollowButton: Received status update for ${widget.targetUserEmail}: $isFollowing',
+            );
+          }
+        });
+
     // Verify actual follow status from backend if no cached data
     if (cachedStatus == null) {
       _verifyFollowStatus();
@@ -78,19 +84,25 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
 
   Future<void> _verifyFollowStatus() async {
     try {
-      final actualStatus = await FollowService.checkFollowStatus(widget.targetUserEmail);
-      
+      final actualStatus = await FollowService.checkFollowStatus(
+        widget.targetUserEmail,
+      );
+
       if (mounted) {
         setState(() {
           _state = actualStatus ? 2 : 0;
           _isInitializing = false;
         });
-        
+
         // Update the status manager cache
         _statusManager.updateFollowStatus(widget.targetUserEmail, actualStatus);
-        
-        debugPrint('✅ Follow status verified for ${widget.targetUserEmail}: $actualStatus');
-        debugPrint('🔄 Initial status was: ${widget.initialFollowStatus}, Actual status: $actualStatus');
+
+        debugPrint(
+          '✅ Follow status verified for ${widget.targetUserEmail}: $actualStatus',
+        );
+        debugPrint(
+          '🔄 Initial status was: ${widget.initialFollowStatus}, Actual status: $actualStatus',
+        );
       }
     } catch (e) {
       debugPrint('❌ Error verifying follow status: $e');
@@ -112,7 +124,7 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final size = widget.size ?? 25.0;
-    
+
     // Show loading spinner while initializing
     if (_isInitializing) {
       return SizedBox(
@@ -136,7 +148,7 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
         ),
       );
     }
-    
+
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
@@ -149,6 +161,7 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: _getButtonColor(),
+
                 padding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(size / 2),
@@ -242,23 +255,28 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
     try {
       setState(() => _state = 1);
       await _animationController.forward();
-      
+
       await FollowService.sendFollowRequest(widget.targetUserEmail);
-      
+
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       setState(() => _state = 2);
       await _animationController.reverse();
-      
+
       // Update status manager
       _statusManager.updateFollowStatus(widget.targetUserEmail, true);
-      
+
       if (widget.onFollowSuccess != null) {
         widget.onFollowSuccess!();
       }
       SoundPlayer player = SoundPlayer();
-      player.FollowSound(); 
-      Get.snackbar("Follow", 'Follow Request Sent', backgroundColor: Colors.green, colorText: Colors.white);
+      player.FollowSound();
+      Get.snackbar(
+        "Follow",
+        'Follow Request Sent',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
 
       // ScaffoldMessenger.of(context).showSnackBar(
       //   const SnackBar(
@@ -267,12 +285,12 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
       //     duration: Duration(seconds: 2),
       //   ),
       // );
-      
+
       debugPrint('✅ Follow request completed for ${widget.targetUserEmail}');
     } catch (e) {
       setState(() => _state = 0);
       _animationController.reset();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -280,7 +298,7 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
           duration: Duration(seconds: 3),
         ),
       );
-      
+
       debugPrint('❌ Follow request failed for ${widget.targetUserEmail}: $e');
     } finally {
       setState(() => _isLoading = false);
@@ -294,23 +312,28 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
 
     try {
       await _animationController.forward();
-      
+
       final result = await FollowService.unfollowUser(widget.targetUserEmail);
-      
+
       debugPrint('Unfollow response: $result');
-      
+
       setState(() => _state = 0);
       await _animationController.reverse();
-      
+
       // Update status manager
       _statusManager.updateFollowStatus(widget.targetUserEmail, false);
-      
+
       if (widget.onUnfollowSuccess != null) {
         widget.onUnfollowSuccess!();
       }
       SoundPlayer player = SoundPlayer();
       player.FollowSound();
-      Get.snackbar("UnFollow", 'Unfollow Successfull', backgroundColor: Colors.green, colorText: Colors.white);
+      Get.snackbar(
+        "UnFollow",
+        'Unfollow Successfull',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
 
       // ScaffoldMessenger.of(context).showSnackBar(
       //   const SnackBar(
@@ -319,17 +342,18 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
       //     duration: Duration(seconds: 2),
       //   ),
       // );
-      
+
       debugPrint('✅ Unfollow completed for ${widget.targetUserEmail}');
     } catch (e) {
       setState(() => _state = 2);
       _animationController.reset();
-      
+
       String errorMessage = e.toString();
       if (errorMessage.contains('FormatException')) {
-        errorMessage = 'Server returned invalid response. The unfollow endpoint might not be configured correctly.';
+        errorMessage =
+            'Server returned invalid response. The unfollow endpoint might not be configured correctly.';
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $errorMessage'),
@@ -337,7 +361,7 @@ class _FollowButtonState extends State<FollowButton> with SingleTickerProviderSt
           duration: Duration(seconds: 3),
         ),
       );
-      
+
       debugPrint('❌ Unfollow failed for ${widget.targetUserEmail}: $e');
     } finally {
       setState(() => _isLoading = false);
