@@ -1,4 +1,4 @@
-// lib/services/Firebase_Messaging.dart - COMPLETE CORRECTED VERSION
+
 
 import 'dart:async';
 import 'dart:convert';
@@ -185,65 +185,65 @@ class FirebaseNotificationService {
   }
 
   // ENHANCED: Handle call notification actions
-  void _handleCallNotificationAction(String action, Map<String, dynamic> data) {
-    final callId = data['callId']?.toString() ?? '';
+  // void _handleCallNotificationAction(String action, Map<String, dynamic> data) {
+  //   final callId = data['callId']?.toString() ?? '';
     
-    switch (action) {
-      case 'accept_call':
-        _acceptCallFromNotification(callId, data);
-        break;
-      case 'decline_call':
-        _declineCallFromNotification(callId);
-        break;
-      default:
-        // Show incoming call screen
-        _showIncomingCallFromNotification(data);
-        break;
-    }
-  }
+  //   switch (action) {
+  //     case 'accept_call':
+  //       _acceptCallFromNotification(callId, data);
+  //       break;
+  //     case 'decline_call':
+  //       _declineCallFromNotification(callId);
+  //       break;
+  //     default:
+  //       // Show incoming call screen
+  //       _showIncomingCallFromNotification(data);
+  //       break;
+  //   }
+  // }
 
-  void _acceptCallFromNotification(String callId, Map<String, dynamic> data) {
-    try {
-      if (Get.isRegistered<WebRTCCallService>()) {
-        final callService = WebRTCCallService.instance;
-        callService.answerCall(callId);
+  // void _acceptCallFromNotification(String callId, Map<String, dynamic> data) {
+  //   try {
+  //     if (Get.isRegistered<WebRTCCallService>()) {
+  //       final callService = WebRTCCallService.instance;
+  //       callService.answerCall(data);
         
-        // Navigate to call screen
-        Get.to(() => ActiveCallScreen());
+  //       // Navigate to call screen
+  //       Get.to(() => ActiveCallScreen());
         
-        // Clear notification
-        clearNotification(callId.hashCode);
-      } else {
-        // Show incoming call screen if service not ready
-        _showIncomingCallFromNotification(data);
-      }
-    } catch (e) {
-      developer.log('❌ Error accepting call from notification: $e');
-      _showIncomingCallFromNotification(data);
-    }
-  }
+  //       // Clear notification
+  //       clearNotification(callId.hashCode);
+  //     } else {
+  //       // Show incoming call screen if service not ready
+  //       _showIncomingCallFromNotification(data);
+  //     }
+  //   } catch (e) {
+  //     developer.log('❌ Error accepting call from notification: $e');
+  //     _showIncomingCallFromNotification(data);
+  //   }
+  // }
 
-  void _declineCallFromNotification(String callId) {
-    try {
-      if (Get.isRegistered<WebRTCCallService>()) {
-        final callService = WebRTCCallService.instance;
-        callService.rejectCall(callId);
+  // void _declineCallFromNotification(String callId) {
+  //   try {
+  //     if (Get.isRegistered<WebRTCCallService>()) {
+  //       final callService = WebRTCCallService.instance;
+  //       callService.rejectCall(callId);
         
-        // Clear notification
-        clearNotification(callId.hashCode);
-      }
-    } catch (e) {
-      developer.log('❌ Error declining call from notification: $e');
-    }
-  }
+  //       // Clear notification
+  //       clearNotification(callId.hashCode);
+  //     }
+  //   } catch (e) {
+  //     developer.log('❌ Error declining call from notification: $e');
+  //   }
+  // }
 
-  void _showIncomingCallFromNotification(Map<String, dynamic> data) {
-    Get.to(
-      () => IncomingCallScreen(callData: data),
-      transition: Transition.fadeIn,
-      fullscreenDialog: true,
-    );
-  }
+  // void _showIncomingCallFromNotification(Map<String, dynamic> data) {
+  //   Get.to(
+  //     () => IncomingCallScreen(callData: data),
+  //     transition: Transition.fadeIn,
+  //     fullscreenDialog: true,
+  //   );
+  // }
 
   Future<void> _initializeLocalNotifications() async {
     try {
@@ -408,9 +408,9 @@ class FirebaseNotificationService {
       final messageType = message.data['type']?.toString() ?? '';
       
       switch (messageType) {
-        case 'call':
-          _handleIncomingCallMessage(message);
-          break;
+        // case 'call':
+        //   _handleIncomingCallMessage(message);
+        //   break;
         case 'chat':
         case 'message':
           handleForegroundMessage(message);
@@ -441,46 +441,46 @@ class FirebaseNotificationService {
   }
 
   // ENHANCED: Handle incoming call messages
-  void _handleIncomingCallMessage(RemoteMessage message) {
-    try {
-      developer.log('📞 === HANDLING INCOMING CALL MESSAGE ===');
+  // void _handleIncomingCallMessage(RemoteMessage message) {
+  //   try {
+  //     developer.log('📞 === HANDLING INCOMING CALL MESSAGE ===');
       
-      final data = message.data;
-      final callId = data['callId']?.toString() ?? '';
-      final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
-      final isVideoCall = data['isVideoCall'] == 'true';
+  //     final data = message.data;
+  //     final callId = data['callId']?.toString() ?? '';
+  //     final callerName = data['callerName']?.toString() ?? 'Unknown Caller';
+  //     final isVideoCall = data['isVideoCall'] == 'true';
       
-      developer.log('📞 Call ID: $callId');
-      developer.log('📞 Caller: $callerName');
-      developer.log('📞 Video: $isVideoCall');
+  //     developer.log('📞 Call ID: $callId');
+  //     developer.log('📞 Caller: $callerName');
+  //     developer.log('📞 Video: $isVideoCall');
       
-      // Show call notification
-      sendCallNotification(
-        token: '', // Empty for local notification
-        callId: callId,
-        callerName: callerName,
-        isVideoCall: isVideoCall,
-      );
+  //     // Show call notification
+  //     sendCallNotification(
+  //       token: '', // Empty for local notification
+  //       callId: callId,
+  //       callerName: callerName,
+  //       isVideoCall: isVideoCall,
+  //     );
       
-      // If app is in foreground, directly show incoming call screen
-      if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-        developer.log('📞 App in foreground, showing call screen directly');
+  //     // If app is in foreground, directly show incoming call screen
+  //     if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+  //       developer.log('📞 App in foreground, showing call screen directly');
         
-        Future.delayed(const Duration(milliseconds: 500), () {
-          Get.to(
-            () => IncomingCallScreen(callData: data),
-            transition: Transition.fadeIn,
-            fullscreenDialog: true,
-          );
-        });
-      }
+  //       Future.delayed(const Duration(milliseconds: 500), () {
+  //         Get.to(
+  //           () => IncomingCallScreen(callData: data),
+  //           transition: Transition.fadeIn,
+  //           fullscreenDialog: true,
+  //         );
+  //       });
+  //     }
       
-      developer.log('✅ Incoming call message handled');
+  //     developer.log('✅ Incoming call message handled');
       
-    } catch (e) {
-      developer.log('❌ Error handling incoming call message: $e');
-    }
-  }
+  //   } catch (e) {
+  //     developer.log('❌ Error handling incoming call message: $e');
+  //   }
+  // }
 
   // Handle foreground messages with badge management (existing method enhanced)
   Future<void> handleForegroundMessage(RemoteMessage message) async {
@@ -871,12 +871,12 @@ class FirebaseNotificationService {
           case 'mark_read':
             _handleMarkAsReadWithBadge(data);
             break;
-          case 'accept_call':
-            _handleCallNotificationAction('accept_call', data);
-            break;
-          case 'decline_call':
-            _handleCallNotificationAction('decline_call', data);
-            break;
+          // case 'accept_call':
+          //   _handleCallNotificationAction('accept_call', data);
+          //   break;
+          // case 'decline_call':
+          //   _handleCallNotificationAction('decline_call', data);
+          //   break;
           default:
             _handleNotificationTapWithBadge(data);
             break;
@@ -980,11 +980,10 @@ class FirebaseNotificationService {
         case 'message':
           _navigateToChatWithBadge(data);
           break;
-        case 'call':
-          _handleCallNotification(data);
-          break;
+        // case 'call':
+        //   _handleCallNotification(data);
+        //   break;
         default:
-          // Navigate to home
           Get.toNamed('/home');
           break;
       }
@@ -1038,9 +1037,9 @@ class FirebaseNotificationService {
         case 'message':
           _navigateToChat(data);
           break;
-        case 'call':
-          _handleCallNotification(data);
-          break;
+        // case 'call':
+        //   _handleCallNotification(data);
+        //   break;
         default:
           // Navigate to home
           Get.toNamed('/home');
@@ -1083,16 +1082,16 @@ class FirebaseNotificationService {
     }
   }
 
-  void _handleCallNotification(Map<String, dynamic> data) {
-    developer.log('📞 Handling call notification: $data');
+  // void _handleCallNotification(Map<String, dynamic> data) {
+  //   developer.log('📞 Handling call notification: $data');
     
-    // Show incoming call screen
-    Get.to(
-      () => IncomingCallScreen(callData: data),
-      transition: Transition.fadeIn,
-      fullscreenDialog: true,
-    );
-  }
+  //   // Show incoming call screen
+  //   Get.to(
+  //     () => IncomingCallScreen(callData: data),
+  //     transition: Transition.fadeIn,
+  //     fullscreenDialog: true,
+  //   );
+  // }
 
   // iOS-specific callback
   static void _onDidReceiveLocalNotification(

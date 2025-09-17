@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/screens/Shop/Cart_List/cart_model.dart';
+import 'package:innovator/models/Shop_cart_model.dart';
 import 'package:intl/intl.dart';
 
 class OrderDetailPage extends StatefulWidget {

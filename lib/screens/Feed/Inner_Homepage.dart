@@ -13,6 +13,7 @@ import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/screens/Feed/Optimize%20Media/OptimizeMediaScreen.dart';
 import 'package:innovator/screens/Feed/SuggestedUsr.dart';
+import 'package:innovator/screens/Feed/Update%20Feed/API_Service.dart';
 import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:innovator/screens/Likes/Content-Like-Service.dart';
 import 'package:innovator/screens/Likes/content-Like-Button.dart';
@@ -34,6 +35,9 @@ import 'dart:developer' as developer;
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+
+import '../../models/Author_model.dart';
+import '../../models/Feed_Content_Model.dart';
 
 // VideoPlaybackManager class
 
@@ -118,211 +122,10 @@ class CacheManager {
 }
 
 // Enhanced Author model
-class Author {
-  final String id;
-  final String name;
-  final String email;
-  final String picture;
 
-  const Author({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.picture,
-  });
-
-  factory Author.fromJson(Map<String, dynamic> json) {
-    return Author(
-      id: json['_id'] ?? '',
-      name: json['name'] ?? 'Unknown',
-      email: json['email'] ?? '',
-      picture: json['picture'] ?? '',
-    );
-  }
-}
 
 // Enhanced FeedContent model
-class FeedContent {
-  final String id;
-  String status;
-  final String type;
-  final List<String> files;
-  final List<dynamic> optimizedFiles;
-  final Author author;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  int views;
-  bool isShared;
-  int likes;
-  int comments;
-  bool isLiked;
-  bool isFollowed;
-  bool engagementLoaded;
-  String loadPriority;
 
-  late final List<String> _mediaUrls;
-  late final bool _hasImages;
-  late final bool _hasVideos;
-  late final bool _hasPdfs;
-  late final bool _hasWordDocs;
-
-  FeedContent({
-    required this.id,
-    required this.status,
-    required this.type,
-    required this.files,
-    required this.optimizedFiles,
-    required this.author,
-    required this.createdAt,
-    required this.updatedAt,
-    this.views = 0,
-    this.isShared = false,
-    this.likes = 0,
-    this.comments = 0,
-    this.isLiked = false,
-    this.isFollowed = false,
-    this.engagementLoaded = false,
-    this.loadPriority = 'normal',
-  }) {
-    try {
-      final allUrls = [
-        ...files.map((file) => _formatUrl(file)),
-        ...optimizedFiles
-            .where((file) => file != null && file is Map && file['url'] != null)
-            .map((file) => _formatUrl(file['url'])),
-      ];
-
-      _mediaUrls = allUrls.toSet().toList();
-
-      _hasImages =
-          _mediaUrls.any((url) => FileTypeHelper.isImage(url)) ||
-          optimizedFiles.any(
-            (file) => file != null && file is Map && file['type'] == 'image',
-          );
-
-      _hasVideos =
-          _mediaUrls.any((url) => FileTypeHelper.isVideo(url)) ||
-          optimizedFiles.any(
-            (file) => file != null && file is Map && file['type'] == 'video',
-          );
-
-      _hasPdfs =
-          _mediaUrls.any((url) => FileTypeHelper.isPdf(url)) ||
-          optimizedFiles.any(
-            (file) => file != null && file is Map && file['type'] == 'pdf',
-          );
-
-      _hasWordDocs = _mediaUrls.any((url) => FileTypeHelper.isWordDoc(url));
-    } catch (e) {
-      _mediaUrls = [];
-      _hasImages = false;
-      _hasVideos = false;
-      _hasPdfs = false;
-      _hasWordDocs = false;
-      developer.log('Error initializing FeedContent media: $e');
-    }
-  }
-
-  String _formatUrl(String url) {
-    if (url.startsWith('http')) {
-      return url;
-    }
-    return 'http://182.93.94.210:3067${url.startsWith('/') ? url : '/$url'}';
-  }
-
-  factory FeedContent.fromJson(Map<String, dynamic> json) {
-    try {
-      // Enhanced error handling for user interactions
-      final userInteractions =
-          json['userInteractions'] as Map<String, dynamic>? ?? {};
-
-      return FeedContent(
-        id: json['_id'] ?? '',
-        status: json['status'] ?? '',
-        type: json['type'] ?? 'innovation',
-        files: List<String>.from(json['files'] ?? []),
-        optimizedFiles: List<dynamic>.from(json['optimizedFiles'] ?? []),
-        author: Author.fromJson(json['author'] ?? {}),
-        createdAt: DateTime.parse(
-          json['createdAt'] ?? DateTime.now().toIso8601String(),
-        ),
-        updatedAt: DateTime.parse(
-          json['updatedAt'] ?? DateTime.now().toIso8601String(),
-        ),
-        views: json['views'] ?? 0,
-        isShared: json['isShared'] ?? false,
-        likes: json['likes'] ?? 0,
-        comments: json['comments'] ?? 0,
-        isLiked: json['liked'] ?? userInteractions['liked'] ?? false,
-        isFollowed: userInteractions['followed'] ?? false,
-        engagementLoaded: json['engagementLoaded'] ?? false,
-        loadPriority: json['loadPriority'] ?? 'normal',
-      );
-    } catch (e) {
-      developer.log('Error parsing FeedContent: $e');
-      return FeedContent(
-        id: '',
-        status: '',
-        type: '',
-        files: [],
-        optimizedFiles: [],
-        author: Author(id: '', name: 'Error', email: '', picture: ''),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-    }
-  }
-
-  List<String> get mediaUrls => _mediaUrls;
-  bool get hasImages => _hasImages;
-  bool get hasVideos => _hasVideos;
-  bool get hasPdfs => _hasPdfs;
-  bool get hasWordDocs => _hasWordDocs;
-
-  String? get bestVideoUrl {
-    try {
-      final videoFiles =
-          optimizedFiles
-              .where(
-                (file) =>
-                    file != null && file is Map && file['type'] == 'video',
-              )
-              .toList();
-      if (videoFiles.isEmpty) return null;
-
-      videoFiles.sort((a, b) {
-        final aQualities = List<String>.from(a['qualities'] ?? []);
-        final bQualities = List<String>.from(b['qualities'] ?? []);
-        return bQualities.length.compareTo(aQualities.length);
-      });
-
-      return _formatUrl(
-        videoFiles.first['url'] ?? videoFiles.first['hls'] ?? '',
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  String? get thumbnailUrl {
-    try {
-      for (final file in optimizedFiles) {
-        if (file != null && file is Map && file['thumbnail'] != null) {
-          return _formatUrl(file['thumbnail']);
-        }
-      }
-
-      final imageUrl = _mediaUrls.firstWhere(
-        (url) => FileTypeHelper.isImage(url),
-        orElse: () => '',
-      );
-
-      return imageUrl.isNotEmpty ? imageUrl : null;
-    } catch (e) {
-      return null;
-    }
-  }
-}
 
 class ContentResponse {
   final int status;
@@ -673,6 +476,32 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
   }
 
+  
+// Add this to your _Inner_HomePageState class
+
+/// ✅ NEW: Preload visible users when content is loaded
+void _preloadVisibleUsers() {
+  if (_allContents.isEmpty) return;
+  
+  try {
+    final userController = Get.find<UserController>();
+    final visibleUserIds = _allContents
+        .take(20) // Only preload for visible items
+        .map((content) => content.author.id)
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    
+    if (visibleUserIds.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        userController.preloadVisibleUsers(visibleUserIds, context);
+      });
+    }
+  } catch (e) {
+    debugPrint('Error preloading visible users: $e');
+  }
+}
+
   // ENHANCED: Load initial content with cursor format testing
   Future<void> _loadInitialContent() async {
     debugPrint('🔄 Loading initial content...');
@@ -708,6 +537,9 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
           _currentOffset = contentData.contents.length;
           _useCursorPagination = true; // Reset to try cursor first
         });
+
+        //New Preload user after login
+        _preloadVisibleUsers();
 
         debugPrint('✅ Initial content loaded: ${_allContents.length} items');
         debugPrint('📊 Has more: $_hasMoreContent');
@@ -805,6 +637,21 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
           _isLoading = false;
           _isLoadingMore = false;
         });
+
+        if (contentData.contents.isNotEmpty) {
+        final newUserIds = contentData.contents
+            .map((content) => content.author.id)
+            .where((id) => id.isNotEmpty)
+            .toSet()
+            .toList();
+        
+        if (newUserIds.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final userController = Get.find<UserController>();
+            userController.preloadVisibleUsers(newUserIds, context);
+          });
+        }
+      }
 
         debugPrint(
           '✅ More content loaded: ${contentData.contents.length} new items',
@@ -1728,6 +1575,7 @@ class FeedApiService {
 }
 
 // ENHANCED CONTENT DATA CLASS
+// Enhanced ContentData class with automatic user caching
 class ContentData {
   final List<FeedContent> contents;
   final bool hasMore;
@@ -1742,14 +1590,11 @@ class ContentData {
       debugPrint('   - Message: ${json['message']}');
 
       final data = json['data'] as Map<String, dynamic>? ?? {};
-
       debugPrint('📊 Data structure keys: ${data.keys.toList()}');
 
       // Parse different content arrays from the API response
       final normalContentList = data['normalContent'] as List<dynamic>? ?? [];
       final videoContentList = data['videoContent'] as List<dynamic>? ?? [];
-
-      // Also check for 'normal' and 'videos' keys (backup)
       final normalList = data['normal'] as List<dynamic>? ?? [];
       final videosList = data['videos'] as List<dynamic>? ?? [];
 
@@ -1765,29 +1610,27 @@ class ContentData {
       final nextCursor = data['nextCursor'] as String?;
 
       debugPrint('📊 ContentData parsing:');
-      debugPrint('   - Normal content items: ${normalContentList.length}');
-      debugPrint('   - Video content items: ${videoContentList.length}');
-      debugPrint('   - Normal items (backup): ${normalList.length}');
-      debugPrint('   - Video items (backup): ${videosList.length}');
       debugPrint('   - Total items: ${allItems.length}');
       debugPrint('   - Has more: $hasMore');
       debugPrint('   - Next cursor: $nextCursor');
 
-      final contents =
-          allItems
-              .map((item) {
-                try {
-                  return FeedContent.fromJson(item as Map<String, dynamic>);
-                } catch (e) {
-                  debugPrint('❌ Error parsing individual content item: $e');
-                  return null;
-                }
-              })
-              .where((content) => content != null && content.id.isNotEmpty)
-              .cast<FeedContent>()
-              .toList();
+      final contents = allItems
+          .map((item) {
+            try {
+              return FeedContent.fromJson(item as Map<String, dynamic>);
+            } catch (e) {
+              debugPrint('❌ Error parsing individual content item: $e');
+              return null;
+            }
+          })
+          .where((content) => content != null && content.id.isNotEmpty)
+          .cast<FeedContent>()
+          .toList();
 
       debugPrint('   - Valid contents parsed: ${contents.length}');
+
+      // ✅ NEW: Cache all user data immediately after parsing
+      _cacheUsersFromContents(contents);
 
       return ContentData(
         contents: contents,
@@ -1798,6 +1641,38 @@ class ContentData {
       debugPrint('❌ ContentData.fromNewFeedApi error: $e');
       debugPrint('❌ JSON structure: ${json.toString()}');
       return ContentData(contents: [], hasMore: false, nextCursor: null);
+    }
+  }
+
+  // ✅ NEW: Cache user data from feed contents
+  static void _cacheUsersFromContents(List<FeedContent> contents) {
+    try {
+      if (!Get.isRegistered<UserController>()) {
+        debugPrint('⚠️ UserController not registered, skipping user cache');
+        return;
+      }
+
+      final userController = Get.find<UserController>();
+      final usersToCache = <Map<String, dynamic>>[];
+
+      for (final content in contents) {
+        // Only cache if not already cached
+        if (!userController.isUserCached(content.author.id)) {
+          usersToCache.add({
+            '_id': content.author.id,
+            'name': content.author.name,
+            'picture': content.author.picture,
+            'email': content.author.email,
+          });
+        }
+      }
+
+      if (usersToCache.isNotEmpty) {
+        userController.bulkCacheUsers(usersToCache);
+        debugPrint('👥 Cached ${usersToCache.length} new users');
+      }
+    } catch (e) {
+      debugPrint('❌ Error caching users from contents: $e');
     }
   }
 
@@ -2466,64 +2341,80 @@ class _FeedItemState extends State<FeedItem>
   }
 
   Widget _buildAuthorAvatar() {
-    final userController = Get.find<UserController>();
+  final userController = Get.find<UserController>();
 
-    if (_isAuthorCurrentUser()) {
-      return Obx(() {
-        final picturePath = userController.getFullProfilePicturePath();
-        final version = userController.profilePictureVersion.value;
+  if (_isAuthorCurrentUser()) {
+    return Obx(() {
+      final picturePath = userController.getFullProfilePicturePath();
+      final version = userController.profilePictureVersion.value;
 
-        return CircleAvatar(
-          key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
-          backgroundImage:
-              picturePath != null
-                  ? NetworkImage('$picturePath?v=$version')
-                  : null,
-          child:
-              picturePath == null || picturePath.isEmpty
-                  ? Text(
-                    widget.content.author.name.isNotEmpty
-                        ? widget.content.author.name[0].toUpperCase()
-                        : '?',
-                  )
-                  : null,
-        );
-      });
-    }
-
-    if (widget.content.author.picture.isEmpty) {
       return CircleAvatar(
-        child: Text(
-          widget.content.author.name.isNotEmpty
-              ? widget.content.author.name[0].toUpperCase()
-              : '?',
-        ),
+        key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
+        backgroundImage: picturePath != null
+            ? CachedNetworkImageProvider('$picturePath?v=$version')
+            : null,
+        child: picturePath == null || picturePath.isEmpty
+            ? Text(
+                widget.content.author.name.isNotEmpty
+                    ? widget.content.author.name[0].toUpperCase()
+                    : '?',
+              )
+            : null,
       );
-    }
+    });
+  }
 
-    return CachedNetworkImage(
-      imageUrl: 'http://182.93.94.210:3067${widget.content.author.picture}',
-      imageBuilder:
-          (context, imageProvider) =>
-              CircleAvatar(backgroundImage: imageProvider),
-      placeholder:
-          (context, url) => CircleAvatar(
-            child: Container(
-              width: 20,
-              height: 20,
-              child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
-            ),
-          ),
-      errorWidget:
-          (context, url, error) => CircleAvatar(
-            child: Text(
-              widget.content.author.name.isNotEmpty
-                  ? widget.content.author.name[0].toUpperCase()
-                  : '?',
-            ),
-          ),
+  // ✅ ENHANCED: Cache user data if not already cached
+  if (!userController.isUserCached(widget.content.author.id)) {
+    userController.cacheUserProfilePicture(
+      widget.content.author.id,
+      widget.content.author.picture.isNotEmpty ? widget.content.author.picture : null,
+      widget.content.author.name,
     );
   }
+
+  // Use cached data with fallback to original author data
+  final cachedImageUrl = userController.getOtherUserFullProfilePicturePath(widget.content.author.id);
+  final cachedName = userController.getOtherUserName(widget.content.author.id);
+
+  final imageUrl = cachedImageUrl ?? 
+                   (widget.content.author.picture.isNotEmpty 
+                     ? 'http://182.93.94.210:3067${widget.content.author.picture}' 
+                     : null);
+  
+  final displayName = cachedName ?? widget.content.author.name;
+
+  if (imageUrl == null || imageUrl.isEmpty) {
+    return CircleAvatar(
+      child: Text(
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+      ),
+    );
+  }
+
+  return CachedNetworkImage(
+    imageUrl: imageUrl,
+    imageBuilder: (context, imageProvider) => CircleAvatar(
+      backgroundImage: imageProvider,
+      key: ValueKey('other_user_${widget.content.author.id}_${imageUrl.hashCode}'),
+    ),
+    placeholder: (context, url) => CircleAvatar(
+      child: Container(
+        width: 20,
+        height: 20,
+        child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+      ),
+    ),
+    errorWidget: (context, url, error) => CircleAvatar(
+      child: Text(
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+      ),
+    ),
+    cacheKey: 'user_${widget.content.author.id}_${imageUrl.hashCode}',
+    memCacheWidth: 80,
+    memCacheHeight: 80,
+  );
+}
 
   Widget _buildMediaPreview() {
     final hasOptimizedVideo = widget.content.optimizedFiles.any(
@@ -2553,7 +2444,7 @@ class _FeedItemState extends State<FeedItem>
                 (file) => file['original'] ?? file['url'] ?? file['thumbnail'],
               )
               .where((url) => url != null)
-              .map((url) => widget.content._formatUrl(url))
+              .map((url) => widget.content.formatUrl(url))
               .toList();
 
       if (imageUrls.isNotEmpty) {
@@ -2630,7 +2521,7 @@ class _FeedItemState extends State<FeedItem>
       child: AspectRatio(
         aspectRatio: 16 / 9,
         child: AutoPlayVideoWidget(
-          url: widget.content._formatUrl(videoUrl),
+          url: widget.content.formatUrl(videoUrl),
           thumbnailUrl: widget.content.thumbnailUrl,
         ),
       ),
@@ -3066,7 +2957,74 @@ class _FeedItemState extends State<FeedItem>
           ),
         );
       },
-    ).then((value) {
+    ).then((value) async{
+      if (value == 'edit') {
+      // Show dialog to edit content
+      final TextEditingController controller = TextEditingController(text: widget.content.status);
+      final result = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Edit Content'),
+          content: TextField(
+            controller: controller,
+            maxLines: 4,
+            decoration: InputDecoration(hintText: 'Update your content'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              child: Text('Save'),
+            ),
+          ],
+        ),
+      );
+      if (result != null && result.trim().isNotEmpty) {
+        // Call API to update content
+        final success = await ApiService.updateContent(widget.content.id, result.trim());
+        if (success) {
+          setState(() {
+            widget.content.status = result.trim();
+          });
+          Get.snackbar('Success', 'Content updated',backgroundColor: Colors.green);
+        } else {
+          Get.snackbar('Error', 'Failed to update content', backgroundColor: Colors.red, colorText: Colors.white);
+        }
+      }
+    } else if (value == 'delete') {
+      // Confirm delete
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Delete Post'),
+          content: Text('Are you sure you want to delete this post?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (confirm == true) {
+        // Call API to delete files (assuming widget.content.files is a List<String>)
+        final success = await ApiService.deleteFiles(widget.content.id);
+        if (success) {
+          Get.snackbar('Deleted', 'Post deleted', backgroundColor: Colors.green);
+          // Optionally remove from feed or refresh
+        } else {
+          Get.snackbar('Error', 'Failed to delete post', backgroundColor: Colors.red, colorText: Colors.white);
+        }
+      }
+    } 
       if (value == 'copy') {
         Clipboard.setData(ClipboardData(text: widget.content.status));
         Get.snackbar('Copied', 'Content copied to clipboard');

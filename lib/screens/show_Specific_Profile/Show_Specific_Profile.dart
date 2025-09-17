@@ -15,6 +15,8 @@ import 'package:innovator/screens/show_Specific_Profile/User_Image_Gallery.dart'
 import 'package:innovator/screens/show_Specific_Profile/show_Specific_followers.dart';
 import 'package:innovator/widget/FloatingMenuwidget.dart';
 
+import '../../models/Feed_Content_Model.dart';
+
 class SpecificUserProfilePage extends StatefulWidget {
   final String userId;
   final String? scrollToPostId;

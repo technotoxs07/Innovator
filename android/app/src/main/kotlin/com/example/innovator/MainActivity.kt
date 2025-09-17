@@ -14,15 +14,17 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.innovation.innovator/call"  // Updated to match package
+    private val CHANNEL = "com.innovation.innovator/call"
     private val NOTIFICATION_CHANNEL_ID = "incoming_calls"
     private var wakeLock: PowerManager.WakeLock? = null
     
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
+        // Create notification channels
         createNotificationChannels()
         
+        // Setup method channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -41,7 +43,9 @@ class MainActivity : FlutterActivity() {
     
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Incoming calls channel with highest importance
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // Incoming calls channel
             val callChannel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 "Incoming Calls",
@@ -54,6 +58,7 @@ class MainActivity : FlutterActivity() {
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 setBypassDnd(true)
             }
+            notificationManager.createNotificationChannel(callChannel)
             
             // Chat messages channel
             val chatChannel = NotificationChannel(
@@ -66,10 +71,17 @@ class MainActivity : FlutterActivity() {
                 enableVibration(true)
                 setShowBadge(true)
             }
-            
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(callChannel)
             notificationManager.createNotificationChannel(chatChannel)
+            
+            // General notifications channel
+            val generalChannel = NotificationChannel(
+                "general_notifications",
+                "General Notifications",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "General app notifications"
+            }
+            notificationManager.createNotificationChannel(generalChannel)
         }
     }
     
@@ -84,21 +96,8 @@ class MainActivity : FlutterActivity() {
         )
         wakeLock?.acquire(10000) // 10 seconds
         
-        // Unlock keyguard for Android 8+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-            keyguardManager.requestDismissKeyguard(this, null)
-        } else {
-            // For older versions
-            @Suppress("DEPRECATION")
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
-        }
+        // Show on lock screen
+        showCallScreen()
         
         // Bring app to foreground
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -116,13 +115,15 @@ class MainActivity : FlutterActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 setShowWhenLocked(true)
                 setTurnScreenOn(true)
+                val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+                keyguardManager.requestDismissKeyguard(this, null)
             } else {
                 @Suppress("DEPRECATION")
                 window.addFlags(
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                     WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                 )
             }
         }
@@ -131,7 +132,9 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        if (intent?.action == "INCOMING_CALL") {
+        // Handle incoming call intent
+        if (intent?.action == "INCOMING_CALL" || 
+            intent?.action == "com.hiennv.flutter_callkit_incoming.ACTION_CALL_INCOMING") {
             showCallScreen()
         }
         
@@ -145,8 +148,29 @@ class MainActivity : FlutterActivity() {
     
     private fun handleNotificationClick(intent: Intent?) {
         intent?.extras?.let { extras ->
-            if (extras.getString("type") == "call") {
-                showCallScreen()
+            val type = extras.getString("type")
+            val action = intent.action
+            
+            when {
+                type == "call" -> showCallScreen()
+                action == "com.hiennv.flutter_callkit_incoming.ACTION_CALL_ACCEPT" -> {
+                    showCallScreen()
+                    // Send event to Flutter
+                    flutterEngine?.dartExecutor?.let {
+                        MethodChannel(it.binaryMessenger, CHANNEL)
+                            .invokeMethod("onCallAccepted", extras)
+                    }
+                }
+                action == "com.hiennv.flutter_callkit_incoming.ACTION_CALL_DECLINE" -> {
+                    // Send event to Flutter
+                    flutterEngine?.dartExecutor?.let {
+                        MethodChannel(it.binaryMessenger, CHANNEL)
+                            .invokeMethod("onCallDeclined", extras)
+                    }
+                }
+                else -> {
+                    // No action needed or log for debugging
+                }
             }
         }
     }

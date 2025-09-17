@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:innovator/screens/Course/models/api_models.dart';
+import 'package:innovator/models/Course_models.dart';
 import 'package:innovator/screens/Course/services/api_services.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:developer' as developer;

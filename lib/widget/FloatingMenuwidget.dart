@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/screens/Course/home.dart';
-import 'package:innovator/screens/Course/models/api_models.dart';
+import 'package:innovator/models/Course_models.dart';
 import 'package:innovator/screens/Course/services/api_services.dart';
 import 'package:innovator/screens/Events/Events.dart';
 import 'package:innovator/screens/Project_Management/Project_idea.dart';

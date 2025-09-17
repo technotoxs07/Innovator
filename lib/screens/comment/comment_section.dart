@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/screens/chatrrom/sound/soundplayer.dart';
 import 'package:innovator/screens/comment/JWT_Helper.dart';
-import 'package:innovator/screens/comment/comment_Model.dart';
+import 'package:innovator/models/comment_Model.dart';
 import 'package:innovator/screens/comment/comment_services.dart';
 
 class CommentSection extends StatefulWidget {

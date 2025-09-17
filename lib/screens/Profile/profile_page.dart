@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Login.dart';
+import 'package:innovator/models/Feed_Content_Model.dart';
 import 'package:innovator/screens/Feed/Inner_Homepage.dart';
 import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:innovator/screens/Follow/follow-Service.dart';

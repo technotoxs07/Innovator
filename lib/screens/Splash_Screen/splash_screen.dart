@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
       await AppData().initialize();
       
       // Check for Firebase Auth state mismatch (happens after reinstall)
-      await _checkAndHandleAuthState();
+      //await _checkAndHandleAuthState();
       
       // Add a small delay to show the splash screen
       await Future.delayed(const Duration(milliseconds: 1500));

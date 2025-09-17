@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:innovator/App_data/App_data.dart';
-import 'package:innovator/screens/Shop/Cart_List/cart_model.dart';
+import 'package:innovator/models/Shop_cart_model.dart';
 
 class ApiService {
   

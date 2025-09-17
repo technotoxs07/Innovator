@@ -786,8 +786,8 @@ void _initializeFcmInBackground() {
       await _createFirebaseAuthSession(userData);
       
       // Initialize other services
-      await _initializeFollowStatusManager();
-      await _initializeChatControllerWithFollowStatus();
+     // await _initializeFollowStatusManager();
+      //await _initializeChatControllerWithFollowStatus();
       
       Navigator.pushAndRemoveUntil(
         context, 

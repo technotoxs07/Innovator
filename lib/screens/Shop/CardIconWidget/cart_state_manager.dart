@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
 import 'package:innovator/screens/Shop/Cart_List/api_services.dart';
-import 'package:innovator/screens/Shop/Cart_List/cart_model.dart';
+import 'package:innovator/models/Shop_cart_model.dart';
 import 'dart:developer' as developer;
 
 class CartStateManager extends GetxController {

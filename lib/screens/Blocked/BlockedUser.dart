@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:innovator/App_data/App_data.dart';
-import 'package:innovator/screens/Blocked/Blocked_Model.dart';
+import 'package:innovator/models/Blocked_Model.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({Key? key}) : super(key: key);

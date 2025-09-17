@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/screens/Course/course_details_screen.dart';
-import 'package:innovator/screens/Course/models/api_models.dart';
+import 'package:innovator/models/Course_models.dart';
 import 'package:innovator/screens/Course/services/api_services.dart';
 import 'package:innovator/utils/Drawer/custom_drawer.dart';
 import 'package:innovator/widget/FloatingMenuwidget.dart';

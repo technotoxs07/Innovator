@@ -8,7 +8,7 @@ import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/screens/Shop/Cart_List/api_services.dart';
 import 'package:innovator/screens/Shop/checkout.dart';
 import 'package:innovator/widget/FloatingMenuwidget.dart';
-import 'cart_model.dart';
+import '../../../models/Shop_cart_model.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);

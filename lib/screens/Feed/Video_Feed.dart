@@ -1540,7 +1540,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
     _isMuted = false;
     
     // Start network monitoring
-    _speedMonitor.startMonitoring();
+   // _speedMonitor.startMonitoring();
     
     // Initialize with optimal quality
     _initializeAdaptiveVideo();
@@ -2438,10 +2438,10 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
 
 class AdaptiveVideoSystem {
   static void initialize() {
-    final speedMonitor = NetworkSpeedMonitor();
+    //final speedMonitor = NetworkSpeedMonitor();
     final qualityManager = VideoQualityManager();
     
-    speedMonitor.startMonitoring();
+    //speedMonitor.startMonitoring();
     
     // Set up automatic quality adjustment
     Timer.periodic(Duration(seconds: 25), (timer) {
