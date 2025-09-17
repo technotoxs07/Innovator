@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1965,7 +1964,8 @@ class _FeedItemState extends State<FeedItem>
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8.0),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(color: Colors.grey.shade200, width: 1.0),
@@ -2088,8 +2088,17 @@ class _FeedItemState extends State<FeedItem>
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              SizedBox(width: 10.0),
+                              Container(
+                                width: 4.0,
+                                height: 4.0,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade400,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
                               if (!isOwnContent) ...[
-                                const SizedBox(width: 12.0),
+                                const SizedBox(width: 10.0),
                                 AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   key: ValueKey(
@@ -2159,15 +2168,7 @@ class _FeedItemState extends State<FeedItem>
                                 ),
                               ),
                               const SizedBox(width: 8.0),
-                              Container(
-                                width: 4.0,
-                                height: 4.0,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade400,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8.0),
+
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8.0,
@@ -2197,9 +2198,11 @@ class _FeedItemState extends State<FeedItem>
             // Content Section
             if (widget.content.status.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 5.0,
+                padding: EdgeInsets.only(
+                  left: 16.0,
+                  right: 16.0,
+                  bottom: widget.content.files.isNotEmpty ? 8.0 : 16.0,
+                  // top: 8.0,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2255,7 +2258,7 @@ class _FeedItemState extends State<FeedItem>
                                     });
                                   },
                                   child: Text(
-                                    _isExpanded ? 'Show Less' : 'Show More',
+                                    _isExpanded ? 'See Less' : 'See More',
                                     style: TextStyle(
                                       color: Colors.blue.shade700,
                                       fontSize: 11.0,
@@ -2276,12 +2279,16 @@ class _FeedItemState extends State<FeedItem>
             if (widget.content.files.isNotEmpty)
               Container(
                 margin: EdgeInsets.symmetric(horizontal: 1.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16.0),
-                  child: _buildMediaPreview(),
-                ),
+                child: _buildMediaPreview(),
               ),
-
+            SizedBox(height: 10.0),
+            Divider(
+              color: Colors.grey.shade300,
+              endIndent: 10,
+              indent: 10,
+              height: 1.0,
+              thickness: 1.0,
+            ),
             Container(
               child: Padding(
                 padding: EdgeInsets.only(
@@ -2311,19 +2318,22 @@ class _FeedItemState extends State<FeedItem>
                               ),
                               onPressed: () {},
                             ),
-                            IconButton(
-                              icon: Icon(
-                                _showComments
-                                    ? Icons.chat_bubble
-                                    : Icons.chat_bubble_outline,
-                                color: Colors.black,
-                                size: 20.0,
-                              ),
-                              onPressed: () {
+                            SizedBox(width: 4.0),
+                            InkWell(
+                              onTap: () {
                                 setState(() {
                                   _showComments = !_showComments;
                                 });
                               },
+                              child: Image.asset(
+                                'assets/icon/comment.png',
+                                color:
+                                    _showComments
+                                        ? Colors.blue.shade700
+                                        : Colors.grey.shade800,
+                                width: 25,
+                                height: 25,
+                              ),
                             ),
                           ],
                         ),
@@ -2331,27 +2341,10 @@ class _FeedItemState extends State<FeedItem>
                           onTap: () {
                             _showShareOptions(context);
                           },
-                          child: Column(
-                            children: [
-                              Column(
-                                children: [
-                                  Image.asset(
-                                    'assets/icon/send.png',
-                                    width: 20,
-                                    height: 20,
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 10.0),
-                              Text(
-                                'Share',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
-                                  fontSize: 14.0,
-                                ),
-                              ),
-                            ],
+                          child: Image.asset(
+                            'assets/icon/send.png',
+                            width: 20,
+                            height: 20,
                           ),
                         ),
                       ],
@@ -2359,23 +2352,28 @@ class _FeedItemState extends State<FeedItem>
                     Padding(
                       padding: EdgeInsets.only(left: 20.0, bottom: 8.0),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${widget.content.likes} Likes',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
-                              fontSize: 11.0,
-                            ),
-                          ),
-                          SizedBox(width: 10.0),
-                          Text(
-                            '${widget.content.comments} Comments',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
-                              fontSize: 11.0,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                '${widget.content.likes} Likes',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                  fontSize: 11.0,
+                                ),
+                              ),
+                              SizedBox(width: 10.0),
+                              Text(
+                                '${widget.content.comments} Comments',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                  fontSize: 11.0,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -2628,37 +2626,34 @@ class _FeedItemState extends State<FeedItem>
   Widget _buildSingleImage(String url) {
     return GestureDetector(
       onTap: () => _showMediaGallery(context, [url], 0),
-      child: Container(
-        // constraints: BoxConstraints(maxHeight: 450, minHeight: 200),
-        child: CachedNetworkImage(
-          filterQuality: FilterQuality.high,
+      child: CachedNetworkImage(
+        filterQuality: FilterQuality.high,
 
-          imageUrl: url,
-          fit: BoxFit.contain,
-          // width: double.infinity,
-          memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
-          placeholder:
-              (context, url) => Container(
-                height: 250,
-                color: Colors.grey[300],
-                child: Center(
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    child: Image.asset(
-                      'animation/IdeaBulb.gif',
-                      fit: BoxFit.contain,
-                    ),
+        imageUrl: url,
+        fit: BoxFit.contain,
+        // width: double.infinity,
+        memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
+        placeholder:
+            (context, url) => Container(
+              height: 250,
+              color: Colors.grey[300],
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  child: Image.asset(
+                    'animation/IdeaBulb.gif',
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
-          errorWidget:
-              (context, url, error) => Container(
-                height: 250,
-                color: Colors.grey[300],
-                child: Icon(Icons.error),
-              ),
-        ),
+            ),
+        errorWidget:
+            (context, url, error) => Container(
+              height: 250,
+              color: Colors.grey[300],
+              child: Icon(Icons.error),
+            ),
       ),
     );
   }
