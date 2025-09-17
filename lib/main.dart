@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -1226,10 +1225,7 @@ void main() async {
   }
 
   runApp(
-    DevicePreview(
-      enabled: kDebugMode,
-      builder: (context) => const ProviderScope(child: InnovatorHomePage()),
-    ),
+      ProviderScope(child: InnovatorHomePage()),
   );
 }
 

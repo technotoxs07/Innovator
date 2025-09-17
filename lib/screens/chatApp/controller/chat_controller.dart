@@ -675,7 +675,7 @@ int getTotalUnreadCountFromMutualFollowers() {
       final chatId = chat['chatId']?.toString() ?? '';
       
       if (otherUser != null && chatId.isNotEmpty) {
-        // Only count badges from mutual followers
+        // Only count badges from mutual followers (using SYNC method)
         if (isMutualFollower(otherUser)) {
           final badgeCount = chatBadges[chatId]?.value ?? 0;
           total += badgeCount;
@@ -689,6 +689,7 @@ int getTotalUnreadCountFromMutualFollowers() {
   developer.log('📊 Total unread count from mutual followers: $total');
   return total;
 }
+
 
   void _initializeFollowStatusManager() {
     try {
@@ -2222,7 +2223,7 @@ Future<void> _checkSenderMutualFollowStatus(String chatId, String senderId, Map<
     senderData['userId'] = senderId;
     senderData['_id'] = senderId;
     
-    // Check if sender is mutual follower
+    // Use SYNC check for speed (since this runs frequently)
     if (!isMutualFollower(senderData)) {
       developer.log('🚫 Ignoring message from non-mutual follower: $senderId');
       return;
@@ -2276,6 +2277,7 @@ void _moveChatToTopWithMutualCheck(String chatId, Map<String, dynamic> messageDa
         senderData['userId'] = senderId;
         senderData['_id'] = senderId;
         
+        // Use SYNC check for performance
         if (!isMutualFollower(senderData)) {
           developer.log('🚫 Not moving chat to top - sender is not mutual follower: $senderId');
           return;
@@ -3057,24 +3059,26 @@ void _moveChatToTopWithMutualCheck(String chatId, Map<String, dynamic> messageDa
   //@override
 void navigateToChat(Map<String, dynamic> user) async {
   try {
-    // Check if user is mutual follower
+    // Check if user is mutual follower (sync first for speed)
     bool canChat = isMutualFollower(user);
 
     if (!canChat) {
       // Try fresh API check if cache check fails
-      final email = user['email']?.toString();
-      if (email != null) {
-        developer.log('🔄 Verifying follow status with fresh API check...');
-        final freshStatus = await followStatusManager.checkFollowStatus(email);
-        canChat = freshStatus?['isMutualFollow'] == true;
-        
-        if (canChat) {
-          // Update user data with fresh API data
-          final apiUserData = freshStatus!['user'] as Map<String, dynamic>;
-          user['name'] = apiUserData['name'];
-          user['picture'] = apiUserData['picture'];
-          user['apiPictureUrl'] = 'http://182.93.94.210:3067${apiUserData['picture']}';
-          user['isMutualFollow'] = true;
+      developer.log('🔄 Verifying follow status with fresh API check...');
+      canChat = await isMutualFollowerAsync(user, forceRefresh: true);
+      
+      if (canChat) {
+        // Update user data with fresh API data if needed
+        final email = user['email']?.toString();
+        if (email != null) {
+          final freshStatus = await followStatusManager.checkFollowStatus(email);
+          if (freshStatus != null && freshStatus['isMutualFollow'] == true) {
+            final apiUserData = freshStatus['user'] as Map<String, dynamic>;
+            user['name'] = apiUserData['name'];
+            user['picture'] = apiUserData['picture'];
+            user['apiPictureUrl'] = 'http://182.93.94.210:3067${apiUserData['picture']}';
+            user['isMutualFollow'] = true;
+          }
         }
       }
     }
@@ -3129,13 +3133,7 @@ void navigateToChat(Map<String, dynamic> user) async {
     
   } catch (e) {
     developer.log('❌ Error in navigation: $e');
-    Get.snackbar(
-      'Error',
-      'Unable to open chat. Please try again.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withAlpha(80),
-      colorText: Colors.white,
-    );
+   
   }
 }
 
@@ -3803,6 +3801,13 @@ Future<void> refreshUsersWithFollowStatus() async {
   // Fallback to followStatusManager
   return followStatusManager.isMutualFollower(user);
 }
+
+Future<bool> isMutualFollowerAsync(Map<String, dynamic>? user, {bool forceRefresh = false}) async {
+  if (user == null) return false;
+  
+  return await followStatusManager.isMutualFollowerAsync(user, forceRefresh: forceRefresh);
+}
+
 
   String formatMessageTime(Timestamp? timestamp) {
     if (timestamp == null) return '';
