@@ -20,7 +20,7 @@ class InstantProfilePicture extends StatelessWidget {
     this.fallbackName,
     this.fallbackImageUrl,
     this.authorData, // ✅ NEW
-    this.cacheIfMissing = true, // ✅ NEW
+    this.cacheIfMissing = true, required Map<String, dynamic> profileData, required bool showBorder, // ✅ NEW
   }) : super(key: key);
 
   @override

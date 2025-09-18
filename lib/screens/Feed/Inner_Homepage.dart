@@ -122,9 +122,7 @@ class CacheManager {
 
 // Enhanced Author model
 
-
 // Enhanced FeedContent model
-
 
 class ContentResponse {
   final int status;
@@ -475,31 +473,31 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
   }
 
-  
-// Add this to your _Inner_HomePageState class
+  // Add this to your _Inner_HomePageState class
 
-/// ✅ NEW: Preload visible users when content is loaded
-void _preloadVisibleUsers() {
-  if (_allContents.isEmpty) return;
-  
-  try {
-    final userController = Get.find<UserController>();
-    final visibleUserIds = _allContents
-        .take(20) // Only preload for visible items
-        .map((content) => content.author.id)
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList();
-    
-    if (visibleUserIds.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        userController.preloadVisibleUsers(visibleUserIds, context);
-      });
+  /// ✅ NEW: Preload visible users when content is loaded
+  void _preloadVisibleUsers() {
+    if (_allContents.isEmpty) return;
+
+    try {
+      final userController = Get.find<UserController>();
+      final visibleUserIds =
+          _allContents
+              .take(20) // Only preload for visible items
+              .map((content) => content.author.id)
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList();
+
+      if (visibleUserIds.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          userController.preloadVisibleUsers(visibleUserIds, context);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error preloading visible users: $e');
     }
-  } catch (e) {
-    debugPrint('Error preloading visible users: $e');
   }
-}
 
   // ENHANCED: Load initial content with cursor format testing
   Future<void> _loadInitialContent() async {
@@ -638,19 +636,20 @@ void _preloadVisibleUsers() {
         });
 
         if (contentData.contents.isNotEmpty) {
-        final newUserIds = contentData.contents
-            .map((content) => content.author.id)
-            .where((id) => id.isNotEmpty)
-            .toSet()
-            .toList();
-        
-        if (newUserIds.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final userController = Get.find<UserController>();
-            userController.preloadVisibleUsers(newUserIds, context);
-          });
+          final newUserIds =
+              contentData.contents
+                  .map((content) => content.author.id)
+                  .where((id) => id.isNotEmpty)
+                  .toSet()
+                  .toList();
+
+          if (newUserIds.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final userController = Get.find<UserController>();
+              userController.preloadVisibleUsers(newUserIds, context);
+            });
+          }
         }
-      }
 
         debugPrint(
           '✅ More content loaded: ${contentData.contents.length} new items',
@@ -1618,18 +1617,19 @@ class ContentData {
       debugPrint('   - Has more: $hasMore');
       debugPrint('   - Next cursor: $nextCursor');
 
-      final contents = allItems
-          .map((item) {
-            try {
-              return FeedContent.fromJson(item as Map<String, dynamic>);
-            } catch (e) {
-              debugPrint('❌ Error parsing individual content item: $e');
-              return null;
-            }
-          })
-          .where((content) => content != null && content.id.isNotEmpty)
-          .cast<FeedContent>()
-          .toList();
+      final contents =
+          allItems
+              .map((item) {
+                try {
+                  return FeedContent.fromJson(item as Map<String, dynamic>);
+                } catch (e) {
+                  debugPrint('❌ Error parsing individual content item: $e');
+                  return null;
+                }
+              })
+              .where((content) => content != null && content.id.isNotEmpty)
+              .cast<FeedContent>()
+              .toList();
 
       debugPrint('   - Valid contents parsed: ${contents.length}');
 
@@ -1895,13 +1895,13 @@ class _FeedItemState extends State<FeedItem>
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            Colors.blue.shade400,
-                            Colors.purple.shade400,
+                            Color.fromRGBO(244, 135, 6, 1), // your theme
+                            Color.fromRGBO(255, 204, 0, 1), // golden highlight
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withAlpha(30),
+                            color: Colors.orangeAccent.shade100,
                             blurRadius: 12.0,
                             offset: const Offset(0, 4),
                           ),
@@ -2327,80 +2327,94 @@ class _FeedItemState extends State<FeedItem>
   }
 
   Widget _buildAuthorAvatar() {
-  final userController = Get.find<UserController>();
+    final userController = Get.find<UserController>();
 
-  if (_isAuthorCurrentUser()) {
-    return Obx(() {
-      final picturePath = userController.getFullProfilePicturePath();
-      final version = userController.profilePictureVersion.value;
+    if (_isAuthorCurrentUser()) {
+      return Obx(() {
+        final picturePath = userController.getFullProfilePicturePath();
+        final version = userController.profilePictureVersion.value;
 
-      return CircleAvatar(
-        key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
-        backgroundImage: picturePath != null
-            ? CachedNetworkImageProvider('$picturePath?v=$version')
+        return CircleAvatar(
+          key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
+          backgroundImage:
+              picturePath != null
+                  ? CachedNetworkImageProvider('$picturePath?v=$version')
+                  : null,
+          child:
+              picturePath == null || picturePath.isEmpty
+                  ? Text(
+                    widget.content.author.name.isNotEmpty
+                        ? widget.content.author.name[0].toUpperCase()
+                        : '?',
+                  )
+                  : null,
+        );
+      });
+    }
+
+    // ✅ ENHANCED: Cache user data if not already cached
+    if (!userController.isUserCached(widget.content.author.id)) {
+      userController.cacheUserProfilePicture(
+        widget.content.author.id,
+        widget.content.author.picture.isNotEmpty
+            ? widget.content.author.picture
             : null,
-        child: picturePath == null || picturePath.isEmpty
-            ? Text(
-                widget.content.author.name.isNotEmpty
-                    ? widget.content.author.name[0].toUpperCase()
-                    : '?',
-              )
-            : null,
+        widget.content.author.name,
       );
-    });
-  }
+    }
 
-  // ✅ ENHANCED: Cache user data if not already cached
-  if (!userController.isUserCached(widget.content.author.id)) {
-    userController.cacheUserProfilePicture(
+    // Use cached data with fallback to original author data
+    final cachedImageUrl = userController.getOtherUserFullProfilePicturePath(
       widget.content.author.id,
-      widget.content.author.picture.isNotEmpty ? widget.content.author.picture : null,
-      widget.content.author.name,
+    );
+    final cachedName = userController.getOtherUserName(
+      widget.content.author.id,
+    );
+
+    final imageUrl =
+        cachedImageUrl ??
+        (widget.content.author.picture.isNotEmpty
+            ? 'http://182.93.94.210:3067${widget.content.author.picture}'
+            : null);
+
+    final displayName = cachedName ?? widget.content.author.name;
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return CircleAvatar(
+        child: Text(
+          displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      imageBuilder:
+          (context, imageProvider) => CircleAvatar(
+            backgroundImage: imageProvider,
+            key: ValueKey(
+              'other_user_${widget.content.author.id}_${imageUrl.hashCode}',
+            ),
+          ),
+      placeholder:
+          (context, url) => CircleAvatar(
+            child: Container(
+              width: 20,
+              height: 20,
+              child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+            ),
+          ),
+      errorWidget:
+          (context, url, error) => CircleAvatar(
+            child: Text(
+              displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+            ),
+          ),
+      cacheKey: 'user_${widget.content.author.id}_${imageUrl.hashCode}',
+      memCacheWidth: 80,
+      memCacheHeight: 80,
     );
   }
-
-  // Use cached data with fallback to original author data
-  final cachedImageUrl = userController.getOtherUserFullProfilePicturePath(widget.content.author.id);
-  final cachedName = userController.getOtherUserName(widget.content.author.id);
-
-  final imageUrl = cachedImageUrl ?? 
-                   (widget.content.author.picture.isNotEmpty 
-                     ? 'http://182.93.94.210:3067${widget.content.author.picture}' 
-                     : null);
-  
-  final displayName = cachedName ?? widget.content.author.name;
-
-  if (imageUrl == null || imageUrl.isEmpty) {
-    return CircleAvatar(
-      child: Text(
-        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-      ),
-    );
-  }
-
-  return CachedNetworkImage(
-    imageUrl: imageUrl,
-    imageBuilder: (context, imageProvider) => CircleAvatar(
-      backgroundImage: imageProvider,
-      key: ValueKey('other_user_${widget.content.author.id}_${imageUrl.hashCode}'),
-    ),
-    placeholder: (context, url) => CircleAvatar(
-      child: Container(
-        width: 20,
-        height: 20,
-        child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
-      ),
-    ),
-    errorWidget: (context, url, error) => CircleAvatar(
-      child: Text(
-        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-      ),
-    ),
-    cacheKey: 'user_${widget.content.author.id}_${imageUrl.hashCode}',
-    memCacheWidth: 80,
-    memCacheHeight: 80,
-  );
-}
 
   Widget _buildMediaPreview() {
     final hasOptimizedVideo = widget.content.optimizedFiles.any(
@@ -2941,74 +2955,101 @@ class _FeedItemState extends State<FeedItem>
           ),
         );
       },
-    ).then((value) async{
+    ).then((value) async {
       if (value == 'edit') {
-      // Show dialog to edit content
-      final TextEditingController controller = TextEditingController(text: widget.content.status);
-      final result = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Edit Content'),
-          content: TextField(
-            controller: controller,
-            maxLines: 4,
-            decoration: InputDecoration(hintText: 'Update your content'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, controller.text),
-              child: Text('Save'),
-            ),
-          ],
-        ),
-      );
-      if (result != null && result.trim().isNotEmpty) {
-        // Call API to update content
-        final success = await ApiService.updateContent(widget.content.id, result.trim());
-        if (success) {
-          setState(() {
-            widget.content.status = result.trim();
-          });
-          Get.snackbar('Success', 'Content updated',backgroundColor: Colors.green);
-        } else {
-          Get.snackbar('Error', 'Failed to update content', backgroundColor: Colors.red, colorText: Colors.white);
+        // Show dialog to edit content
+        final TextEditingController controller = TextEditingController(
+          text: widget.content.status,
+        );
+        final result = await showDialog<String>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text('Edit Content'),
+                content: TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  decoration: InputDecoration(hintText: 'Update your content'),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, controller.text),
+                    child: Text('Save'),
+                  ),
+                ],
+              ),
+        );
+        if (result != null && result.trim().isNotEmpty) {
+          // Call API to update content
+          final success = await ApiService.updateContent(
+            widget.content.id,
+            result.trim(),
+          );
+          if (success) {
+            setState(() {
+              widget.content.status = result.trim();
+            });
+            Get.snackbar(
+              'Success',
+              'Content updated',
+              backgroundColor: Colors.green,
+            );
+          } else {
+            Get.snackbar(
+              'Error',
+              'Failed to update content',
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+            );
+          }
+        }
+      } else if (value == 'delete') {
+        // Confirm delete
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text('Delete Post'),
+                content: Text('Are you sure you want to delete this post?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    child: Text('Delete'),
+                  ),
+                ],
+              ),
+        );
+        if (confirm == true) {
+          // Call API to delete files (assuming widget.content.files is a List<String>)
+          final success = await ApiService.deleteFiles(widget.content.id);
+          if (success) {
+            Get.snackbar(
+              'Deleted',
+              'Post deleted',
+              backgroundColor: Colors.green,
+            );
+            // Optionally remove from feed or refresh
+          } else {
+            Get.snackbar(
+              'Error',
+              'Failed to delete post',
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+            );
+          }
         }
       }
-    } else if (value == 'delete') {
-      // Confirm delete
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Delete Post'),
-          content: Text('Are you sure you want to delete this post?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: Text('Delete'),
-            ),
-          ],
-        ),
-      );
-      if (confirm == true) {
-        // Call API to delete files (assuming widget.content.files is a List<String>)
-        final success = await ApiService.deleteFiles(widget.content.id);
-        if (success) {
-          Get.snackbar('Deleted', 'Post deleted', backgroundColor: Colors.green);
-          // Optionally remove from feed or refresh
-        } else {
-          Get.snackbar('Error', 'Failed to delete post', backgroundColor: Colors.red, colorText: Colors.white);
-        }
-      }
-    } 
       if (value == 'copy') {
         Clipboard.setData(ClipboardData(text: widget.content.status));
         Get.snackbar('Copied', 'Content copied to clipboard');

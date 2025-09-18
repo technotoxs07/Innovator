@@ -248,7 +248,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+       // crossAxisAlignment: CrossAxisAlignment.,
         children: [
           _buildHeader(),
           if (content!.status.isNotEmpty) _buildStatusSection(),
@@ -416,8 +416,10 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
         style: const TextStyle(
           fontSize: 16.0,
           height: 1.5,
+          letterSpacing: 1.2,
           color: Color(0xFF2D2D2D),
           fontWeight: FontWeight.w500,
+          fontFamily: 'InterThin'
         ),
       ),
     );
@@ -443,7 +445,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
         return GestureDetector(
           onTap: () => _showMediaGallery([optimizedFile.url], 0),
           child: CachedNetworkImage(
-            imageUrl: optimizedFile.url,
+            imageUrl: _formatMediaUrl(optimizedFile.url),
             fit: BoxFit.cover,
             placeholder: (context, url) => Container(
               height: 200,
@@ -463,8 +465,8 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
           child: AspectRatio(
             aspectRatio: 16 / 9,
             child: AutoPlayVideoWidget(
-              url: optimizedFile.url,
-              thumbnailUrl: optimizedFile.thumbnail,
+              url: _formatMediaUrl(optimizedFile.url),
+              thumbnailUrl: optimizedFile.thumbnail != null ? _formatMediaUrl(optimizedFile.thumbnail!) : null,
             ),
           ),
         );
@@ -477,7 +479,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
       return GestureDetector(
         onTap: () => _showMediaGallery(content!.files, 0),
         child: CachedNetworkImage(
-          imageUrl: firstFile,
+          imageUrl: _formatMediaUrl(firstFile),
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
             height: 200,
@@ -769,6 +771,11 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
       debugPrint('Error sharing via apps: $e');
     }
   }
+
+  String _formatMediaUrl(String url) {
+  if (url.startsWith('http')) return url;
+  return 'http://182.93.94.210:3067$url';
+}
 
   void _showMediaGallery(List<String> mediaUrls, int initialIndex) {
     Navigator.push(

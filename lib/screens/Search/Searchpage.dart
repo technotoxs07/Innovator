@@ -61,17 +61,14 @@ class _SearchPageState extends State<SearchPage> {
       if (response.statusCode == 200) {
         final data = _filterUniqueUsers(json.decode(response.body)['data']);
         
-        // CACHE ALL USERS DATA INSTANTLY
-        userController.bulkCacheUsers(data.cast<Map<String, dynamic>>());
-        
-        // PRELOAD IMAGES FOR FIRST 10 USERS
-        final firstTenUserIds = data.take(10).map((user) => user['_id'] as String).toList();
-        userController.preloadVisibleUsers(firstTenUserIds, context);
-        
         setState(() {
           _suggestedUsers = data.take(10).toList();
           _isLoading = false;
         });
+
+        // ✅ ENHANCED: Cache and preload with user data
+        await _cacheAndPreloadUsers(_suggestedUsers);
+        
       } else {
         throw Exception('Failed to load suggestions');
       }
@@ -80,6 +77,7 @@ class _SearchPageState extends State<SearchPage> {
         _isLoading = false;
       });
       _showErrorMessage('Error loading suggestions');
+      debugPrint('Error fetching suggested users: $e');
     }
   }
 
@@ -115,17 +113,14 @@ class _SearchPageState extends State<SearchPage> {
                 user['name']?.toLowerCase().contains(query.toLowerCase()) ?? false)
             .toList();
         
-        // CACHE SEARCH RESULTS DATA
-        userController.bulkCacheUsers(filteredResults.cast<Map<String, dynamic>>());
-        
-        // PRELOAD IMAGES FOR SEARCH RESULTS
-        final searchUserIds = filteredResults.map((user) => user['_id'] as String).toList();
-        userController.preloadVisibleUsers(searchUserIds, context);
-        
         setState(() {
           _searchResults = filteredResults;
           _isLoading = false;
         });
+
+        // ✅ ENHANCED: Cache and preload search results
+        await _cacheAndPreloadUsers(filteredResults);
+        
       } else {
         throw Exception('Failed to search users');
       }
@@ -134,8 +129,36 @@ class _SearchPageState extends State<SearchPage> {
         _isLoading = false;
       });
       _showErrorMessage('Error searching users');
+      debugPrint('Error searching users: $e');
     }
   }
+
+  // ✅ NEW: Enhanced caching and preloading method
+  Future<void> _cacheAndPreloadUsers(List<dynamic> users) async {
+  if (users.isEmpty) return;
+
+  try {
+    // Cache all users first using existing bulkCacheUsers method
+    final usersToCache = users.cast<Map<String, dynamic>>();
+    userController.bulkCacheUsers(usersToCache);
+    debugPrint('Cached ${users.length} users in search');
+
+    // Preload images using existing preloadVisibleUsers method
+    final userIds = users.map((user) => user['_id'] as String).toList();
+    await userController.preloadVisibleUsers(userIds, context);
+    
+    debugPrint('Preloaded ${userIds.length} user images in search');
+
+    // Force UI refresh to ensure cached images are displayed
+    if (mounted) {
+      setState(() {});
+    }
+
+  } catch (e) {
+    debugPrint('Error caching/preloading users: $e');
+  }
+}
+
 
   void _showErrorMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -305,61 +328,124 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildUserCard(Map<String, dynamic> user) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SpecificUserProfilePage(userId: user['_id']),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // USE THE INSTANT PROFILE PICTURE WIDGET
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(27),
-                  border: Border.all(color: Colors.orange, width: 2),
-                ),
-                child: InstantProfilePicture(
-                  userId: user['_id'],
-                  radius: 25,
-                  fallbackName: user['name'],
-                  fallbackImageUrl: user['picture'] != null && user['picture'].isNotEmpty
-                      ? 'http://182.93.94.210:3067${user['picture']}'
-                      : null,
-                ),
-              ),
-              
-              const SizedBox(width: 16),
-              
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user['name'] ?? 'Unknown',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('Tap to view profile', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                  ],
-                ),
-              ),
-              
-              const Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
-            ],
+  final userId = user['_id'] ?? '';
+  final userName = user['name'] ?? 'Unknown';
+  final userPicture = user['picture'] ?? '';
+
+  // Debug logging for problematic users
+  if (userName.toLowerCase().contains('nepatronix')) {
+    debugPrint('DEBUG NepaTronix in search:');
+    debugPrint('  - User ID: $userId');
+    debugPrint('  - Name: $userName');
+    debugPrint('  - Picture: $userPicture');
+    debugPrint('  - Is cached: ${userController.isUserCached(userId)}');
+    debugPrint('  - Cached URL: ${userController.getOtherUserFullProfilePicturePath(userId)}');
+  }
+
+  // Force cache the user if not already cached
+  if (userId.isNotEmpty && !userController.isUserCached(userId)) {
+    debugPrint('Force caching user in search: $userName ($userId)');
+    userController.cacheUserProfilePicture(
+      userId,
+      userPicture.isNotEmpty ? userPicture : null,
+      userName,
+    );
+  }
+
+  return Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    elevation: 2,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SpecificUserProfilePage(userId: userId),
           ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Enhanced avatar with better fallback handling
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(27),
+                border: Border.all(color: Colors.orange, width: 2),
+              ),
+              child: _buildSearchAvatar(userId, userName, userPicture),
+            ),
+            
+            const SizedBox(width: 16),
+            
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userName,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 4),
+                  if (user['email'] != null && user['email'].toString().isNotEmpty)
+                    Text(
+                      user['email'],
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  const SizedBox(height: 2),
+                  const Text('Tap to view profile', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                ],
+              ),
+            ),
+            
+            const Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
+          ],
         ),
       ),
-    );
+    ),
+  );
+}
+
+
+Widget _buildSearchAvatar(String userId, String userName, String userPicture) {
+  // Try to get cached URL first
+  String? imageUrl = userController.getOtherUserFullProfilePicturePath(userId);
+  
+  // If no cached URL, build direct URL from user data
+  if (imageUrl == null && userPicture.isNotEmpty) {
+    imageUrl = userPicture.startsWith('http') 
+        ? userPicture 
+        : 'http://182.93.94.210:3067${userPicture.startsWith('/') ? userPicture : '/$userPicture'}';
+  }
+
+  return CircleAvatar(
+    radius: 25,
+    backgroundColor: Colors.grey[300],
+    backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+        ? NetworkImage(imageUrl)
+        : null,
+    onBackgroundImageError: imageUrl != null ? (error, stackTrace) {
+      debugPrint('Avatar image error for $userName: $error');
+    } : null,
+    child: imageUrl == null || imageUrl.isEmpty
+        ? Text(
+            userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          )
+        : null,
+  );
+}
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }
