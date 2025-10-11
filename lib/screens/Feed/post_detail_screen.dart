@@ -248,8 +248,10 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
         ],
       ),
       child: Column(
+        
        // crossAxisAlignment: CrossAxisAlignment.,
         children: [
+          
           _buildHeader(),
           if (content!.status.isNotEmpty) _buildStatusSection(),
           if (content!.hasMedia) _buildMediaSection(),

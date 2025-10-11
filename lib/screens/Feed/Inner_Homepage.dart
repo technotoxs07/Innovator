@@ -1731,7 +1731,10 @@ class _FeedItemState extends State<FeedItem>
       duration: Duration(milliseconds: 300),
     );
     formattedTimeAgo = _formatTimeAgo(widget.content.createdAt);
-    _recordView();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recordView();
+    });
+   // isOwnContent = _isAuthorCurrentUser();
   }
 
   @override

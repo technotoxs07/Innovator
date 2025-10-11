@@ -382,73 +382,75 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
   }
 
   Future<String> _callGeminiAPI(String message) async {
-    const String baseUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+  const String baseUrl =
+      'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
 
-    // Add system prompt to ensure ELIZA identity
-    String systemPrompt = "You are ELIZA, an AI assistant created by Innovator. Always respond as ELIZA and never mention Gemini, Google, or any other AI system. You are helpful, friendly, and professional. If asked about your identity, always say you are ELIZA created by Innovator.";
-    String fullMessage = "$systemPrompt\n\nUser: $message";
+  String systemPrompt =
+      "You are ELIZA, an AI assistant created by Innovator. Always respond as ELIZA and never mention Gemini, Google, or any other AI system. You are helpful, friendly, and professional.";
+  String fullMessage = "$systemPrompt\n\nUser: $message";
 
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': fullMessage}
-              ]
-            }
-          ],
-          'generationConfig': {
-            'temperature': 0.9,
-            'topK': 1,
-            'topP': 1,
-            'maxOutputTokens': 2048,
-            'stopSequences': []
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl?key=$_apiKey'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {'text': fullMessage}
+            ]
+          }
+        ],
+        'generationConfig': {
+          'temperature': 0.9,
+          'topK': 40,
+          'topP': 0.95,
+          'maxOutputTokens': 150, // For CreatePostScreen
+          // 'maxOutputTokens': 2048, // For ElizaChatScreen
+        },
+        'safetySettings': [
+          {
+            'category': 'HARM_CATEGORY_HARASSMENT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
           },
-          'safetySettings': [
-            {
-              'category': 'HARM_CATEGORY_HARASSMENT',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              'category': 'HARM_CATEGORY_HATE_SPEECH',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            }
-          ]
-        }),
-      );
+          {
+            'category': 'HARM_CATEGORY_HATE_SPEECH',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          }
+        ]
+      }),
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['candidates'] != null &&
-            data['candidates'].isNotEmpty &&
-            data['candidates'][0]['content'] != null &&
-            data['candidates'][0]['content']['parts'] != null &&
-            data['candidates'][0]['content']['parts'].isNotEmpty) {
-          return data['candidates'][0]['content']['parts'][0]['text'];
-        } else {
-          throw Exception('Invalid response structure from API');
-        }
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['candidates'] != null &&
+          data['candidates'].isNotEmpty &&
+          data['candidates'][0]['content'] != null &&
+          data['candidates'][0]['content']['parts'] != null &&
+          data['candidates'][0]['content']['parts'].isNotEmpty) {
+        return data['candidates'][0]['content']['parts'][0]['text'];
       } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception('API Error: ${errorData['error']['message'] ?? response.statusCode}');
+        throw Exception('Invalid response structure from API');
       }
-    } catch (e) {
-      print('Error calling API: $e');
-      rethrow;
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw Exception(
+        'API Error: ${errorData['error']['message'] ?? response.statusCode}',
+      );
     }
+  } catch (e) {
+    print('Error calling API: $e');
+    rethrow;
   }
+}
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
