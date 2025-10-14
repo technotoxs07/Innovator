@@ -88,27 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
   
   // Save all settings at once
-  Future<void> _saveAllSettings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      await Future.wait([
-        prefs.setBool('pushNotifications', pushNotifications),
-        prefs.setBool('emailNotifications', emailNotifications),
-        prefs.setBool('privateAccount', privateAccount),
-        prefs.setBool('allowTagging', allowTagging),
-        prefs.setBool('showOnlineStatus', showOnlineStatus),
-        prefs.setBool('darkMode', darkMode),
-        prefs.setBool('autoPlayVideos', autoPlayVideos),
-        prefs.setBool('saveToGallery', saveToGallery),
-        prefs.setString('selectedLanguage', selectedLanguage),
-      ]);
-      Get.snackbar('Saved', 'All Settings Saved Successfully', backgroundColor: Colors.green, colorText: Colors.white);
-    } catch (e) {
-      Get.snackbar('Failed', 'Failed to Save Settings', backgroundColor: Colors.red, colorText: Colors.white);
-    }
-  }
-  
+    
   // Reset settings to default
   Future<void> _resetSettings() async {
     try {

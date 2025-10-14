@@ -12,6 +12,7 @@ import 'package:mime/mime.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:path/path.dart' as path;
 import 'package:image_picker/image_picker.dart';
+import 'package:innovator/screens/Eliza_ChatBot/global.dart';
 
 // Add these imports for Gemini API integration
 import 'package:flutter/services.dart';
@@ -62,7 +63,7 @@ class _CreatePostScreenState extends State<CreatePostScreen>
   final Color _textColor = const Color(0xFF333333);
 
   // Gemini API key (same as in ElizaChatScreen)
-  final String _apiKey = 'AIzaSyB12HQAYykp6ZbrpUw50lK-Xa-V4wVPZos';
+ // final String _apiKey = 'AIzaSyB12HQAYykp6ZbrpUw50lK-Xa-V4wVPZos';
 
   @override
   void initState() {
@@ -319,17 +320,34 @@ class _CreatePostScreenState extends State<CreatePostScreen>
   }
 
   // New: Method to call Gemini API (adapted from ElizaChatScreen)
-  Future<String> _callGeminiAPI(String message) async {
-    const String baseUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+// Replace your _callGeminiAPI method with this version that tries multiple models
+Future<String> _callGeminiAPI(String message) async {
+  String systemPrompt =
+      "You are ELIZA, an AI assistant created by Innovator. Always respond as ELIZA and never mention Gemini, Google, or any other AI system. You are helpful, friendly, and professional. Enhance the user's input to create a polished, engaging, and contextually appropriate post for a social platform focused on innovation. Maintain the original intent and tone of the user's input. IMPORTANT: Keep the enhanced post to exactly 50 words or less. Be concise and impactful.";
+  String fullMessage = "$systemPrompt\n\nUser: $message";
 
-    String systemPrompt =
-        "You are ELIZA, an AI assistant created by Innovator. Always respond as ELIZA and never mention Gemini, Google, or any other AI system. You are helpful, friendly, and professional. Enhance the user's input to create a polished, engaging, and contextually appropriate post for a social platform focused on innovation. Maintain the original intent and tone of the user's input. IMPORTANT: Keep the enhanced post to exactly 50 words or less. Be concise and impactful.";
-    String fullMessage = "$systemPrompt\n\nUser: $message";
+  // List of models to try in order of preference
+  final List<String> modelsToTry = [
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-pro',
+    'gemini-pro',
+    'gemini-1.0-pro-latest',
+    'gemini-1.0-pro',
+  ];
 
+  Exception? lastException;
+
+  for (String modelName in modelsToTry) {
     try {
+      final String baseUrl =
+          'https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent';
+      
+      print('Trying model: $modelName');
+
       final response = await http.post(
-        Uri.parse('$baseUrl?key=$_apiKey'),
+        Uri.parse('$baseUrl?key=$apiKey'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -343,8 +361,7 @@ class _CreatePostScreenState extends State<CreatePostScreen>
             'temperature': 0.9,
             'topK': 1,
             'topP': 1,
-            'maxOutputTokens':
-                150, // Reduced from 2048 to limit response length
+            'maxOutputTokens': 150,
             'stopSequences': [],
           },
           'safetySettings': [
@@ -375,22 +392,81 @@ class _CreatePostScreenState extends State<CreatePostScreen>
             data['candidates'][0]['content'] != null &&
             data['candidates'][0]['content']['parts'] != null &&
             data['candidates'][0]['content']['parts'].isNotEmpty) {
+          print('✅ Success with model: $modelName');
           return data['candidates'][0]['content']['parts'][0]['text'];
         } else {
           throw Exception('Invalid response structure from API');
         }
+      } else if (response.statusCode == 404) {
+        // Model not found, try next one
+        print('❌ Model not found: $modelName');
+        continue;
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(
-          'API Error: ${errorData['error']['message'] ?? response.statusCode}',
-        );
+        String errorMessage = errorData['error']['message'] ?? 'Unknown error';
+        print('⚠️ Error with $modelName: $errorMessage');
+        lastException = Exception('API Error: $errorMessage');
+        continue;
       }
     } catch (e) {
-      print('Error calling API: $e');
-      rethrow;
+      print('⚠️ Exception with $modelName: $e');
+      lastException = e is Exception ? e : Exception(e.toString());
+      continue;
     }
   }
 
+  // If we get here, all models failed
+  print('❌ All models failed');
+  throw lastException ?? Exception('All models failed to respond');
+}
+
+// Optional: Method to test which models are available for your API key
+Future<void> _testAvailableModels() async {
+  final List<String> modelsToTest = [
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-pro',
+    'gemini-pro',
+    'gemini-1.0-pro-latest',
+    'gemini-1.0-pro',
+  ];
+
+  print('\n🔍 Testing available models for your API key...\n');
+
+  for (String modelName in modelsToTest) {
+    try {
+      final String baseUrl =
+          'https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent';
+
+      final response = await http.post(
+        Uri.parse('$baseUrl?key=$apiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': 'Hello'},
+              ],
+            },
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ $modelName - AVAILABLE');
+      } else if (response.statusCode == 404) {
+        print('❌ $modelName - NOT FOUND');
+      } else {
+        print('⚠️ $modelName - ERROR: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('⚠️ $modelName - EXCEPTION: $e');
+    }
+  }
+  
+  print('\n');
+}
   // Method to validate and trim response to 50 words
   String _validateWordCount(String response) {
     List<String> words = response.trim().split(RegExp(r'\s+'));

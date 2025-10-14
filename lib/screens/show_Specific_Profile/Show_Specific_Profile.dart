@@ -11,7 +11,6 @@ import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:flutter/services.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/screens/comment/comment_screen.dart';
-import 'package:innovator/screens/show_Specific_Profile/User_Image_Gallery.dart';
 import 'package:innovator/screens/show_Specific_Profile/show_Specific_followers.dart';
 import 'package:innovator/widget/FloatingMenuwidget.dart';
 

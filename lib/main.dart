@@ -2,26 +2,22 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/screens/Feed/Services/Feed_Cache_service.dart';
-import 'package:innovator/screens/Feed/Video_Feed.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/screens/Shop/Shop_Page.dart';
 import 'package:innovator/screens/Splash_Screen/splash_screen.dart';
-import 'package:innovator/screens/chatApp/Add_to_Chat.dart';
 import 'package:innovator/screens/chatApp/SearchchatUser.dart';
 import 'package:innovator/screens/chatApp/chat_homepage.dart';
 import 'package:innovator/screens/chatApp/chatlistpage.dart';
@@ -29,10 +25,9 @@ import 'package:innovator/screens/chatApp/chatscreen.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/services/Daily_Notifcation.dart';
 import 'package:innovator/services/Firebase_Messaging.dart';
-import 'package:innovator/services/firebase_services.dart';
 import 'package:innovator/utils/Drawer/drawer_cache_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
+import 'package:innovator/screens/Eliza_ChatBot/global.dart';
 
 // Global variables and constants
 late Size mq;
@@ -117,18 +112,18 @@ Future<void> _initializeBackgroundNotifications() async {
 
     if (androidPlugin != null) {
       // Create channels ONLY ONCE
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'incoming_calls',
-          'Incoming Calls',
-          description: 'Notifications for incoming calls',
-          importance: Importance.max,
-          enableVibration: true,
-          enableLights: true,
-          playSound: true,
-          showBadge: true,
-        ),
-      );
+      // await androidPlugin.createNotificationChannel(
+      //   const AndroidNotificationChannel(
+      //     'incoming_calls',
+      //     'Incoming Calls',
+      //     description: 'Notifications for incoming calls',
+      //     importance: Importance.max,
+      //     enableVibration: true,
+      //     enableLights: true,
+      //     playSound: true,
+      //     showBadge: true,
+      //   ),
+      // );
 
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
@@ -250,9 +245,9 @@ Future<void> _initializeApp() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
-    try {
-      AdaptiveVideoSystem.initialize();
-    } catch (e) {}
+    // try {
+    //   AdaptiveVideoSystem.initialize();
+    // } catch (e) {}
 
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -309,171 +304,6 @@ Future<void> _initializeApp() async {
     developer.log('App initialization completed');
   } catch (e) {
     developer.log('App initialization failed: $e');
-  }
-}
-
-
-
-// Attempt to restore user data from Firebase/Firestore
-Future<bool> _restoreUserDataFromFirebase(User firebaseUser) async {
-  try {
-    developer.log('🔄 Attempting to restore user data from Firebase...');
-
-    // Get fresh ID token
-    final idToken = await firebaseUser.getIdToken(true);
-    if (idToken == null) return false;
-
-    // Try to get user data from Firestore
-    final userDoc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(firebaseUser.uid)
-            .get();
-
-    if (userDoc.exists) {
-      final userData = userDoc.data() ?? {};
-
-      // Ensure all required fields
-      userData['_id'] = firebaseUser.uid;
-      userData['id'] = firebaseUser.uid;
-      userData['userId'] = firebaseUser.uid;
-      userData['uid'] = firebaseUser.uid;
-      userData['email'] = userData['email'] ?? firebaseUser.email ?? '';
-      userData['name'] = userData['name'] ?? firebaseUser.displayName ?? 'User';
-      userData['photoURL'] = userData['photoURL'] ?? firebaseUser.photoURL;
-      userData['fcmTokens'] = userData['fcmTokens'] ?? [];
-
-      // Save to AppData
-      await AppData().setAuthToken(idToken);
-      await AppData().setCurrentUser(userData);
-
-      // Get fresh FCM token
-      try {
-        final fcmToken = await FirebaseMessaging.instance.getToken();
-        if (fcmToken != null) {
-          await AppData().saveFcmToken(fcmToken);
-        }
-      } catch (e) {
-        developer.log('FCM token error: $e');
-      }
-
-      developer.log('✅ User data successfully restored from Firestore');
-      return true;
-    } else {
-      developer.log('❌ User document not found in Firestore');
-
-      // Try to create basic user data from Firebase Auth
-      final basicUserData = {
-        '_id': firebaseUser.uid,
-        'id': firebaseUser.uid,
-        'userId': firebaseUser.uid,
-        'uid': firebaseUser.uid,
-        'email': firebaseUser.email ?? '',
-        'name':
-            firebaseUser.displayName ??
-            firebaseUser.email?.split('@')[0] ??
-            'User',
-        'photoURL': firebaseUser.photoURL,
-        'provider': 'google',
-        'fcmTokens': [],
-      };
-
-      // Create user document in Firestore
-      await FirebaseService.verifyAndCreateUser(
-        userId: firebaseUser.uid,
-        name: basicUserData['name'] as String,
-        email: basicUserData['email'] as String,
-        photoURL: firebaseUser.photoURL,
-        provider: 'google',
-      );
-
-      // Save to AppData
-      await AppData().setAuthToken(idToken);
-      await AppData().setCurrentUser(basicUserData);
-
-      developer.log('✅ Created new user data from Firebase Auth');
-      return true;
-    }
-  } catch (e) {
-    developer.log('❌ Failed to restore user data: $e');
-    return false;
-  }
-}
-
-// Verify and update Firestore user document
-Future<void> _verifyAndUpdateFirestoreUser(
-  User firebaseUser,
-  String localUserJson,
-) async {
-  try {
-    final userData = jsonDecode(localUserJson) as Map<String, dynamic>;
-
-    // Ensure user document exists in Firestore
-    await FirebaseService.verifyAndCreateUser(
-      userId: userData['_id'] ?? firebaseUser.uid,
-      name: userData['name'] ?? firebaseUser.displayName ?? 'User',
-      email: userData['email'] ?? firebaseUser.email ?? '',
-      phone: userData['phone'],
-      dob: userData['dob'],
-      photoURL: userData['photoURL'] ?? firebaseUser.photoURL,
-      provider: userData['provider'] ?? 'email',
-    );
-
-    developer.log('✅ Firestore user document verified/updated');
-  } catch (e) {
-    developer.log('❌ Error verifying Firestore user: $e');
-  }
-}
-
-Future<void> _handleReinstallAuthState(bool hasInternet) async {
-  try {
-    developer.log('🔍 Checking for reinstall auth state mismatch...');
-
-    // Check if Firebase Auth has a user but local storage doesn't
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    final prefs = await SharedPreferences.getInstance();
-    final localToken = prefs.getString('auth_token');
-    final localUserJson = prefs.getString('current_user');
-
-    if (firebaseUser != null && (localToken == null || localUserJson == null)) {
-      developer.log(
-        '⚠️ Detected app reinstall - Firebase user exists but local data missing',
-      );
-
-      if (hasInternet) {
-        // Try to restore user data from Firebase
-        final restored = await _restoreUserDataFromFirebase(firebaseUser);
-
-        if (!restored) {
-          // If restoration fails, sign out to force fresh login
-          developer.log('📤 Restoration failed, signing out Firebase user');
-          await FirebaseAuth.instance.signOut();
-          await GoogleSignIn().signOut();
-        }
-      } else {
-        // Offline: Can't restore, must sign out
-        developer.log('📤 Offline - signing out Firebase user');
-        await FirebaseAuth.instance.signOut();
-      }
-    } else if (firebaseUser != null &&
-        localToken != null &&
-        localUserJson != null) {
-      developer.log('✅ Auth state consistent - user properly logged in');
-
-      // Verify and update Firestore user document
-      await _verifyAndUpdateFirestoreUser(firebaseUser, localUserJson);
-    } else {
-      developer.log('✅ No Firebase user - clean state');
-    }
-  } catch (e) {
-    developer.log('❌ Error handling reinstall auth state: $e');
-    // On error, sign out to ensure clean state
-    try {
-      await FirebaseAuth.instance.signOut();
-      await GoogleSignIn().signOut();
-    } catch (signOutError) {
-      developer.log('Error signing out: $signOutError');
-    }
   }
 }
 
@@ -576,6 +406,7 @@ void _handleNotificationTapFromMessage(RemoteMessage message) {
 
 // OPTIMIZED: Main function
 void main() async {
+  Gemini.init(apiKey: apiKey);
   try {
     WidgetsFlutterBinding.ensureInitialized();
     
@@ -675,13 +506,13 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
           }),
         ),
 
-        GetPage(
-          name: '/add-to-chat',
-          page: () => const AddToChatScreen(),
-          binding: BindingsBuilder(() {
-            Get.lazyPut<FireChatController>(() => FireChatController());
-          }),
-        ),
+        // GetPage(
+        //   name: '/add-to-chat',
+        //   page: () => const AddToChatScreen(),
+        //   binding: BindingsBuilder(() {
+        //     Get.lazyPut<FireChatController>(() => FireChatController());
+        //   }),
+        // ),
 
         GetPage(
           name: '/search',

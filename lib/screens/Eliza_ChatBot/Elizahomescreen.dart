@@ -86,7 +86,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
   bool _isLoading = false;
 
   // Replace with your actual API key
-  final String _apiKey = 'AIzaSyB12HQAYykp6ZbrpUw50lK-Xa-V4wVPZos';
+  final String _apiKey = 'AIzaSyBJDJOD2kVz9Us0uWupToE8BTl4xJUDVKw';
 
   // Orange color theme
   static const Color primaryOrange = Color.fromRGBO(244, 135, 6, 1);

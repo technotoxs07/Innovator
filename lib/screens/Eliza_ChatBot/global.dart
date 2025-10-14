@@ -12,3 +12,5 @@ Future<void> _saveCodeToAppData(String code) async {
     print('Error saving file: $e');
   }
 }
+
+  const String apiKey = 'AIzaSyAyeHRovi07ejP8BNHu_NtXaAVBIXM1Ihs';

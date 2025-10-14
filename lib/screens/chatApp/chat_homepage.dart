@@ -484,11 +484,11 @@ Widget _buildUsersList() {
       if (controller.searchResults.isEmpty && !controller.isSearching.value) {
         return _buildNoSearchResultsState();
       }
-    } else {
-      // Normal mode empty state
-      if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
-        return _buildEmptyState();
-      }
+    // } else {
+    //   // Normal mode empty state
+    //   if (controller.allUsers.isEmpty && !controller.isLoadingUsers.value) {
+    //     return _buildEmptyState();
+    //   }
     }
 
     // Debug log to verify data is available
@@ -1068,114 +1068,114 @@ Widget _buildFollowStatusLoadingState() {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color.fromRGBO(244, 135, 6, 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.people_outline,
-              size: 64,
-              color: Color.fromRGBO(244, 135, 6, 1),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No mutual followers yet',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start following people to see them here',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () => controller.refreshUsersAndCache(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh'),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: () => Get.to(() => const AddToChatScreen()),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color.fromRGBO(244, 135, 6, 1),
-                  side: const BorderSide(color: Color.fromRGBO(244, 135, 6, 1)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                icon: const Icon(Icons.person_search),
-                label: const Text('Find Users'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildEmptyState() {
+  //   return Center(
+  //     child: Column(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         Container(
+  //           padding: const EdgeInsets.all(24),
+  //           decoration: BoxDecoration(
+  //             color: const Color.fromRGBO(244, 135, 6, 0.1),
+  //             shape: BoxShape.circle,
+  //           ),
+  //           child: const Icon(
+  //             Icons.people_outline,
+  //             size: 64,
+  //             color: Color.fromRGBO(244, 135, 6, 1),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 24),
+  //         Text(
+  //           'No mutual followers yet',
+  //           style: TextStyle(
+  //             fontSize: 20,
+  //             fontWeight: FontWeight.bold,
+  //             color: Colors.grey.shade700,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Text(
+  //           'Start following people to see them here',
+  //           style: TextStyle(
+  //             fontSize: 14,
+  //             color: Colors.grey.shade500,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 24),
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             ElevatedButton.icon(
+  //               onPressed: () => controller.refreshUsersAndCache(),
+  //               style: ElevatedButton.styleFrom(
+  //                 backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+  //                 foregroundColor: Colors.white,
+  //                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(25),
+  //                 ),
+  //               ),
+  //               icon: const Icon(Icons.refresh),
+  //               label: const Text('Refresh'),
+  //             ),
+  //             const SizedBox(width: 12),
+  //             OutlinedButton.icon(
+  //               onPressed: () => Get.to(() => const AddToChatScreen()),
+  //               style: OutlinedButton.styleFrom(
+  //                 foregroundColor: const Color.fromRGBO(244, 135, 6, 1),
+  //                 side: const BorderSide(color: Color.fromRGBO(244, 135, 6, 1)),
+  //                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(25),
+  //                 ),
+  //               ),
+  //               icon: const Icon(Icons.person_search),
+  //               label: const Text('Find Users'),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  void _showLogoutDialog() {
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.logout, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Logout'),
-          ],
-        ),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              controller.updateUserStatus(false);
-              Get.offAllNamed('/login');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-  }
+  // void _showLogoutDialog() {
+  //   Get.dialog(
+  //     AlertDialog(
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.circular(16),
+  //       ),
+  //       title: const Row(
+  //         children: [
+  //           Icon(Icons.logout, color: Colors.red),
+  //           SizedBox(width: 8),
+  //           Text('Logout'),
+  //         ],
+  //       ),
+  //       content: const Text('Are you sure you want to logout?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Get.back(),
+  //           child: Text(
+  //             'Cancel',
+  //             style: TextStyle(color: Colors.grey.shade600),
+  //           ),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () {
+  //             Get.back();
+  //             controller.updateUserStatus(false);
+  //             Get.offAllNamed('/login');
+  //           },
+  //           style: ElevatedButton.styleFrom(
+  //             backgroundColor: Colors.red,
+  //             foregroundColor: Colors.white,
+  //           ),
+  //           child: const Text('Logout'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
