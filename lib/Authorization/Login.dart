@@ -1573,6 +1573,7 @@ class _LoginPageState extends State<LoginPage> {
                                       text: 'Google',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w500,
+                                        fontSize: 15,
                                         fontFamily: 'InterThin',
                                       ),
                                     ),
