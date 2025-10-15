@@ -1158,14 +1158,14 @@ SizedBox(height: 30),
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'My Posts',
+              'Posts',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
            ElevatedButton.icon(
             
             onPressed: (){
             Navigator.push(context, MaterialPageRoute(builder: (context)=>VideoFeedPage()));
-           }, label:Text('My Reels',style: TextStyle(color: Colors.black),),
+           }, label:Text('Reels',style: TextStyle(color: Colors.black),),
            icon: Icon(Icons.video_collection,color: Color.fromRGBO(244, 135, 6, 1),),
            style: ElevatedButton.styleFrom(
             elevation: 0,
@@ -1176,7 +1176,11 @@ SizedBox(height: 30),
           ],
         ),
       ),
-      SizedBox(height: 20),
+      // SizedBox(height: 20),
+      Divider(
+        thickness: 0.8,
+        color: Colors.grey[300],
+      ),
     ],
   );
 }
