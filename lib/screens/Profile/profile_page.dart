@@ -3,17 +3,23 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Login.dart';
 import 'package:innovator/models/Feed_Content_Model.dart';
+import 'package:innovator/screens/Add_Content/Create_post.dart';
 import 'package:innovator/screens/Feed/Inner_Homepage.dart';
+import 'package:innovator/screens/Feed/Video_Feed.dart' show VideoFeedPage;
 import 'package:innovator/screens/Follow/follow_Button.dart';
 import 'package:innovator/screens/Follow/follow-Service.dart';
 import 'package:innovator/screens/Profile/Edit_Profile.dart';
+import 'package:innovator/screens/Profile/ProfileCacheManager.dart';
 import 'package:innovator/screens/SHow_Specific_Profile/Show_Specific_Profile.dart';
+import 'package:innovator/screens/Settings/settings.dart';
 import 'package:innovator/widget/FloatingMenuwidget.dart';
+import 'package:lottie/lottie.dart';
 import 'package:path/path.dart' as path;
 import 'package:http_parser/http_parser.dart';
 import 'package:get/get.dart';
@@ -811,225 +817,373 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     );
   }
 
-  Widget _buildProfileSection(UserProfile profile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(height: 40),
-        Center(
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Stack(
-                    children: [
-                      Obx(
-                        () => CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Color.fromRGBO(235, 111, 70, 0.2),
-                          key: ValueKey(
-                            'profile_${_userController.profilePictureVersion.value}',
-                          ), // Forces rebuild
-                          backgroundImage:
-                              _userController.getFullProfilePicturePath() !=
-                                      null
-                                  ? NetworkImage(
+
+Widget _buildProfileSection(UserProfile profile) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(height: 20),
+      Padding(
+        padding: const EdgeInsets.only(right: 10, left: 10),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Stack(
+                  children: [
+                    Obx(
+                      () => CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Color.fromRGBO(235, 111, 70, 0.2),
+                        key: ValueKey(
+                          'profile_${_userController.profilePictureVersion.value}',
+                        ),
+                        backgroundImage:
+                            _userController.getFullProfilePicturePath() != null
+                                ? NetworkImage(
                                     '${_userController.getFullProfilePicturePath()!}?v=${_userController.profilePictureVersion.value}',
-                                  ) // Add version parameter to URL
-                                  : null,
-                          child:
-                              _userController.profilePicture.value == null ||
-                                      _userController.profilePicture.value == ''
-                                  ? Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: Color.fromRGBO(244, 135, 6, 1),
                                   )
-                                  : null,
-                        ),
+                                : null,
+                        child: _userController.profilePicture.value == null ||
+                                _userController.profilePicture.value == ''
+                            ? Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Color.fromRGBO(244, 135, 6, 1),
+                              )
+                            : null,
                       ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: GestureDetector(
-                          onTap: _isUploading ? null : _pickAndUploadImage,
-                          child: Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Color.fromRGBO(244, 135, 6, 1),
-                              shape: BoxShape.circle,
-                            ),
-                            child:
-                                _isUploading
-                                    ? SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                    : Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: GestureDetector(
+                        onTap: _isUploading ? null : _pickAndUploadImage,
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Color.fromRGBO(244, 135, 6, 1),
+                            shape: BoxShape.circle,
                           ),
+                          child: _isUploading
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                SizedBox(width: 15),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Obx(
+                      () => Text(
+                        _userController.userName.value ?? profile.name,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      profile.email,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color.fromRGBO(244, 135, 6, 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      margin: EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${profile.level.toUpperCase()}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color.fromRGBO(244, 135, 6, 1),
+                    fontWeight: FontWeight.bold,
                   ),
-                  Column(
+                ),
+                      
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+            // SizedBox(height: 10),
+            Divider(
+              thickness: 0.8,
+              color: Colors.grey[300],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 20.0, right: 20.0,),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Obx(
-                        () => Text(
-                          _userController.userName.value ?? profile.name,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) => EditProfileScreen(),
+                      FutureBuilder<List<FollowerFollowing>>(
+                        future: UserProfileService.getFollowers(),
+                        builder: (context, snapshot) {
+                          int followerCount = 0;
+                          if (snapshot.connectionState == ConnectionState.done &&
+                              snapshot.hasData) {
+                            followerCount = snapshot.data!.length;
+                          }
+                          return GestureDetector(
+                            onTap: () => _showFollowersFollowingDialog(context),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '$followerCount ',
+                                  style: TextStyle(
+                                    color: Color.fromRGBO(244, 135, 6, 1),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                     Text(
+                                  'Followers',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         },
-                        label: Text(
-                          'Edit Profile',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
-                        icon: Icon(Icons.edit, color: Colors.white),
                       ),
+                      SizedBox(width: 40),
+                      FutureBuilder<List<FollowerFollowing>>(
+                        future: UserProfileService.getFollowing(),
+                        builder: (context, snapshot) {
+                          int followingCount = 0;
+                          if (snapshot.connectionState == ConnectionState.done &&
+                              snapshot.hasData) {
+                            followingCount = snapshot.data!.length;
+                          }
+                          return GestureDetector(
+                            onTap: () {
+                              _tabController.index = 1;
+                              _showFollowersFollowingDialog(context);
+                            },
+                            child: Column(
+                              children: [
+                                Text(
+                                  '$followingCount',
+                                  style: TextStyle(
+                                    color: Color.fromRGBO(244, 135, 6, 1),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Following',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      
                     ],
                   ),
-                ],
-              ),
-              SizedBox(height: 12),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red, fontSize: 12),
-                  ),
-                ),
-              SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  GestureDetector(
-                    onTap: () => _showFollowersFollowingDialog(context),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color.fromRGBO(235, 111, 70, 0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'Followers',
-                        style: TextStyle(
-                          color: Color.fromRGBO(244, 135, 6, 1),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      _tabController.index = 1;
-                      _showFollowersFollowingDialog(context);
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color.fromRGBO(235, 111, 70, 0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'Following',
-                        style: TextStyle(
-                          color: Color.fromRGBO(244, 135, 6, 1),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+height:35,
+width: 35,
                     decoration: BoxDecoration(
-                      color: Color.fromRGBO(235, 111, 70, 0.2),
-                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.grey[200],
+                      shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      '${profile.level.toUpperCase()} LEVEL',
-                      style: TextStyle(
-                        color: Color.fromRGBO(244, 135, 6, 1),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: IconButton(
+                                          padding: EdgeInsets.all(0),
+                      onPressed: (){
+                                showModalBottomSheet(
+                                  backgroundColor: Colors.white,
+                                  context: context, builder: (context){
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: Icon(Icons.info_outline),
+                                        title: Text('My Information'),
+                                        onTap: ()  {
+                                          Navigator.of(context).pop();
+                                          showAdaptiveDialog(context: context, builder: (context) {
+                                            return AlertDialog(
+                                              backgroundColor: Colors.white,
+                                           
+                                              content: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                      SizedBox(height: 24),
+      Padding(
+        padding: EdgeInsets.all(12),
+        child: Text(
+          'Personal Information',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ),
+      SizedBox(height: 8),
+      ProfileInfoCard(
+        title: 'Email',
+        value: profile.email,
+        icon: Icons.email,
+      ),
+      ProfileInfoCard(
+        title: 'Phone',
+        value: profile.phone,
+        icon: Icons.phone,
+      ),
+      ProfileInfoCard(
+        title: 'Date of Birth',
+        value: formatDate(profile.dob),
+        icon: Icons.calendar_today,
+      ),
+      ProfileInfoCard(
+        title: 'Member Since',
+        value: formatDate(profile.createdAt),
+        icon: Icons.access_time,
+      ),
+                                                ],
+                                              ),
+                                              actions: [
+                                                TextButton(onPressed: (){
+                                                                                          Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (_) => EditProfileScreen(),
+                              ),
+                            );
+                                                }, child: Text('Edit'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  child: Text('Close'),
+                                                ),
+                                              ],
+                                            );
+                                          });
+                                        },
+                                      ),
+                                      
+                                      ListTile(
+                                        leading: Icon(Icons.logout),
+                                        title: Text('Logout'),
+                                        onTap: () async {
+                                          await AppData().clearAuthToken();
+                                          Get.offAll(()=>LoginPage());
+                                        },
+                                      ),
+                                      
+                                      
+                                    ] ,
+                                  );
+                                });
+                    }, icon: Icon(Icons.more_vert_outlined,color: Colors.grey,)),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        SizedBox(height: 24),
-        Padding(
-          padding: EdgeInsets.all(12),
-          child: Text(
-            'Personal Information',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        SizedBox(height: 8),
-        ProfileInfoCard(
-          title: 'Email',
-          value: profile.email,
-          icon: Icons.email,
-        ),
-        ProfileInfoCard(
-          title: 'Phone',
-          value: profile.phone,
-          icon: Icons.phone,
-        ),
-        ProfileInfoCard(
-          title: 'Date of Birth',
-          value: formatDate(profile.dob),
-          icon: Icons.calendar_today,
-        ),
+      ),
 
-        ProfileInfoCard(
-          title: 'Member Since',
-          value: formatDate(profile.createdAt),
-          icon: Icons.access_time,
-        ),
-        SizedBox(height: 24),
-        Divider(thickness: 1),
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text(
-            'My Feed',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      SizedBox(height: 24),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+                    'Create New Post',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.black),
+                  ),
+                  SizedBox(height: 10),
+          
+          InkWell(
+            onTap: (){
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>CreatePostScreen()));
+            },
+            child:Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(8),
+              ),
+          
+              child: 
+              Center(
+                child: Text(
+                  'Write Something...',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black45),
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      ),
+SizedBox(height: 30),
+      Padding(
+        padding: const EdgeInsets.only(right: 10,left: 10,top: 2,bottom: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Posts',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+           ElevatedButton.icon(
+            
+            onPressed: (){
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>VideoFeedPage()));
+           }, label:Text('Reels',style: TextStyle(color: Colors.black),),
+           icon: Icon(Icons.video_collection,color: Color.fromRGBO(244, 135, 6, 1),),
+           style: ElevatedButton.styleFrom(
+            elevation: 0,
+            backgroundColor: Colors.grey.shade200,
 
+           ),
+           ),
+          ],
+        ),
+      ),
+      // SizedBox(height: 20),
+      Divider(
+        thickness: 0.8,
+        color: Colors.grey[300],
+      ),
+    ],
+  );
+}
   Widget _buildContentItem(int index) {
     final content = _contents[index];
     return RepaintBoundary(
@@ -1063,89 +1217,106 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        controller: _scrollController,
-        physics: BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: FutureBuilder<UserProfile>(
-              future: _profileFuture,
-              builder: (context, snapshot) {
-                if (_isLoadingFromCache) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Loading Information'),
-                      ],
-                    ),
-                  );
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+      
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios),
+          onPressed: (){
+            Navigator.pop(context);
+          },
+        ),
+        
+        title: Text('My Profile'),
+        backgroundColor: Color.fromRGBO(244, 135, 6, 1),
+      ) ,
+      body: Padding(
+        padding: const EdgeInsets.only(right: 12,left: 12),
+        child: CustomScrollView(
+          controller: _scrollController,
+        
+          slivers: [
+            SliverToBoxAdapter(
+              child: FutureBuilder<UserProfile>(
+                future: _profileFuture,
+                builder: (context, snapshot) {
+                  if (_isLoadingFromCache) {
+                    return const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red,
-                          ),
+                          CircularProgressIndicator(),
                           SizedBox(height: 16),
-                          Text(
-                            'Error loading profile',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          // Lottie.asset(
-                          //   'animation/No-Content.json',
-                          //   fit: BoxFit.cover,
-                          // ),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _loadProfile();
-                              });
-                            },
-                            child: Text(
-                              'Try Again',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-                            ),
-                          ),
+                          Text('Loading Information'),
                         ],
                       ),
-                    ),
-                  );
-                } else if (snapshot.hasData) {
-                  final profile = snapshot.data!;
-                  return _buildProfileSection(profile);
-                } else {
-                  return Center(child: Text(''));
-                }
-              },
+                    );
+                  }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Error loading profile',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            // Lottie.asset(
+                            //   'animation/No-Content.json',
+                            //   fit: BoxFit.cover,
+                            // ),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _loadProfile();
+                                });
+                              },
+                              child: Text(
+                                'Try Again',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color.fromRGBO(244, 135, 6, 1),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else if (snapshot.hasData) {
+                    final profile = snapshot.data!;
+                    return _buildProfileSection(profile);
+                  } else {
+                    return Center(child: Text(''));
+                  }
+                },
+              ),
             ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              if (index == _contents.length) {
-                return _buildLoadingIndicator();
-              }
-              return _buildContentItem(index);
-            }, childCount: _contents.length + (_hasMoreData ? 1 : 0)),
-          ),
-        ],
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                if (index == _contents.length) {
+                  return _buildLoadingIndicator();
+                }
+                return _buildContentItem(index);
+              }, childCount: _contents.length + (_hasMoreData ? 1 : 0)),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingMenuWidget(),
     );
@@ -1175,6 +1346,7 @@ class ProfileInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
+      color: Colors.white,
       margin: EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(16.0),

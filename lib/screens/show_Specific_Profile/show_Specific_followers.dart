@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
+import 'package:innovator/controllers/State_Management_Profile.dart';
 import 'package:innovator/models/chat_model.dart';
 import 'package:innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
 
@@ -200,22 +201,25 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
       ),
       child: ListTile(
         onTap: isCurrentUser ? null : () => _navigateToProfile(user),
-        leading: CircleAvatar(
-          radius: 25,
-          backgroundColor: Colors.grey[300],
-          backgroundImage: user['picture'] != null && user['picture'].toString().isNotEmpty
-              ? NetworkImage('http://182.93.94.210:3067${user['picture']}')
-              : null,
-          child: user['picture'] == null || user['picture'].toString().isEmpty
-              ? Text(
-                  (user['name'] ?? 'U')[0].toUpperCase(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                )
-              : null,
-        ),
+        leading: InstantProfilePicture(userId: widget.userId, profileData: user['profile'], showBorder: false, radius: 70,),
+        // ClipRect(
+        //   child: CircleAvatar(
+        //     radius: 25,
+        //     backgroundColor: Colors.grey[300],
+        //     backgroundImage: user['picture'] != null && user['picture'].toString().isNotEmpty
+        //         ? NetworkImage('http://182.93.94.210:3067${user['picture']}')
+        //         : null,
+        //     child: user['picture'] == null || user['picture'].toString().isEmpty
+        //         ? Text(
+        //             (user['name'] ?? 'U')[0].toUpperCase(),
+        //             style: const TextStyle(
+        //               fontWeight: FontWeight.bold,
+        //               fontSize: 16,
+        //             ),
+        //           )
+        //         : null,
+        //   ),
+        // ),
         title: Text(
           user['name'] ?? 'Unknown User',
           style: const TextStyle(

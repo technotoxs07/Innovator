@@ -2432,31 +2432,31 @@ class _FeedItemState extends State<FeedItem>
 
       if (FileTypeHelper.isImage(fileUrl)) {
         return _buildSingleImage(fileUrl); // Use updated _buildSingleImage
-      // } else if (FileTypeHelper.isVideo(fileUrl)) {
-      //   return FutureBuilder<Size>(
-      //     future: _getVideoSize(fileUrl),
-      //     builder: (context, snapshot) {
-      //       double maxHeight = 250.0;
-      //       if (snapshot.hasData) {
-      //         final size = snapshot.data!;
-      //         final aspectRatio = size.width / size.height;
-      //         if (aspectRatio < 1) {
-      //           maxHeight = 400.0;
-      //         }
-      //       }
-      //       return Container(
-      //         color: Colors.black,
-      //         alignment: Alignment.center,
-      //         child: LimitedBox(
-      //           maxHeight: maxHeight,
-      //           child: GestureDetector(
-      //             onTap: () => _showMediaGallery(context, mediaUrls, 0),
-      //             child: AutoPlayVideoWidget(url: fileUrl, height: maxHeight),
-      //           ),
-      //         ),
-      //       );
-      //     },
-      //   );
+      } else if (FileTypeHelper.isVideo(fileUrl)) {
+        return FutureBuilder<Size>(
+          future: _getVideoSize(fileUrl),
+          builder: (context, snapshot) {
+            double maxHeight = 250.0;
+            if (snapshot.hasData) {
+              final size = snapshot.data!;
+              final aspectRatio = size.width / size.height;
+              if (aspectRatio < 1) {
+                maxHeight = 400.0;
+              }
+            }
+            return Container(
+              color: Colors.black,
+              alignment: Alignment.center,
+              child: LimitedBox(
+                maxHeight: maxHeight,
+                child: GestureDetector(
+                  onTap: () => _showMediaGallery(context, mediaUrls, 0),
+                  child: AutoPlayVideoWidget(url: fileUrl, height: maxHeight),
+                ),
+              ),
+            );
+          },
+        );
       } else if (FileTypeHelper.isPdf(fileUrl)) {
         return _buildDocumentPreview(
           fileUrl,
@@ -2477,25 +2477,25 @@ class _FeedItemState extends State<FeedItem>
     return _buildImageGallery(mediaUrls); // Use updated _buildImageGallery
   }
 
-  // Widget _buildVideoPreview(String url) {
-  //   final originalVideoUrl = widget.content.optimizedFiles
-  //       .where((file) => file['type'] == 'video')
-  //       .map((file) => file['original'] ?? file['hls'] ?? file['url'])
-  //       .firstWhere((url) => url != null, orElse: () => null);
+  Widget _buildVideoPreview(String url) {
+    final originalVideoUrl = widget.content.optimizedFiles
+        .where((file) => file['type'] == 'video')
+        .map((file) => file['original'] ?? file['hls'] ?? file['url'])
+        .firstWhere((url) => url != null, orElse: () => null);
 
-  //   final videoUrl = originalVideoUrl ?? url;
+    final videoUrl = originalVideoUrl ?? url;
 
-  //   return Container(
-  //     color: Colors.black,
-  //     child: AspectRatio(
-  //       aspectRatio: 16 / 9,
-  //       child: AutoPlayVideoWidget(
-  //         url: widget.content.formatUrl(videoUrl),
-  //         thumbnailUrl: widget.content.thumbnailUrl,
-  //       ),
-  //     ),
-  //   );
-  // }
+    return Container(
+      color: Colors.black,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: AutoPlayVideoWidget(
+          url: widget.content.formatUrl(videoUrl),
+          thumbnailUrl: widget.content.thumbnailUrl,
+        ),
+      ),
+    );
+  }
 
   Widget _buildSingleImage(String url) {
     return GestureDetector(
@@ -2679,13 +2679,13 @@ class _FeedItemState extends State<FeedItem>
     );
   }
 
-  // Future<Size> _getVideoSize(String url) async {
-  //   final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-  //   await controller.initialize();
-  //   final size = controller.value.size;
-  //   controller.dispose();
-  //   return size;
-  // }
+  Future<Size> _getVideoSize(String url) async {
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    await controller.initialize();
+    final size = controller.value.size;
+    controller.dispose();
+    return size;
+  }
 
   Widget _buildDocumentPreview(
     String fileUrl,
@@ -2715,21 +2715,37 @@ class _FeedItemState extends State<FeedItem>
   }
 
   void _showMediaGallery(
-    BuildContext context,
-    List<String> mediaUrls,
-    int initialIndex,
-  ) {
+  BuildContext context,
+  List<String> mediaUrls,
+  int initialIndex,
+) {
+  final selectedUrl = mediaUrls[initialIndex];
+
+  // If selected item is a video, open full screen video player directly
+  if (FileTypeHelper.isVideo(selectedUrl)) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => OptimizedMediaGalleryScreen(
-              mediaUrls: mediaUrls,
-              initialIndex: initialIndex,
-            ),
+        builder: (context) => FullscreenVideoPage(
+          url: selectedUrl,
+          thumbnail: widget.content.thumbnailUrl,
+        ),
       ),
     );
+    return;
   }
+
+  // For images and other media, open the gallery screen
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => OptimizedMediaGalleryScreen(
+        mediaUrls: mediaUrls,
+        initialIndex: initialIndex,
+      ),
+    ),
+  );
+}
 
   void _showShareOptions(BuildContext context) {
     final TextEditingController shareTextController = TextEditingController();
@@ -3780,415 +3796,725 @@ Future<void> _handleDeleteContent() async {
   }
 }
 
-// AutoPlayVideoWidget with enhanced performance
-// class AutoPlayVideoWidget extends StatefulWidget {
-//   final String url;
-//   final double? height;
-//   final double? width;
-//   final String? thumbnailUrl;
+class FullscreenVideoPage extends StatefulWidget {
+  final String url;
+  final String? thumbnail;
 
-//   const AutoPlayVideoWidget({
-//     required this.url,
-//     this.thumbnailUrl,
-//     this.height,
-//     this.width,
-//     Key? key,
-//   }) : super(key: key);
+  const FullscreenVideoPage({
+    Key? key,
+    required this.url,
+    this.thumbnail,
+  }) : super(key: key);
 
-//   @override
-//   State<AutoPlayVideoWidget> createState() => AutoPlayVideoWidgetState();
-// }
+  @override
+  State<FullscreenVideoPage> createState() => _FullscreenVideoPageState();
+}
 
-// class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
-//     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
-//   VideoPlayerController? _controller;
-//   bool _initialized = false;
-//   bool _isMuted = true;
-//   bool _disposed = false;
-//   Timer? _initTimer;
-//   bool _isPlaying = true;
-//   final String videoId = UniqueKey().toString();
-//   static final Map<String, AutoPlayVideoWidgetState> _activeVideos = {};
+class _FullscreenVideoPageState extends State<FullscreenVideoPage>
+    with WidgetsBindingObserver {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+  bool _isPlaying = false;
+  bool _isMuted = true;
+  bool _disposed = false;
+  bool _showControls = true;
+  Timer? _hideControlsTimer;
 
-//   @override
-//   bool get wantKeepAlive => true;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _enterFullscreen();
+    _initController();
+    _startHideControlsTimer();
+  }
 
-//   void _safeSetState(VoidCallback fn) {
-//     if (mounted && !_disposed) {
-//       WidgetsBinding.instance.addPostFrameCallback((_) {
-//         if (mounted && !_disposed) {
-//           setState(fn);
-//         }
-//       });
-//     }
-//   }
+  Future<void> _enterFullscreen() async {
+    // Hide system overlays for immersive fullscreen
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
 
-//   void pauseVideo() {
-//     if (_controller != null && !_disposed && _initialized) {
-//       _controller!.pause();
-//       _safeSetState(() {
-//         _isPlaying = false;
-//       });
-//     }
-//   }
+  Future<void> _exitFullscreen() async {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
 
-//   void playVideo() {
-//     if (_controller != null && !_disposed && _initialized) {
-//       _controller!.play();
-//       _safeSetState(() {
-//         _isPlaying = true;
-//       });
-//     }
-//   }
+  Future<void> _initController() async {
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    try {
+      await _controller!.setLooping(false);
+      await _controller!.setVolume(0.0);
+      await _controller!.initialize();
+      if (_disposed) return;
+      setState(() {
+        _initialized = true;
+        _isPlaying = true;
+        _isMuted = true;
+      });
+      _controller!.play();
+    } catch (e) {
+      debugPrint('FullscreenVideoPage init error: $e');
+    }
+  }
 
-//   void muteVideo() {
-//     if (_controller != null && !_disposed && _initialized) {
-//       _controller!
-//           .setVolume(0.0)
-//           .then((_) {
-//             _safeSetState(() {
-//               _isMuted = true;
-//             });
-//           })
-//           .catchError((error) {
-//             developer.log('Error muting video: $error');
-//           });
-//     }
-//   }
+  @override
+  void dispose() {
+    _disposed = true;
+    _hideControlsTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.pause();
+    _controller?.dispose();
+    _controller = null;
+    _exitFullscreen();
+    super.dispose();
+  }
 
-//   void unmuteVideo() {
-//     if (_controller != null && !_disposed && _initialized) {
-//       _controller!.setVolume(1.0);
-//       _safeSetState(() {
-//         _isMuted = false;
-//       });
-//     }
-//   }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_controller == null || _disposed) return;
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _controller!.pause();
+    } else if (state == AppLifecycleState.resumed && _isPlaying) {
+      _controller!.play();
+    }
+  }
 
-//   bool get isMuted => _isMuted;
-//   bool get isPlaying => _isPlaying;
-//   bool get isInitialized => _initialized;
+  void _togglePlayPause() {
+    if (_controller == null || !_initialized) return;
+    setState(() {
+      if (_controller!.value.isPlaying) {
+        _controller!.pause();
+        _isPlaying = false;
+      } else {
+        _controller!.play();
+        _isPlaying = true;
+      }
+    });
+    _showControlsTemporarily();
+  }
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     WidgetsBinding.instance.addObserver(this);
-//     _initializeVideoPlayer();
-//     VideoPlaybackManager().registerVideo(this);
-//     _activeVideos[videoId] = this;
-//   }
+  void _toggleMute() {
+    if (_controller == null || !_initialized) return;
+    setState(() {
+      _isMuted = !_isMuted;
+      _controller!.setVolume(_isMuted ? 0.0 : 1.0);
+    });
+    _showControlsTemporarily();
+  }
 
-//   void _initializeVideoPlayer() {
-//     if (_disposed) return;
+  void _showControlsTemporarily() {
+    setState(() {
+      _showControls = true;
+    });
+    _startHideControlsTimer();
+  }
 
-//     _initTimer = Timer(const Duration(seconds: 30), () {
-//       if (!_initialized && !_disposed) {
-//         _handleInitializationError();
-//       }
-//     });
+  void _startHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _isPlaying) {
+        setState(() {
+          _showControls = false;
+        });
+      }
+    });
+  }
 
-//     _controller = VideoPlayerController.networkUrl(
-//       Uri.parse(widget.url),
-//       videoPlayerOptions: VideoPlayerOptions(
-//         mixWithOthers: true,
-//         allowBackgroundPlayback: false,
-//       ),
-//     );
+  void _onScreenTap() {
+    if (_showControls) {
+      // If controls are visible, toggle play/pause
+      _togglePlayPause();
+    } else {
+      // If controls are hidden, show them
+      _showControlsTemporarily();
+    }
+  }
 
-//     _controller!
-//       ..setLooping(true)
-//       ..setVolume(0.0)
-//       ..initialize()
-//           .then((_) {
-//             _initTimer?.cancel();
-//             if (!_disposed) {
-//               _safeSetState(() {
-//                 _initialized = true;
-//               });
-//               WidgetsBinding.instance.addPostFrameCallback((_) {
-//                 if (mounted && !_disposed) {
-//                   _controller!.play();
-//                 }
-//               });
-//             }
-//           })
-//           .catchError((error) {
-//             _initTimer?.cancel();
-//             if (!_disposed) {
-//               _handleInitializationError();
-//             }
-//           });
-//   }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Video player
+            Center(
+              child: _initialized && _controller != null
+                  ? AspectRatio(
+                      aspectRatio: _controller!.value.aspectRatio,
+                      child: VideoPlayer(_controller!),
+                    )
+                  : (widget.thumbnail != null
+                      ? CachedNetworkImage(
+                          imageUrl: widget.thumbnail!,
+                          fit: BoxFit.contain,
+                          placeholder: (c, u) =>
+                              Center(child: Image.asset('animation/IdeaBulb.gif')),
+                        )
+                      : Center(child: Image.asset('animation/IdeaBulb.gif'))),
+            ),
 
-//   void _handleVisibilityChanged(VisibilityInfo info) {
-//     if (!mounted || _disposed || _controller == null) return;
+            // Tap area for play/pause (only active when controls are visible or video is paused)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _onScreenTap,
+                behavior: HitTestBehavior.translucent,
+                child: Container(
+                  color: Colors.transparent,
+                ),
+              ),
+            ),
 
-//     final visibleFraction = info.visibleFraction;
+            // Top bar with back button (always on top with higher z-index)
+            AnimatedOpacity(
+              opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, left: 8, right: 8),
+                  child: Row(
+                    children: [
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            child: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       if (!mounted || _disposed) return;
+            // Center play/pause button (visible when paused)
+            if (!_isPlaying)
+              Center(
+                child: GestureDetector(
+                  onTap: _togglePlayPause,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
 
-//       if (visibleFraction > 0.5) {
-//         _activeVideos[videoId] = this;
-//         _muteOtherVideos();
-//         if (_initialized && !_controller!.value.isPlaying && _isPlaying) {
-//           _controller!.play();
-//         }
-//       } else {
-//         _activeVideos.remove(videoId);
-//         if (_initialized && _controller!.value.isPlaying) {
-//           _controller!.pause();
-//         }
-//       }
-//     });
-//   }
+            // Bottom controls (mute button)
+            AnimatedOpacity(
+              opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _toggleMute,
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isMuted ? Icons.volume_off : Icons.volume_up,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-//   void _muteOtherVideos() {
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       for (final entry in _activeVideos.entries) {
-//         if (entry.key != videoId &&
-//             entry.value.mounted &&
-//             !entry.value._disposed) {
-//           entry.value._controller?.pause();
-//           entry.value._controller?.setVolume(0.0);
-//           entry.value._safeSetState(() {
-//             entry.value._isMuted = true;
-//             entry.value._isPlaying = false;
-//           });
-//         }
-//       }
-//     });
-//   }
 
-//   static void pauseAllAutoPlayVideos() {
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       for (final entry in _activeVideos.entries) {
-//         if (entry.value.mounted && !entry.value._disposed) {
-//           entry.value._controller?.pause();
-//           entry.value._controller?.setVolume(0.0);
-//           entry.value._safeSetState(() {
-//             entry.value._isMuted = true;
-//             entry.value._isPlaying = false;
-//           });
-//         }
-//       }
-//     });
-//   }
+//AutoPlayVideoWidget with enhanced performance
+class AutoPlayVideoWidget extends StatefulWidget {
+  final String url;
+  final double? height;
+  final double? width;
+  final String? thumbnailUrl;
 
-//   static void resumeAllAutoPlayVideos() {
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       for (final entry in _activeVideos.entries) {
-//         if (entry.value._initialized &&
-//             entry.value.mounted &&
-//             !entry.value._disposed) {
-//           entry.value._controller?.play();
-//           entry.value._controller?.setVolume(0.0);
-//           entry.value._safeSetState(() {
-//             entry.value._isPlaying = true;
-//             entry.value._isMuted = true;
-//           });
-//         }
-//       }
-//     });
-//   }
+  const AutoPlayVideoWidget({
+    required this.url,
+    this.thumbnailUrl,
+    this.height,
+    this.width,
+    Key? key,
+  }) : super(key: key);
 
-//   void _handleInitializationError([Object? error]) {
-//     _safeSetState(() {
-//       _initialized = false;
-//     });
-//   }
+  @override
+  State<AutoPlayVideoWidget> createState() => AutoPlayVideoWidgetState();
+}
 
-//   @override
-//   void didChangeAppLifecycleState(AppLifecycleState state) {
-//     super.didChangeAppLifecycleState(state);
-//     if (_controller == null || _disposed) return;
+class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+  bool _isMuted = true;
+  bool _disposed = false;
+  Timer? _initTimer;
+  bool _isPlaying = true;
+  final String videoId = UniqueKey().toString();
+  static final Map<String, AutoPlayVideoWidgetState> _activeVideos = {};
 
-//     WidgetsBinding.instance.addPostFrameCallback((_) {
-//       if (!mounted || _disposed) return;
+  @override
+  bool get wantKeepAlive => true;
 
-//       switch (state) {
-//         case AppLifecycleState.paused:
-//         case AppLifecycleState.inactive:
-//           _controller!.pause();
-//           break;
-//         case AppLifecycleState.resumed:
-//           if (_initialized && mounted && _isPlaying) {
-//             _controller!.play();
-//           }
-//           break;
-//         case AppLifecycleState.detached:
-//         case AppLifecycleState.hidden:
-//           _controller!.pause();
-//           break;
-//       }
-//     });
-//   }
+  void _safeSetState(VoidCallback fn) {
+    if (mounted && !_disposed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_disposed) {
+          setState(fn);
+        }
+      });
+    }
+  }
 
-//   @override
-//   void dispose() {
-//     VideoPlaybackManager().unregisterVideo(this);
-//     _disposed = true;
-//     _activeVideos.remove(videoId);
-//     _initTimer?.cancel();
-//     WidgetsBinding.instance.removeObserver(this);
-//     _controller?.dispose();
-//     _controller = null;
-//     super.dispose();
-//   }
+  void pauseVideo() {
+    if (_controller != null && !_disposed && _initialized) {
+      _controller!.pause();
+      _safeSetState(() {
+        _isPlaying = false;
+      });
+    }
+  }
 
-//   void _togglePlayPause() {
-//     if (_controller == null || _disposed || !_initialized) return;
+  void playVideo() {
+    if (_controller != null && !_disposed && _initialized) {
+      _controller!.play();
+      _safeSetState(() {
+        _isPlaying = true;
+      });
+    }
+  }
 
-//     setState(() {
-//       _isPlaying = !_isPlaying;
-//       if (_isPlaying) {
-//         _controller!.play();
-//       } else {
-//         _controller!.pause();
-//       }
-//     });
-//   }
+  void muteVideo() {
+    if (_controller != null && !_disposed && _initialized) {
+      _controller!
+          .setVolume(0.0)
+          .then((_) {
+            _safeSetState(() {
+              _isMuted = true;
+            });
+          })
+          .catchError((error) {
+            developer.log('Error muting video: $error');
+          });
+    }
+  }
 
-//   void _toggleMute() {
-//     if (_controller == null || _disposed || !_initialized) return;
+  void unmuteVideo() {
+    if (_controller != null && !_disposed && _initialized) {
+      _controller!.setVolume(1.0);
+      _safeSetState(() {
+        _isMuted = false;
+      });
+    }
+  }
 
-//     setState(() {
-//       _isMuted = !_isMuted;
-//       _controller!.setVolume(_isMuted ? 0.0 : 1.0);
-//     });
-//   }
+  bool get isMuted => _isMuted;
+  bool get isPlaying => _isPlaying;
+  bool get isInitialized => _initialized;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     super.build(context);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeVideoPlayer();
+    _activeVideos[videoId] = this;
+  }
 
-//     return VisibilityDetector(
-//       key: Key(videoId),
-//       onVisibilityChanged: _handleVisibilityChanged,
-//       child: Container(
-//         height: widget.height ?? MediaQuery.of(context).size.height,
-//         width: widget.width ?? MediaQuery.of(context).size.width,
-//         color: Colors.white,
-//         child:
-//             !_initialized || _controller == null
-//                 ? _buildLoadingOrThumbnail()
-//                 : _buildVideoPlayer(),
-//       ),
-//     );
-//   }
+  void _initializeVideoPlayer() {
+    if (_disposed) return;
 
-//   Widget _buildLoadingOrThumbnail() {
-//     if (widget.thumbnailUrl != null) {
-//       return CachedNetworkImage(
-//         imageUrl: widget.thumbnailUrl!,
-//         fit: BoxFit.cover,
-//         placeholder:
-//             (context, url) => Center(
-//               child: Container(
-//                 width: 40,
-//                 height: 40,
-//                 child: Image.asset(
-//                   'animation/IdeaBulb.gif',
-//                   fit: BoxFit.contain,
-//                 ),
-//               ),
-//             ),
-//         errorWidget:
-//             (context, url, error) => Container(
-//               color: Colors.grey,
-//               child: const Center(
-//                 child: Icon(Icons.videocam_off, color: Colors.white),
-//               ),
-//             ),
-//       );
-//     } else {
-//       return Center(
-//         child: Container(
-//           width: 40,
-//           height: 40,
-//           child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
-//         ),
-//       );
-//     }
-//   }
+    _initTimer = Timer(const Duration(seconds: 30), () {
+      if (!_initialized && !_disposed) {
+        _handleInitializationError();
+      }
+    });
 
-//   Widget _buildVideoPlayer() {
-//     return LayoutBuilder(
-//       builder: (context, constraints) {
-//         final size = _controller!.value.size;
-//         final aspectRatio = size.width / size.height;
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.url),
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: false,
+      ),
+    );
 
-//         double targetWidth = constraints.maxWidth;
-//         double targetHeight = constraints.maxWidth / aspectRatio;
+    _controller!
+      ..setLooping(true)
+      ..setVolume(0.0)
+      ..initialize()
+          .then((_) {
+            _initTimer?.cancel();
+            if (!_disposed) {
+              _safeSetState(() {
+                _initialized = true;
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && !_disposed) {
+                  _controller!.play();
+                }
+              });
+            }
+          })
+          .catchError((error) {
+            _initTimer?.cancel();
+            if (!_disposed) {
+              _handleInitializationError();
+            }
+          });
+  }
 
-//         if (targetHeight > constraints.maxHeight) {
-//           targetHeight = constraints.maxHeight;
-//           targetWidth = constraints.maxHeight * aspectRatio;
-//         }
+  void _handleVisibilityChanged(VisibilityInfo info) {
+    if (!mounted || _disposed || _controller == null) return;
 
-//         return Center(
-//           child: Stack(
-//             alignment: Alignment.center,
-//             children: [
-//               GestureDetector(
-//                 onTap: _togglePlayPause,
-//                 behavior: HitTestBehavior.opaque,
-//                 child: SizedBox(
-//                   width: targetWidth,
-//                   height: targetHeight,
-//                   child: VideoPlayer(_controller!),
-//                 ),
-//               ),
+    final visibleFraction = info.visibleFraction;
 
-//               if (!_isPlaying)
-//                 IgnorePointer(
-//                   child: Container(
-//                     width: 80,
-//                     height: 80,
-//                     decoration: BoxDecoration(
-//                       color: Colors.black54,
-//                       shape: BoxShape.circle,
-//                     ),
-//                     child: Icon(
-//                       Icons.play_arrow,
-//                       size: 50,
-//                       color: Colors.white,
-//                     ),
-//                   ),
-//                 ),
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _disposed) return;
 
-//               Positioned(
-//                 bottom: 16,
-//                 right: 16,
-//                 child: GestureDetector(
-//                   onTap: _toggleMute,
-//                   behavior: HitTestBehavior.opaque,
-//                   child: Container(
-//                     width: 40,
-//                     height: 40,
-//                     decoration: BoxDecoration(
-//                       color: Colors.black54,
-//                       shape: BoxShape.circle,
-//                       border: Border.all(
-//                         color: Colors.white.withAlpha(30),
-//                         width: 1,
-//                       ),
-//                     ),
-//                     child: Icon(
-//                       _isMuted ? Icons.volume_off : Icons.volume_up,
-//                       color: Colors.white,
-//                       size: 20,
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         );
-//       },
-//     );
-//   }
-// }
+      if (visibleFraction > 0.5) {
+        _activeVideos[videoId] = this;
+        _muteOtherVideos();
+        if (_initialized && !_controller!.value.isPlaying && _isPlaying) {
+          _controller!.play();
+        }
+      } else {
+        _activeVideos.remove(videoId);
+        if (_initialized && _controller!.value.isPlaying) {
+          _controller!.pause();
+        }
+      }
+    });
+  }
+
+  void _muteOtherVideos() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final entry in _activeVideos.entries) {
+        if (entry.key != videoId &&
+            entry.value.mounted &&
+            !entry.value._disposed) {
+          entry.value._controller?.pause();
+          entry.value._controller?.setVolume(0.0);
+          entry.value._safeSetState(() {
+            entry.value._isMuted = true;
+            entry.value._isPlaying = false;
+          });
+        }
+      }
+    });
+  }
+
+  static void pauseAllAutoPlayVideos() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final entry in _activeVideos.entries) {
+        if (entry.value.mounted && !entry.value._disposed) {
+          entry.value._controller?.pause();
+          entry.value._controller?.setVolume(0.0);
+          entry.value._safeSetState(() {
+            entry.value._isMuted = true;
+            entry.value._isPlaying = false;
+          });
+        }
+      }
+    });
+  }
+
+  static void resumeAllAutoPlayVideos() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final entry in _activeVideos.entries) {
+        if (entry.value._initialized &&
+            entry.value.mounted &&
+            !entry.value._disposed) {
+          entry.value._controller?.play();
+          entry.value._controller?.setVolume(0.0);
+          entry.value._safeSetState(() {
+            entry.value._isPlaying = true;
+            entry.value._isMuted = true;
+          });
+        }
+      }
+    });
+  }
+
+  void _handleInitializationError([Object? error]) {
+    _safeSetState(() {
+      _initialized = false;
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_controller == null || _disposed) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _disposed) return;
+
+      switch (state) {
+        case AppLifecycleState.paused:
+        case AppLifecycleState.inactive:
+          _controller!.pause();
+          break;
+        case AppLifecycleState.resumed:
+          if (_initialized && mounted && _isPlaying) {
+            _controller!.play();
+          }
+          break;
+        case AppLifecycleState.detached:
+        case AppLifecycleState.hidden:
+          _controller!.pause();
+          break;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _activeVideos.remove(videoId);
+    _initTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
+
+  // NEW: Method to open fullscreen
+  void _openFullscreen() {
+    if (!mounted || _controller == null) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenVideoPage(
+          url: widget.url,
+          thumbnail: widget.thumbnailUrl,
+        ),
+      ),
+    );
+  }
+
+  void _toggleMute() {
+    if (_controller == null || _disposed || !_initialized) return;
+
+    setState(() {
+      _isMuted = !_isMuted;
+      _controller!.setVolume(_isMuted ? 0.0 : 1.0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    return VisibilityDetector(
+      key: Key(videoId),
+      onVisibilityChanged: _handleVisibilityChanged,
+      child: Container(
+        height: widget.height ?? MediaQuery.of(context).size.height,
+        width: widget.width ?? MediaQuery.of(context).size.width,
+        color: Colors.white,
+        child:
+            !_initialized || _controller == null
+                ? _buildLoadingOrThumbnail()
+                : _buildVideoPlayer(),
+      ),
+    );
+  }
+
+  Widget _buildLoadingOrThumbnail() {
+    if (widget.thumbnailUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: widget.thumbnailUrl!,
+        fit: BoxFit.cover,
+        placeholder:
+            (context, url) => Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                child: Image.asset(
+                  'animation/IdeaBulb.gif',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+        errorWidget:
+            (context, url, error) => Container(
+              color: Colors.grey,
+              child: const Center(
+                child: Icon(Icons.videocam_off, color: Colors.white),
+              ),
+            ),
+      );
+    } else {
+      return Center(
+        child: Container(
+          width: 40,
+          height: 40,
+          child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+        ),
+      );
+    }
+  }
+
+  Widget _buildVideoPlayer() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = _controller!.value.size;
+        final aspectRatio = size.width / size.height;
+
+        double targetWidth = constraints.maxWidth;
+        double targetHeight = constraints.maxWidth / aspectRatio;
+
+        if (targetHeight > constraints.maxHeight) {
+          targetHeight = constraints.maxHeight;
+          targetWidth = constraints.maxHeight * aspectRatio;
+        }
+
+        return Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Video player with tap to fullscreen
+              GestureDetector(
+                onTap: _openFullscreen, // CHANGED: Now opens fullscreen instead of toggle play/pause
+                behavior: HitTestBehavior.opaque,
+                child: SizedBox(
+                  width: targetWidth,
+                  height: targetHeight,
+                  child: VideoPlayer(_controller!),
+                ),
+              ),
+
+              // Play indicator overlay (non-interactive, just visual feedback)
+              if (!_isPlaying)
+                IgnorePointer(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.play_arrow,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+              // Fullscreen icon indicator (top-right)
+              Positioned(
+                top: 16,
+                right: 16,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.fullscreen,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Mute button (bottom-right) with proper hit area
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: GestureDetector(
+                  onTap: _toggleMute,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withAlpha(30),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      _isMuted ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 // OptimizedNetworkImage widget
 // class _OptimizedNetworkImage extends StatelessWidget {

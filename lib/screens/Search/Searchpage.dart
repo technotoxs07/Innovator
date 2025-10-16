@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
+
 import 'package:innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
 import 'package:innovator/widget/FloatingMenuwidget.dart';
 import '../../controllers/user_controller.dart';
@@ -23,6 +24,7 @@ class _SearchPageState extends State<SearchPage> {
   List<dynamic> _suggestedUsers = [];
   bool _isLoading = false;
   bool _isSearching = false;
+  bool _isSuggestedUsersExpanded = false;
 
   @override
   void initState() {
@@ -172,14 +174,18 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      // backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildSimpleHeader(),
-            _buildSimpleSearchBar(),
-            Expanded(child: _buildContent()),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.only(right: 10,left: 10),
+          child: Column(
+            children: [
+              _buildSimpleHeader(),
+              _buildSimpleSearchBar(),
+              Expanded(child: _buildContent()),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingMenuWidget(),
@@ -216,115 +222,208 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSimpleSearchBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'Search for people...',
-            prefixIcon: const Icon(Icons.search, color: Colors.grey),
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.grey),
-                    onPressed: () {
-                      _searchController.clear();
-                      _searchUsers('');
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.all(16),
-          ),
-          onChanged: (value) {
-            setState(() {});
-            _searchUsers(value);
-          },
-        ),
-      ),
+
+    return SearchBar(
+      elevation: WidgetStatePropertyAll(0),
+      backgroundColor: WidgetStatePropertyAll(Colors.grey[100]!),
+      hintText: 'Search for people...',
+      onChanged: (value) {
+        _searchUsers(value);
+      },
+      controller: _searchController,
+      onTap: () {
+        _searchController.clear();
+        _searchUsers('');
+        setState(() {});
+      },
+      leading: const Icon(Icons.search, color: Colors.grey),
+      
     );
   }
 
-  Widget _buildContent() {
-    if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.orange),
-            SizedBox(height: 16),
-            Text('Loading...', style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      );
-    }
 
-    return Container(
-      color: Colors.grey[50],
+//   Widget _buildContent() {
+//   if (_isLoading) {
+//     return const Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           CircularProgressIndicator(color: Colors.orange),
+//           SizedBox(height: 16),
+//           Text('Loading...', style: TextStyle(color: Colors.grey)),
+//         ],
+//       ),
+//     );
+//   }
+
+//   return Container(
+//     color: Colors.grey[50],
+//     child: Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Padding(
+//           padding: const EdgeInsets.all(16),
+//           child: Row(
+//             children: [
+//               Text(
+//                 _isSearching ? 'Search Results' : 'Suggested People',
+//                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+//               ),
+//               const Spacer(),
+//               if (!_isSearching) // Show button only when not searching
+//                 IconButton(
+//                   icon: Icon(
+//                     _isSuggestedUsersExpanded
+//                         ? Icons.keyboard_arrow_up
+//                         : Icons.keyboard_arrow_down,
+//                     color: Colors.orange,
+//                   ),
+//                   onPressed: () {
+//                     setState(() {
+//                       _isSuggestedUsersExpanded = !_isSuggestedUsersExpanded;
+//                     });
+//                   },
+//                 ),
+//             ],
+//           ),
+//         ),
+//         Expanded(child: _buildUserList()),
+//       ],
+//     ),
+//   );
+// }
+
+
+
+
+//   Widget _buildUserList() {
+//   final users = _isSearching ? _searchResults : _suggestedUsers;
+
+//   // If searching and no results, show "No results found"
+//   if (_isSearching && users.isEmpty) {
+//     return const Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(Icons.search_off, size: 64, color: Colors.grey),
+//           SizedBox(height: 16),
+//           Text('No results found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
+//           SizedBox(height: 8),
+//           Text('Try a different search term', style: TextStyle(color: Colors.grey)),
+//         ],
+//       ),
+//     );
+//   }
+
+//   // If not searching and suggested users are not expanded, show empty container
+//   if (!_isSearching && !_isSuggestedUsersExpanded) {
+//     return Container();
+//   }
+
+//   // Show the user list (either search results or suggested users)
+//   return ListView.builder(
+//     padding: const EdgeInsets.symmetric(horizontal: 16),
+//     itemCount: users.length,
+//     itemBuilder: (context, index) {
+//       final user = users[index];
+//       return _buildUserCard(user);
+//     },
+//   );
+// }
+
+Widget _buildContent() {
+  if (_isLoading) {
+    return const Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Text(
-                  _isSearching ? 'Search Results' : 'Suggested People',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
-                ),
-                const Spacer(),
-                if (!_isSearching)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text('${_suggestedUsers.length}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(child: _buildUserList()),
+          CircularProgressIndicator(color: Colors.orange),
+          SizedBox(height: 16),
+          Text('Loading...', style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
   }
 
-  Widget _buildUserList() {
-    final users = _isSearching ? _searchResults : _suggestedUsers;
-    
-    if (users.isEmpty && _isSearching) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No results found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
-            SizedBox(height: 8),
-            Text('Try a different search term', style: TextStyle(color: Colors.grey)),
-          ],
+  return Container(
+    color: Colors.grey[50],
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Text(
+                _isSearching ? 'Search Results' : 'Suggested People',
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87),
+              ),
+              const Spacer(),
+              if (!_isSearching) // Show button only when not searching
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _isSuggestedUsersExpanded = !_isSuggestedUsersExpanded;
+                    });
+                  },
+                  child: Text(
+                    _isSuggestedUsersExpanded ? 'Show Less' : 'See All',
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-      );
-    }
+        Expanded(child: _buildUserList()),
+      ],
+    ),
+  );
+}
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: users.length,
-      itemBuilder: (context, index) {
-        final user = users[index];
-        return _buildUserCard(user);
-      },
+Widget _buildUserList() {
+  final users = _isSearching
+      ? _searchResults
+      : _isSuggestedUsersExpanded
+          ? _suggestedUsers
+          : _suggestedUsers.take(3).toList();
+
+  // If searching and no results, show "No results found"
+  if (_isSearching && users.isEmpty) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text('No results found',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey)),
+          SizedBox(height: 8),
+          Text('Try a different search term',
+              style: TextStyle(color: Colors.grey)),
+        ],
+      ),
     );
   }
+
+  // Show the user list (either search results or limited/full suggested users)
+  return ListView.builder(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    itemCount: users.length,
+    itemBuilder: (context, index) {
+      final user = users[index];
+      return _buildUserCard(user);
+    },
+  );
+}
 
   Widget _buildUserCard(Map<String, dynamic> user) {
   final userId = user['_id'] ?? '';
@@ -351,60 +450,54 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  return Card(
-    margin: const EdgeInsets.only(bottom: 12),
-    elevation: 2,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    child: InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SpecificUserProfilePage(userId: userId),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+  return InkWell(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SpecificUserProfilePage(userId: userId),
+        ),
+      );
+    },
+    borderRadius: BorderRadius.circular(12),
+    child: Column(
+      children: [
+        Row(
           children: [
             // Enhanced avatar with better fallback handling
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(27),
-                border: Border.all(color: Colors.orange, width: 2),
-              ),
-              child: _buildSearchAvatar(userId, userName, userPicture),
-            ),
+            _buildSearchAvatar(userId, userName, userPicture),
             
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
+            
             
             Expanded(
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     userName,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
-                  const SizedBox(height: 4),
-                  if (user['email'] != null && user['email'].toString().isNotEmpty)
-                    Text(
-                      user['email'],
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  const SizedBox(height: 2),
-                  const Text('Tap to view profile', style: TextStyle(fontSize: 14, color: Colors.grey)),
+
+                 
+                
                 ],
               ),
             ),
-            
-            const Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
+        
+           
           ],
+          
         ),
-      ),
+              Divider(
+                
+                    thickness: 2,
+                    color: Colors.grey[300],
+                    height: 20,
+                  ),
+      ],
     ),
+    
   );
 }
 
@@ -421,7 +514,7 @@ Widget _buildSearchAvatar(String userId, String userName, String userPicture) {
   }
 
   return CircleAvatar(
-    radius: 25,
+    radius: 20,
     backgroundColor: Colors.grey[300],
     backgroundImage: imageUrl != null && imageUrl.isNotEmpty
         ? NetworkImage(imageUrl)

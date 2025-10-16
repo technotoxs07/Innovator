@@ -480,12 +480,12 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
           developer.log('Controller initialization error: $e');
         }
 
-        // OPTIMIZED: Delayed notification test only if online
-        if (_isAppOnline) {
-          Future.delayed(const Duration(seconds: 5), () {
-            _performAppReadyNotificationTest();
-          });
-        }
+        // // OPTIMIZED: Delayed notification test only if online
+        // if (_isAppOnline) {
+        //   Future.delayed(const Duration(seconds: 5), () {
+        //     _performAppReadyNotificationTest();
+        //   });
+        // }
       },
 
       getPages: [
@@ -547,24 +547,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     );
   }
 
-  // OPTIMIZED: Lightweight notification test
-  void _performAppReadyNotificationTest() async {
-    try {
-      if (!_isAppOnline) return;
-
-      final notificationService = FirebaseNotificationService();
-
-      // Simple test notification
-      await notificationService.showNotification(
-        title: 'System Ready',
-        body: 'Notifications are active',
-        data: {'type': 'system_ready'},
-      );
-    } catch (e) {
-      developer.log('App-ready notification test failed: $e');
-    }
-  }
-
+  
   _buildAppTheme() {
     return ThemeData(
       fontFamily: 'InterThin',
