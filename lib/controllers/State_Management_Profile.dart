@@ -123,7 +123,7 @@ class InstantProfilePicture extends StatelessWidget {
                   color: Colors.grey[400],
                   child: Center(
                     child: Text(
-                      displayName[0].toUpperCase(),
+                      displayName.toUpperCase(),
                       style: TextStyle(
                         fontSize: radius * 0.7,
                         fontWeight: FontWeight.bold,
