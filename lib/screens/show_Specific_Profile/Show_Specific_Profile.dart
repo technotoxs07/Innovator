@@ -1097,25 +1097,8 @@ void _navigateToChat(Map<String, dynamic> profileData) {
                 ),
               ],
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 5),
            
-            _buildInfoRow(
-              Icons.email_outlined,
-              // 'Email',
-              null,
-              profileData['email'] ?? 'Not provided',
-              Colors.red,
-              onTap: () => _copyToClipboard(profileData['email'], 'Email'),
-            ),
-            if (profileData['phone'] != null && profileData['phone'].isNotEmpty)
-              _buildInfoRow(
-                Icons.phone_outlined,
-                // 'Phone',
-                null,
-                profileData['phone'],
-                Colors.green,
-                onTap: () => _copyToClipboard(profileData['phone'], 'Phone'),
-              ),
             if (profileData['location'] != null &&
                 profileData['location'].isNotEmpty)
               _buildInfoRow(
@@ -1125,15 +1108,7 @@ void _navigateToChat(Map<String, dynamic> profileData) {
                 profileData['location'],
                 Colors.purple,
               ),
-            if (profileData['dob'] != null)
-              _buildInfoRow(
-                Icons.cake_outlined,
-                // 'Birthday',
-                  null,
-                _formatDate(profileData['dob']),
-                Colors.pink,
-              ),
-            if (profileData['gender'] != null)
+if (profileData['gender'] != null)
               _buildInfoRow(
                 Icons.person_outline,
                 // 'Gender',
@@ -1141,7 +1116,16 @@ void _navigateToChat(Map<String, dynamic> profileData) {
                 profileData['gender'],
                 Colors.teal,
               ),
-  
+                if (isExpanded)...[
+                if (profileData['dob'] != null)
+              _buildInfoRow(
+                Icons.cake_outlined,
+                // 'Birthday',
+                  null,
+                _formatDate(profileData['dob']),
+                Colors.pink,
+              ),
+ 
       if (profileData['profession'] != null &&
             profileData['profession'].isNotEmpty)
           _buildInfoRow(
@@ -1167,6 +1151,35 @@ void _navigateToChat(Map<String, dynamic> profileData) {
             profileData['achievements'],
             Colors.amber,
           ),
+
+
+
+        //incase needed in future for showing the email and the phone number
+          
+            // _buildInfoRow(
+            //   Icons.email_outlined,
+            //   // 'Email',
+            //   null,
+            //   profileData['email'] ?? 'Not provided',
+            //   Colors.red,
+            //   onTap: () => _copyToClipboard(profileData['email'], 'Email'),
+            // ),
+            // if (profileData['phone'] != null && profileData['phone'].isNotEmpty)
+            //   _buildInfoRow(
+            //     Icons.phone_outlined,
+            //     // 'Phone',
+            //     null,
+            //     profileData['phone'],
+            //     Colors.green,
+            //     onTap: () => _copyToClipboard(profileData['phone'], 'Phone'),
+            //   ),
+  ],
+  TextButton(onPressed: (){
+
+    setState(() {
+      isExpanded = !isExpanded;
+    });
+  },child:Text( isExpanded?'See Less Information ...':'See More Information ...',style: TextStyle(color: Colors.grey, fontSize: 16),)),
           ],
         ),
       ),

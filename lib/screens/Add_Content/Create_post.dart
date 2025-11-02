@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:innovator/innovator_home.dart';
-import 'package:innovator/main.dart';
+
 import 'package:innovator/widget/FloatingMenuwidget.dart';
 import 'dart:convert';
 import 'dart:io';
