@@ -167,10 +167,12 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                   animation: _fadeAnimation,
                   builder: (context, child) {
                     return FadeTransition(
+                    
                       opacity: _fadeAnimation,
                       child: SlideTransition(
                         position: _slideAnimation,
                         child: CustomScrollView(
+                          
                           controller: _scrollController,
                           physics: const BouncingScrollPhysics(),
                           slivers: [
@@ -194,7 +196,24 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                               const SliverToBoxAdapter(
                                 child: SizedBox(height: 30),
                               ),
-                  
+                                         const SliverToBoxAdapter(
+                                child: 
+                                                       Padding(
+                                                         padding: EdgeInsets.only(right: 10,left: 10),
+                                                         child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                           children: [
+                                                                Divider(),
+                                                             Text('Posts',style: TextStyle(
+                                                              fontSize: 20,
+                                                                                           fontWeight: FontWeight.bold
+                                                                                         ),),
+                                                                                         Divider()
+                                                           ],
+                                                         ),
+                                                       ),
+                              ),
+
                               SliverList(
                                 delegate: SliverChildBuilderDelegate(
                                   (context, index) {
@@ -1180,6 +1199,7 @@ if (profileData['gender'] != null)
       isExpanded = !isExpanded;
     });
   },child:Text( isExpanded?'See Less Information ...':'See More Information ...',style: TextStyle(color: Colors.grey, fontSize: 16),)),
+
           ],
         ),
       ),
