@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/screens/Course/home.dart';
+import 'package:innovator/screens/Project_Management/Project_idea.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/utils/Drawer/custom_drawer.dart';
 import 'package:innovator/Notification/FCM_Services.dart';

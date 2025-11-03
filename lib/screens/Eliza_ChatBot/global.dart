@@ -3,7 +3,8 @@ import 'dart:io';
 
 Future<void> _saveCodeToAppData(String code) async {
   try {
-    // Get the application documents directory (AppData equivalent for the app)
+    // Get the application doc
+    //uments directory (AppData equivalent for the app)
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/eliza_chat_screen.dart');
     await file.writeAsString(code);
@@ -12,3 +13,5 @@ Future<void> _saveCodeToAppData(String code) async {
     print('Error saving file: $e');
   }
 }
+
+  const String apiKey = 'AIzaSyAAsNe3vn85mCgYz3la055Jm5QfhFV2x8k';

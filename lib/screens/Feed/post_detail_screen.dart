@@ -248,8 +248,10 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
         ],
       ),
       child: Column(
+        
        // crossAxisAlignment: CrossAxisAlignment.,
         children: [
+          
           _buildHeader(),
           if (content!.status.isNotEmpty) _buildStatusSection(),
           if (content!.hasMedia) _buildMediaSection(),
@@ -459,18 +461,19 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
             ),
           ),
         );
-      } else if (optimizedFile.type == 'video') {
-        return Container(
-          color: Colors.black,
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: AutoPlayVideoWidget(
-              url: _formatMediaUrl(optimizedFile.url),
-              thumbnailUrl: optimizedFile.thumbnail != null ? _formatMediaUrl(optimizedFile.thumbnail!) : null,
-            ),
-          ),
-        );
       }
+      // } else if (optimizedFile.type == 'video') {
+      //   return Container(
+      //     color: Colors.black,
+      //     child: AspectRatio(
+      //       aspectRatio: 16 / 9,
+      //       child: AutoPlayVideoWidget(
+      //         url: _formatMediaUrl(optimizedFile.url),
+      //         thumbnailUrl: optimizedFile.thumbnail != null ? _formatMediaUrl(optimizedFile.thumbnail!) : null,
+      //       ),
+      //     ),
+      //   );
+      // }
     }
 
     // Fallback to original files

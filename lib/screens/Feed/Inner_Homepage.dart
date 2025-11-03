@@ -35,7 +35,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-import '../../models/Author_model.dart';
 import '../../models/Feed_Content_Model.dart';
 
 // VideoPlaybackManager class
@@ -45,39 +44,6 @@ class LoadingConfig {
       'animation/IdeaBulb.gif'; // Update this path to your GIF file
 }
 
-// ronir ronnndfnfkj sjhbhd ronit shrivastav ronit shrivasta   roniuf ronjf
-class VideoPlaybackManager {
-  static final VideoPlaybackManager _instance =
-      VideoPlaybackManager._internal();
-  factory VideoPlaybackManager() => _instance;
-  VideoPlaybackManager._internal();
-
-  final Set<AutoPlayVideoWidgetState> _registeredVideos = {};
-
-  void registerVideo(AutoPlayVideoWidgetState video) {
-    _registeredVideos.add(video);
-  }
-
-  void unregisterVideo(AutoPlayVideoWidgetState video) {
-    _registeredVideos.remove(video);
-  }
-
-  void pauseAllVideos() {
-    for (final video in _registeredVideos) {
-      if (video.mounted) {
-        video.pauseVideo();
-      }
-    }
-  }
-
-  void resumeAllVideos() {
-    for (final video in _registeredVideos) {
-      if (video.mounted) {
-        video.playVideo();
-      }
-    }
-  }
-}
 
 // Replace the RefreshIndicator in your build metho
 // Enhanced CacheManager class
@@ -1731,7 +1697,10 @@ class _FeedItemState extends State<FeedItem>
       duration: Duration(milliseconds: 300),
     );
     formattedTimeAgo = _formatTimeAgo(widget.content.createdAt);
-    _recordView();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recordView();
+    });
+   // isOwnContent = _isAuthorCurrentUser();
   }
 
   @override
@@ -2417,24 +2386,24 @@ class _FeedItemState extends State<FeedItem>
   }
 
   Widget _buildMediaPreview() {
-    final hasOptimizedVideo = widget.content.optimizedFiles.any(
-      (f) => f['type'] == 'video',
-    );
+    // final hasOptimizedVideo = widget.content.optimizedFiles.any(
+    //   (f) => f['type'] == 'video',
+    // );
     final hasOptimizedImages = widget.content.optimizedFiles.any(
       (f) => f['type'] == 'image',
     );
 
-    if (hasOptimizedVideo) {
-      final videoFile = widget.content.optimizedFiles.firstWhere(
-        (f) => f['type'] == 'video',
-      );
+    // if (hasOptimizedVideo) {
+    //   final videoFile = widget.content.optimizedFiles.firstWhere(
+    //     (f) => f['type'] == 'video',
+    //   );
 
-      final videoUrl =
-          videoFile['hls'] ?? videoFile['url'] ?? videoFile['original'];
-      if (videoUrl != null) {
-        return _buildVideoPreview(videoUrl);
-      }
-    }
+    //   final videoUrl =
+    //       videoFile['hls'] ?? videoFile['url'] ?? videoFile['original'];
+    //   if (videoUrl != null) {
+    //     return _buildVideoPreview(videoUrl);
+    //   }
+    // }
 
     if (hasOptimizedImages) {
       final imageUrls =
@@ -2634,45 +2603,45 @@ class _FeedItemState extends State<FeedItem>
     );
   }
 
-  Widget _buildSingleImageOptimized(String url) {
-    return GestureDetector(
-      onTap: () => _showMediaGallery(context, [url], 0),
-      child: Container(
-        constraints: BoxConstraints(maxHeight: 450, minHeight: 200),
-        child: CachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.cover, // Changed from default to cover
-          width: double.infinity,
-          memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
-          placeholder:
-              (context, url) => AspectRatio(
-                aspectRatio: 16 / 9, // Default aspect ratio while loading
-                child: Container(
-                  color: Colors.grey[300],
-                  child: Center(
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      child: Image.asset(
-                        'animation/IdeaBulb.gif',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          errorWidget:
-              (context, url, error) => AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Container(
-                  color: Colors.grey[300],
-                  child: Icon(Icons.error),
-                ),
-              ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildSingleImageOptimized(String url) {
+  //   return GestureDetector(
+  //     onTap: () => _showMediaGallery(context, [url], 0),
+  //     child: Container(
+  //       constraints: BoxConstraints(maxHeight: 450, minHeight: 200),
+  //       child: CachedNetworkImage(
+  //         imageUrl: url,
+  //         fit: BoxFit.cover, // Changed from default to cover
+  //         width: double.infinity,
+  //         memCacheWidth: (MediaQuery.of(context).size.width * 1.5).toInt(),
+  //         placeholder:
+  //             (context, url) => AspectRatio(
+  //               aspectRatio: 16 / 9, // Default aspect ratio while loading
+  //               child: Container(
+  //                 color: Colors.grey[300],
+  //                 child: Center(
+  //                   child: Container(
+  //                     width: 40,
+  //                     height: 40,
+  //                     child: Image.asset(
+  //                       'animation/IdeaBulb.gif',
+  //                       fit: BoxFit.contain,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //         errorWidget:
+  //             (context, url, error) => AspectRatio(
+  //               aspectRatio: 16 / 9,
+  //               child: Container(
+  //                 color: Colors.grey[300],
+  //                 child: Icon(Icons.error),
+  //               ),
+  //             ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // Helper method for grid images
   Widget _buildGridImage(String url, int index, List<String> allUrls) {
@@ -2746,21 +2715,37 @@ class _FeedItemState extends State<FeedItem>
   }
 
   void _showMediaGallery(
-    BuildContext context,
-    List<String> mediaUrls,
-    int initialIndex,
-  ) {
+  BuildContext context,
+  List<String> mediaUrls,
+  int initialIndex,
+) {
+  final selectedUrl = mediaUrls[initialIndex];
+
+  // If selected item is a video, open full screen video player directly
+  if (FileTypeHelper.isVideo(selectedUrl)) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => OptimizedMediaGalleryScreen(
-              mediaUrls: mediaUrls,
-              initialIndex: initialIndex,
-            ),
+        builder: (context) => FullscreenVideoPage(
+          url: selectedUrl,
+          thumbnail: widget.content.thumbnailUrl,
+        ),
       ),
     );
+    return;
   }
+
+  // For images and other media, open the gallery screen
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => OptimizedMediaGalleryScreen(
+        mediaUrls: mediaUrls,
+        initialIndex: initialIndex,
+      ),
+    ),
+  );
+}
 
   void _showShareOptions(BuildContext context) {
     final TextEditingController shareTextController = TextEditingController();
@@ -2913,149 +2898,321 @@ class _FeedItemState extends State<FeedItem>
     }
   }
 
-  void _showQuickSuggestions(BuildContext context) {
-    showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
+  // Replace your existing _showQuickSuggestions method with this updated version
+
+void _showQuickSuggestions(BuildContext context) {
+  showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit, color: Color(0xFFF48706)),
+              title: const Text('Edit content'),
+              onTap: () => Navigator.pop(context, 'edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete post'),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy, color: Colors.blue),
+              title: const Text('Copy content'),
+              onTap: () => Navigator.pop(context, 'copy'),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    },
+  ).then((value) async {
+    if (value == 'edit') {
+      await _handleEditContent();
+    } else if (value == 'delete') {
+      await _handleDeleteContent();
+    } else if (value == 'copy') {
+      Clipboard.setData(ClipboardData(text: widget.content.status));
+      Get.snackbar(
+        'Copied',
+        'Content copied to clipboard',
+        backgroundColor: Colors.green.withAlpha(80),
+        colorText: Colors.white,
+        duration: Duration(seconds: 1),
+      );
+    }
+  });
+}
+
+// New method to handle edit content
+Future<void> _handleEditContent() async {
+  final TextEditingController controller = TextEditingController(
+    text: widget.content.status,
+  );
+  
+  final result = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: Row(
+        children: [
+          Icon(Icons.edit, color: Color(0xFFF48706)),
+          SizedBox(width: 8),
+          Text('Edit Content'),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              maxLines: 8,
+              maxLength: 500,
+              decoration: InputDecoration(
+                hintText: 'Update your content',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(0xFFF48706), width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (controller.text.trim().isEmpty) {
+              Get.snackbar(
+                'Error',
+                'Content cannot be empty',
+                backgroundColor: Colors.red,
+                colorText: Colors.white,
+              );
+              return;
+            }
+            Navigator.pop(context, controller.text.trim());
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFFF48706),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text('Save'),
+        ),
+      ],
+    ),
+  );
+  
+  if (result != null && result.trim().isNotEmpty && result != widget.content.status) {
+    // Show loading dialog
+    Get.dialog(
+      Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
+                width: 50,
+                height: 50,
+                child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
               ),
-              ListTile(
-                leading: const Icon(Icons.edit, color: Color(0xFFF48706)),
-                title: const Text('Edit content'),
-                onTap: () => Navigator.pop(context, 'edit'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Delete post'),
-                onTap: () => Navigator.pop(context, 'delete'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.copy, color: Colors.blue),
-                title: const Text('Copy content'),
-                onTap: () => Navigator.pop(context, 'copy'),
-              ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
+              Text('Updating content...'),
             ],
           ),
-        );
-      },
-    ).then((value) async {
-      if (value == 'edit') {
-        // Show dialog to edit content
-        final TextEditingController controller = TextEditingController(
-          text: widget.content.status,
-        );
-        final result = await showDialog<String>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Text('Edit Content'),
-                content: TextField(
-                  controller: controller,
-                  maxLines: 4,
-                  decoration: InputDecoration(hintText: 'Update your content'),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, controller.text),
-                    child: Text('Save'),
-                  ),
-                ],
-              ),
-        );
-        if (result != null && result.trim().isNotEmpty) {
-          // Call API to update content
-          final success = await ApiService.updateContent(
-            widget.content.id,
-            result.trim(),
-          );
-          if (success) {
-            setState(() {
-              widget.content.status = result.trim();
-            });
-            Get.snackbar(
-              'Success',
-              'Content updated',
-              backgroundColor: Colors.green,
-            );
-          } else {
-            Get.snackbar(
-              'Error',
-              'Failed to update content',
-              backgroundColor: Colors.red,
-              colorText: Colors.white,
-            );
-          }
-        }
-      } else if (value == 'delete') {
-        // Confirm delete
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Text('Delete Post'),
-                content: Text('Are you sure you want to delete this post?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    child: Text('Delete'),
-                  ),
-                ],
-              ),
-        );
-        if (confirm == true) {
-          // Call API to delete files (assuming widget.content.files is a List<String>)
-          final success = await ApiService.deleteFiles(widget.content.id);
-          if (success) {
-            Get.snackbar(
-              'Deleted',
-              'Post deleted',
-              backgroundColor: Colors.green,
-            );
-            // Optionally remove from feed or refresh
-          } else {
-            Get.snackbar(
-              'Error',
-              'Failed to delete post',
-              backgroundColor: Colors.red,
-              colorText: Colors.white,
-            );
-          }
-        }
-      }
-      if (value == 'copy') {
-        Clipboard.setData(ClipboardData(text: widget.content.status));
-        Get.snackbar('Copied', 'Content copied to clipboard');
-      }
-    });
+        ),
+      ),
+      barrierDismissible: false,
+    );
+    
+    // Call API to update content
+    final success = await ApiService.updateContent(
+      widget.content.id,
+      result.trim(),
+      context: context,
+    );
+    
+    Get.back(); // Close loading dialog
+    
+    if (success) {
+      setState(() {
+        widget.content.status = result.trim();
+      });
+      Get.snackbar(
+        'Success',
+        'Content updated successfully',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        icon: Icon(Icons.check_circle, color: Colors.white),
+        duration: Duration(seconds: 1),
+      );
+    } else {
+      Get.snackbar(
+        'Error',
+        'Failed to update content. Please try again.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: Icon(Icons.error, color: Colors.white),
+        duration: Duration(seconds: 1),
+      );
+    }
   }
+}
+
+// New method to handle delete content
+Future<void> _handleDeleteContent() async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: Row(
+        children: [
+          Icon(Icons.warning, color: Colors.red),
+          SizedBox(width: 8),
+          Text('Delete Post'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Are you sure you want to delete this post?',
+            style: TextStyle(fontSize: 16),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'This action cannot be undone.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  
+  if (confirm == true) {
+    // Show loading dialog
+    Get.dialog(
+      Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+              ),
+              SizedBox(height: 16),
+              Text('Deleting post...'),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+    
+    // Call API to delete content
+    final success = await ApiService.deleteFiles(
+      widget.content.id,
+      context: context,
+    );
+    
+    Get.back(); // Close loading dialog
+    
+    if (success) {
+      Get.snackbar(
+        'Deleted',
+        'Post deleted successfully',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        icon: Icon(Icons.check_circle, color: Colors.white),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+      );
+      
+      // Trigger a refresh of the feed
+      // You might want to emit an event or callback to parent widget
+      // to remove this item from the feed list
+      if (context.mounted) {
+        // Navigate back or refresh feed
+        Navigator.of(context).pop();
+      }
+    } else {
+      Get.snackbar(
+        'Error',
+        'Failed to delete post. Please try again.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: Icon(Icons.error, color: Colors.white),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+      );
+    }
+  }
+}
 
   // Add this method to the _FeedItemState class
 
@@ -3639,7 +3796,290 @@ class _FeedItemState extends State<FeedItem>
   }
 }
 
-// AutoPlayVideoWidget with enhanced performance
+class FullscreenVideoPage extends StatefulWidget {
+  final String url;
+  final String? thumbnail;
+
+  const FullscreenVideoPage({
+    Key? key,
+    required this.url,
+    this.thumbnail,
+  }) : super(key: key);
+
+  @override
+  State<FullscreenVideoPage> createState() => _FullscreenVideoPageState();
+}
+
+class _FullscreenVideoPageState extends State<FullscreenVideoPage>
+    with WidgetsBindingObserver {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+  bool _isPlaying = false;
+  bool _isMuted = true;
+  bool _disposed = false;
+  bool _showControls = true;
+  Timer? _hideControlsTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _enterFullscreen();
+    _initController();
+    _startHideControlsTimer();
+  }
+
+  Future<void> _enterFullscreen() async {
+    // Hide system overlays for immersive fullscreen
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  Future<void> _exitFullscreen() async {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
+
+  Future<void> _initController() async {
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    try {
+      await _controller!.setLooping(false);
+      await _controller!.setVolume(0.0);
+      await _controller!.initialize();
+      if (_disposed) return;
+      setState(() {
+        _initialized = true;
+        _isPlaying = true;
+        _isMuted = true;
+      });
+      _controller!.play();
+    } catch (e) {
+      debugPrint('FullscreenVideoPage init error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _hideControlsTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.pause();
+    _controller?.dispose();
+    _controller = null;
+    _exitFullscreen();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_controller == null || _disposed) return;
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _controller!.pause();
+    } else if (state == AppLifecycleState.resumed && _isPlaying) {
+      _controller!.play();
+    }
+  }
+
+  void _togglePlayPause() {
+    if (_controller == null || !_initialized) return;
+    setState(() {
+      if (_controller!.value.isPlaying) {
+        _controller!.pause();
+        _isPlaying = false;
+      } else {
+        _controller!.play();
+        _isPlaying = true;
+      }
+    });
+    _showControlsTemporarily();
+  }
+
+  void _toggleMute() {
+    if (_controller == null || !_initialized) return;
+    setState(() {
+      _isMuted = !_isMuted;
+      _controller!.setVolume(_isMuted ? 0.0 : 1.0);
+    });
+    _showControlsTemporarily();
+  }
+
+  void _showControlsTemporarily() {
+    setState(() {
+      _showControls = true;
+    });
+    _startHideControlsTimer();
+  }
+
+  void _startHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _isPlaying) {
+        setState(() {
+          _showControls = false;
+        });
+      }
+    });
+  }
+
+  void _onScreenTap() {
+    if (_showControls) {
+      // If controls are visible, toggle play/pause
+      _togglePlayPause();
+    } else {
+      // If controls are hidden, show them
+      _showControlsTemporarily();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Video player
+            Center(
+              child: _initialized && _controller != null
+                  ? AspectRatio(
+                      aspectRatio: _controller!.value.aspectRatio,
+                      child: VideoPlayer(_controller!),
+                    )
+                  : (widget.thumbnail != null
+                      ? CachedNetworkImage(
+                          imageUrl: widget.thumbnail!,
+                          fit: BoxFit.contain,
+                          placeholder: (c, u) =>
+                              Center(child: Image.asset('animation/IdeaBulb.gif')),
+                        )
+                      : Center(child: Image.asset('animation/IdeaBulb.gif'))),
+            ),
+            // Tap area for play/pause (only active when controls are visible or video is paused)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _onScreenTap,
+                behavior: HitTestBehavior.translucent,
+                child: Container(
+                  color: Colors.transparent,
+                ),
+              ),
+            ),
+            // Top bar with back button (always on top with higher z-index)
+            AnimatedOpacity(
+              opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, left: 8, right: 8),
+                  child: Row(
+                    children: [
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            child: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Center play/pause button (visible when paused)
+            if (!_isPlaying)
+              Center(
+                child: GestureDetector(
+                  onTap: _togglePlayPause,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            // Bottom controls (mute button)
+            AnimatedOpacity(
+              opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _toggleMute,
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isMuted ? Icons.volume_off : Icons.volume_up,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+//AutoPlayVideoWidget with enhanced performance
 class AutoPlayVideoWidget extends StatefulWidget {
   final String url;
   final double? height;
@@ -3733,7 +4173,6 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeVideoPlayer();
-    VideoPlaybackManager().registerVideo(this);
     _activeVideos[videoId] = this;
   }
 
@@ -3885,7 +4324,6 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
 
   @override
   void dispose() {
-    VideoPlaybackManager().unregisterVideo(this);
     _disposed = true;
     _activeVideos.remove(videoId);
     _initTimer?.cancel();
@@ -3895,17 +4333,19 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
     super.dispose();
   }
 
-  void _togglePlayPause() {
-    if (_controller == null || _disposed || !_initialized) return;
-
-    setState(() {
-      _isPlaying = !_isPlaying;
-      if (_isPlaying) {
-        _controller!.play();
-      } else {
-        _controller!.pause();
-      }
-    });
+  // NEW: Method to open fullscreen
+  void _openFullscreen() {
+    if (!mounted || _controller == null) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenVideoPage(
+          url: widget.url,
+          thumbnail: widget.thumbnailUrl,
+        ),
+      ),
+    );
   }
 
   void _toggleMute() {
@@ -3989,8 +4429,9 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
           child: Stack(
             alignment: Alignment.center,
             children: [
+              // Video player with tap to fullscreen
               GestureDetector(
-                onTap: _togglePlayPause,
+                onTap: _openFullscreen, // CHANGED: Now opens fullscreen instead of toggle play/pause
                 behavior: HitTestBehavior.opaque,
                 child: SizedBox(
                   width: targetWidth,
@@ -3999,6 +4440,7 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
                 ),
               ),
 
+              // Play indicator overlay (non-interactive, just visual feedback)
               if (!_isPlaying)
                 IgnorePointer(
                   child: Container(
@@ -4016,6 +4458,27 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
                   ),
                 ),
 
+              // Fullscreen icon indicator (top-right)
+              Positioned(
+                top: 16,
+                right: 16,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.fullscreen,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Mute button (bottom-right) with proper hit area
               Positioned(
                 bottom: 16,
                 right: 16,
@@ -4050,43 +4513,43 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
 }
 
 // OptimizedNetworkImage widget
-class _OptimizedNetworkImage extends StatelessWidget {
-  final String url;
-  final double? height;
+// class _OptimizedNetworkImage extends StatelessWidget {
+//   final String url;
+//   final double? height;
 
-  const _OptimizedNetworkImage({required this.url, this.height});
+//   const _OptimizedNetworkImage({required this.url, this.height});
 
-  @override
-  Widget build(BuildContext context) {
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      height: height,
-      width: double.infinity,
-      placeholder:
-          (context, url) => Container(
-            color: Colors.grey[300],
-            child: Center(
-              child: Container(
-                width: 30,
-                height: 30,
-                child: Image.asset(
-                  'animation/IdeaBulb.gif',
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-      errorWidget:
-          (context, url, error) => Container(
-            color: Colors.grey[300],
-            child: const Center(child: Icon(Icons.error, color: Colors.white)),
-          ),
-      memCacheWidth: (MediaQuery.of(context).size.width * 2).toInt(),
-      memCacheHeight: (MediaQuery.of(context).size.height * 2).toInt(),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return CachedNetworkImage(
+//       imageUrl: url,
+//       fit: BoxFit.cover,
+//       height: height,
+//       width: double.infinity,
+//       placeholder:
+//           (context, url) => Container(
+//             color: Colors.grey[300],
+//             child: Center(
+//               child: Container(
+//                 width: 30,
+//                 height: 30,
+//                 child: Image.asset(
+//                   'animation/IdeaBulb.gif',
+//                   fit: BoxFit.contain,
+//                 ),
+//               ),
+//             ),
+//           ),
+//       errorWidget:
+//           (context, url, error) => Container(
+//             color: Colors.grey[300],
+//             child: const Center(child: Icon(Icons.error, color: Colors.white)),
+//           ),
+//       memCacheWidth: (MediaQuery.of(context).size.width * 2).toInt(),
+//       memCacheHeight: (MediaQuery.of(context).size.height * 2).toInt(),
+//     );
+//   }
+// }
 
 class _LinkifyText extends StatelessWidget {
   final String text;

@@ -32,6 +32,8 @@ class InstantProfilePicture extends StatelessWidget {
           return Obx(() => _buildCurrentUserAvatar(userController));
         }
 
+        
+
         // For other users - try to get cached data first
         String? imageUrl = userController.getOtherUserFullProfilePicturePath(userId);
         String? displayName = userController.getOtherUserName(userId);

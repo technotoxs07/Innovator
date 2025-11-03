@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Message {
@@ -13,6 +17,7 @@ class Message {
   final bool isLoading;
   final String? messageId;
   bool isReported;
+  final String? media;
 
   Message({
     required this.text,
@@ -21,6 +26,7 @@ class Message {
     this.isLoading = false,
     this.messageId,
     this.isReported = false,
+    this.media,
   });
 
   Map<String, dynamic> toJson() => {
@@ -30,6 +36,7 @@ class Message {
         'isLoading': isLoading,
         'messageId': messageId,
         'isReported': isReported,
+        'media': media,
       };
 
   factory Message.fromJson(Map<String, dynamic> json) => Message(
@@ -39,6 +46,7 @@ class Message {
         isLoading: json['isLoading'] ?? false,
         messageId: json['messageId'],
         isReported: json['isReported'] ?? false,
+        media: json['media'],
       );
 
   Message copyWith({
@@ -48,6 +56,7 @@ class Message {
     bool? isLoading,
     String? messageId,
     bool? isReported,
+    String? media,
   }) {
     return Message(
       text: text ?? this.text,
@@ -56,6 +65,7 @@ class Message {
       isLoading: isLoading ?? this.isLoading,
       messageId: messageId ?? this.messageId,
       isReported: isReported ?? this.isReported,
+      media: media ?? this.media,
     );
   }
 }
@@ -84,9 +94,13 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
   final ScrollController _scrollController = ScrollController();
   final List<Message> _messages = [];
   bool _isLoading = false;
+  String _partialResponse = "";
+  bool _initialLoading = true;
 
-  // Replace with your actual API key
-  final String _apiKey = 'AIzaSyB12HQAYykp6ZbrpUw50lK-Xa-V4wVPZos';
+  // IMPORTANT: Move your API key to a secure location
+  // For development, you can use environment variables or a config file
+  // DO NOT commit API keys to version control
+  static const String _apiKey = 'AIzaSyAAsNe3vn85mCgYz3la055Jm5QfhFV2x8k'; // Replace with new key
 
   // Orange color theme
   static const Color primaryOrange = Color.fromRGBO(244, 135, 6, 1);
@@ -141,6 +155,17 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
   @override
   void initState() {
     super.initState();
+    
+    // Initialize Gemini with proper configuration
+    try {
+      Gemini.init(
+        apiKey: _apiKey,
+        enableDebugging: true, // Enable for development, disable in production
+      );
+    } catch (e) {
+      print('Error initializing Gemini: $e');
+    }
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -154,22 +179,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
       vsync: this,
     )..repeat();
 
-    // Load cached messages
     _loadMessages();
-
-    // Add welcome message if no messages exist
-    if (_messages.isEmpty) {
-      _messages.add(Message(
-        text: "Hello! I'm ELIZA, your personal AI assistant created by Innovator. I'm here to help you with anything you need. How can I assist you today?",
-        isUser: false,
-        timestamp: DateTime.now(),
-        messageId: _generateMessageId(),
-      ));
-      _saveMessages();
-    }
-
-    // Start animation
-    _animationController.forward();
   }
 
   String _generateMessageId() {
@@ -187,21 +197,94 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
   }
 
   Future<void> _loadMessages() async {
-    final prefs = await SharedPreferences.getInstance();
-    final messagesJson = prefs.getString('eliza_messages');
-    if (messagesJson != null) {
-      final List<dynamic> messagesList = jsonDecode(messagesJson);
+    setState(() {
+      _initialLoading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedMessagesJson = prefs.getStringList('eliza_messages') ?? [];
+
+      if (savedMessagesJson.isEmpty) {
+        _addBotMessage("Hello! I'm ELIZA, your personal AI assistant created by Innovator. I'm here to help you with anything you need. How can I assist you today?");
+      } else {
+        final loadedMessages = <Message>[];
+
+        for (final jsonStr in savedMessagesJson) {
+          final Map<String, dynamic> messageMap = jsonDecode(jsonStr);
+
+          String? mediaPath;
+          if (messageMap.containsKey('media') && messageMap['media'] != null) {
+            final String originalPath = messageMap['media'];
+            final File mediaFile = File(originalPath);
+            if (await mediaFile.exists()) {
+              mediaPath = originalPath;
+            }
+          }
+
+          loadedMessages.add(Message(
+            text: messageMap['text'],
+            isUser: messageMap['isUser'],
+            timestamp: DateTime.parse(messageMap['timestamp']),
+            isLoading: messageMap['isLoading'] ?? false,
+            messageId: messageMap['messageId'],
+            isReported: messageMap['isReported'] ?? false,
+            media: mediaPath,
+          ));
+        }
+
+        setState(() {
+          _messages.addAll(loadedMessages);
+        });
+      }
+    } catch (e) {
+      print('Error loading messages: $e');
+      _addBotMessage("Hello! I'm ELIZA, your personal AI assistant created by Innovator. I'm here to help you with anything you need. How can I assist you today?");
+    } finally {
       setState(() {
-        _messages.addAll(messagesList.map((json) => Message.fromJson(json)).toList());
+        _initialLoading = false;
       });
       _scrollToBottom();
+      _animationController.forward();
     }
   }
 
   Future<void> _saveMessages() async {
-    final prefs = await SharedPreferences.getInstance();
-    final messagesJson = jsonEncode(_messages.map((m) => m.toJson()).toList());
-    await prefs.setString('eliza_messages', messagesJson);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final List<String> messagesJson = _messages.map((message) {
+        final Map<String, dynamic> messageMap = {
+          'text': message.text,
+          'isUser': message.isUser,
+          'timestamp': message.timestamp.toIso8601String(),
+          'isLoading': message.isLoading,
+          'messageId': message.messageId,
+          'isReported': message.isReported,
+          'media': message.media,
+        };
+        return jsonEncode(messageMap);
+      }).toList();
+
+      await prefs.setStringList('eliza_messages', messagesJson);
+    } catch (e) {
+      print('Error saving messages: $e');
+    }
+  }
+
+  void _addBotMessage(String text) {
+    setState(() {
+      _messages.add(
+        Message(
+          text: text,
+          isUser: false,
+          timestamp: DateTime.now(),
+          messageId: _generateMessageId(),
+        ),
+      );
+    });
+
+    _saveMessages();
   }
 
   Future<void> _saveReportedContent(String messageId, String category, String? additionalInfo) async {
@@ -222,14 +305,10 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
     await prefs.remove('eliza_messages');
     setState(() {
       _messages.clear();
-      _messages.add(Message(
-        text: "Hello! I'm ELIZA, your personal AI assistant created by Innovator. I'm here to help you with anything you need. How can I assist you today?",
-        isUser: false,
-        timestamp: DateTime.now(),
-        messageId: _generateMessageId(),
-      ));
     });
-    await _saveMessages();
+
+    _addBotMessage("Hello! I'm ELIZA, your personal AI assistant created by Innovator. I'm here to help you with anything you need. How can I assist you today?");
+
     _scrollToBottom();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -258,10 +337,8 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
 
   Future<void> _handleReport(Message message, String category, String? additionalInfo) async {
     try {
-      // Save report locally
       await _saveReportedContent(message.messageId!, category, additionalInfo);
 
-      // Update message status
       final messageIndex = _messages.indexWhere((m) => m.messageId == message.messageId);
       if (messageIndex != -1) {
         setState(() {
@@ -270,7 +347,6 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
         await _saveMessages();
       }
 
-      // Show confirmation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -286,9 +362,6 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
           duration: const Duration(seconds: 3),
         ),
       );
-
-      // TODO: Send report to your backend server
-      // await _sendReportToServer(message.messageId!, category, additionalInfo);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -302,13 +375,11 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
   }
 
   String _processElizaResponse(String response) {
-    // Replace any mentions of Gemini with ELIZA
     String processedResponse = response
         .replaceAllMapped(RegExp(r'\bGemini\b', caseSensitive: false), (match) => 'ELIZA')
-        .replaceAllMapped(RegExp(r'\bGoogle\b', caseSensitive: false), (match) => 'Innovator Developed By Ronit Shrivastav')
+        .replaceAllMapped(RegExp(r'\bGoogle\b', caseSensitive: false), (match) => 'Innovator')
         .replaceAllMapped(RegExp(r'\bBard\b', caseSensitive: false), (match) => 'ELIZA');
 
-    // Add ELIZA personality responses for identity questions
     String lowerResponse = response.toLowerCase();
     if (lowerResponse.contains('who made you') ||
         lowerResponse.contains('who created you') ||
@@ -325,128 +396,131 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
     return processedResponse;
   }
 
-  Future<void> _sendMessage() async {
+  void _sendTextMessage() {
     if (_controller.text.trim().isEmpty || _isLoading) return;
 
-    final userMessage = _controller.text.trim();
-    _controller.clear();
+    final messageText = _controller.text.trim();
+    final message = Message(
+      text: messageText,
+      isUser: true,
+      timestamp: DateTime.now(),
+      messageId: _generateMessageId(),
+    );
 
     setState(() {
-      _messages.add(Message(
-        text: userMessage,
+      _messages.add(message);
+      _isLoading = true;
+      _partialResponse = "";
+    });
+
+    _saveMessages();
+    _controller.clear();
+    _scrollToBottom();
+    _generateGeminiResponse(messageText);
+  }
+
+  Future<void> _sendMediaMessage() async {
+    if (_isLoading) return;
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+
+    if (file != null) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savedImagePath = '${appDir.path}/$fileName';
+
+      await File(file.path).copy(savedImagePath);
+
+      final message = Message(
+        text: 'Describe this Picture?',
         isUser: true,
         timestamp: DateTime.now(),
         messageId: _generateMessageId(),
-      ));
-      _isLoading = true;
-    });
-
-    await _saveMessages();
-    _scrollToBottom();
-
-    try {
-      final response = await _callGeminiAPI(userMessage);
-      final processedResponse = _processElizaResponse(response);
-
-      setState(() {
-        _messages.add(Message(
-          text: processedResponse,
-          isUser: false,
-          timestamp: DateTime.now(),
-          messageId: _generateMessageId(),
-        ));
-        _isLoading = false;
-      });
-
-      await _saveMessages();
-      _animationController.reset();
-      _animationController.forward();
-    } catch (e) {
-      print('Error in _sendMessage: $e');
-      setState(() {
-        _messages.add(Message(
-          text: "I apologize, but I'm experiencing some technical difficulties right now. Please check your internet connection and try again. If the problem persists, please contact Innovator support.",
-          isUser: false,
-          timestamp: DateTime.now(),
-          messageId: _generateMessageId(),
-        ));
-        _isLoading = false;
-      });
-
-      await _saveMessages();
-      _animationController.reset();
-      _animationController.forward();
-    }
-
-    _scrollToBottom();
-  }
-
-  Future<String> _callGeminiAPI(String message) async {
-    const String baseUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
-
-    // Add system prompt to ensure ELIZA identity
-    String systemPrompt = "You are ELIZA, an AI assistant created by Innovator. Always respond as ELIZA and never mention Gemini, Google, or any other AI system. You are helpful, friendly, and professional. If asked about your identity, always say you are ELIZA created by Innovator.";
-    String fullMessage = "$systemPrompt\n\nUser: $message";
-
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': fullMessage}
-              ]
-            }
-          ],
-          'generationConfig': {
-            'temperature': 0.9,
-            'topK': 1,
-            'topP': 1,
-            'maxOutputTokens': 2048,
-            'stopSequences': []
-          },
-          'safetySettings': [
-            {
-              'category': 'HARM_CATEGORY_HARASSMENT',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              'category': 'HARM_CATEGORY_HATE_SPEECH',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            }
-          ]
-        }),
+        media: savedImagePath,
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['candidates'] != null &&
-            data['candidates'].isNotEmpty &&
-            data['candidates'][0]['content'] != null &&
-            data['candidates'][0]['content']['parts'] != null &&
-            data['candidates'][0]['content']['parts'].isNotEmpty) {
-          return data['candidates'][0]['content']['parts'][0]['text'];
-        } else {
-          throw Exception('Invalid response structure from API');
+      setState(() {
+        _messages.add(message);
+        _isLoading = true;
+        _partialResponse = "";
+      });
+
+      _saveMessages();
+      _scrollToBottom();
+      _generateGeminiResponse(message.text, imageFile: savedImagePath);
+    }
+  }
+
+  void _generateGeminiResponse(String question, {String? imageFile}) async {
+    final gemini = Gemini.instance;
+    
+    String systemPrompt =
+        "You are ELIZA, an AI assistant created by Innovator. Always respond as ELIZA and never mention Gemini, Google, or any other AI system. You are helpful, friendly, and professional.";
+    String fullQuestion = "$systemPrompt\n\nUser: $question";
+
+    try {
+      List<Uint8List>? images;
+      if (imageFile != null) {
+        final File file = File(imageFile);
+        if (await file.exists()) {
+          images = [await file.readAsBytes()];
         }
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception('API Error: ${errorData['error']['message'] ?? response.statusCode}');
       }
+
+      _partialResponse = "";
+
+      // Use the correct method: streamGenerateContent or text with streaming
+      gemini.streamGenerateContent(
+        fullQuestion, 
+        images: images,
+      ).listen(
+        (response) {
+          setState(() {
+            // Extract text from response parts
+            final text = response.content?.parts?.fold<String>(
+              '',
+              (previous, current) => previous + (current.text ?? ''),
+            ) ?? '';
+            
+            _partialResponse += text;
+          });
+        },
+        onError: (error) {
+          print('Error from Gemini: $error');
+          setState(() {
+            _isLoading = false;
+            if (_partialResponse.isEmpty) {
+              _addBotMessage("Sorry, I encountered an error. Please check your API key and internet connection.");
+            } else {
+              _addBotMessage(_processElizaResponse(_partialResponse));
+            }
+          });
+        },
+        onDone: () {
+          print('Gemini response completed');
+          setState(() {
+            _isLoading = false;
+            if (_partialResponse.isNotEmpty) {
+              _addBotMessage(_processElizaResponse(_partialResponse));
+            } else {
+              _addBotMessage("I didn't receive a proper response. Please try again.");
+            }
+          });
+          _animationController.reset();
+          _animationController.forward();
+          _scrollToBottom();
+        },
+      );
     } catch (e) {
-      print('Error calling API: $e');
-      rethrow;
+      print('Error generating response: $e');
+      setState(() {
+        _isLoading = false;
+        _addBotMessage("Sorry, I encountered an error: ${e.toString()}. Please check your API key configuration.");
+      });
+      _animationController.reset();
+      _animationController.forward();
+      _scrollToBottom();
     }
   }
 
@@ -483,7 +557,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const SizedBox(width: 52), // Align with AI message bubble
+          const SizedBox(width: 52),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -519,75 +593,81 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
         ),
       ),
       child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDarkMode
-                  ? [
-                      const Color(0xFF0F172A),
-                      const Color(0xFF1E293B),
-                      const Color(0xFF334155),
-                    ]
-                  : [
-                      const Color(0xFFF8FAFC),
-                      const Color(0xFFE2E8F0),
-                      const Color(0xFFCBD5E1),
-                    ],
-            ),
-          ),
-          child: AnimatedBuilder(
-            animation: _backgroundController,
-            builder: (context, child) {
-              return CustomPaint(
-                painter: BackgroundPainter(_backgroundController.value, isDarkMode),
-                child: Column(
-                  children: [
-                    _buildAppBar(isDarkMode),
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: isDarkMode
-                              ? const Color(0xFF1E293B).withAlpha(70)
-                              : Colors.white.withAlpha(70),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(10),
-                              blurRadius: 20,
-                              offset: const Offset(0, -5),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _messages.length + (_isLoading ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == _messages.length && _isLoading) {
-                                return _buildLoadingIndicator();
-                              }
-                              final message = _messages[index];
-                              return FadeTransition(
-                                opacity: _fadeAnimation,
-                                child: _buildMessageBubble(message, index),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    _buildInputArea(),
-                  ],
+        body: _initialLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: primaryOrange,
                 ),
-              );
-            },
-          ),
-        ),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDarkMode
+                        ? [
+                            const Color(0xFF0F172A),
+                            const Color(0xFF1E293B),
+                            const Color(0xFF334155),
+                          ]
+                        : [
+                            const Color(0xFFF8FAFC),
+                            const Color(0xFFE2E8F0),
+                            const Color(0xFFCBD5E1),
+                          ],
+                  ),
+                ),
+                child: AnimatedBuilder(
+                  animation: _backgroundController,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: BackgroundPainter(_backgroundController.value, isDarkMode),
+                      child: Column(
+                        children: [
+                          _buildAppBar(isDarkMode),
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? const Color(0xFF1E293B).withAlpha(70)
+                                    : Colors.white.withAlpha(70),
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(10),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, -5),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: _messages.length + (_isLoading ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index == _messages.length && _isLoading) {
+                                      return _buildLoadingIndicator();
+                                    }
+                                    final message = _messages[index];
+                                    return FadeTransition(
+                                      opacity: _fadeAnimation,
+                                      child: _buildMessageBubble(message, index),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          _buildInputArea(),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
       ),
     );
   }
@@ -793,6 +873,28 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
                         ),
                         const SizedBox(height: 8),
                       ],
+                      if (message.media != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(message.media!),
+                              width: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 200,
+                                  height: 100,
+                                  color: Colors.grey.shade300,
+                                  child: const Center(
+                                    child: Text("Image not available"),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
                       SelectableText(
                         message.text,
                         style: TextStyle(
@@ -970,33 +1072,46 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
       ),
       child: Row(
         children: [
+          IconButton(
+            onPressed: _isLoading ? null : _sendMediaMessage,
+            icon: Icon(Icons.image, 
+              color: _isLoading 
+                ? Colors.grey 
+                : primaryOrange
+            ),
+          ),
           Expanded(
             child: TextField(
               controller: _controller,
               maxLines: 4,
               minLines: 1,
+              enabled: !_isLoading,
               style: TextStyle(
                 color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
                 fontFamily: 'Inter',
                 fontSize: 16,
               ),
               decoration: InputDecoration(
-                hintText: 'Type your message...',
+                hintText: _isLoading 
+                  ? 'Waiting for response...' 
+                  : 'Type your message...',
                 hintStyle: TextStyle(
                   color: isDarkMode ? Colors.grey[500] : const Color(0xFF94A3B8),
                   fontFamily: 'Inter',
                 ),
                 filled: true,
-                fillColor: isDarkMode
-                    ? const Color(0xFF334155).withAlpha(70)
-                    : const Color(0xFFF1F5F9),
+                fillColor: _isLoading 
+                  ? Colors.grey.shade200 
+                  : (isDarkMode
+                      ? const Color(0xFF334155).withAlpha(70)
+                      : const Color(0xFFF1F5F9)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               ),
-              onSubmitted: (_) => _sendMessage(),
+              onSubmitted: (_) => _isLoading ? null : _sendTextMessage(),
             ),
           ),
           const SizedBox(width: 12),
@@ -1011,7 +1126,7 @@ class _ElizaChatScreenState extends State<ElizaChatScreen> with TickerProviderSt
             ),
             child: IconButton(
               icon: const Icon(Icons.send_rounded, color: Colors.white),
-              onPressed: _sendMessage,
+              onPressed: _isLoading ? null : _sendTextMessage,
             ),
           ),
         ],
@@ -1209,7 +1324,6 @@ class BackgroundPainter extends CustomPainter {
 
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
 
-    // Add subtle animated circles
     final circlePaint = Paint()
       ..color = isDarkMode
           ? Colors.white.withAlpha(5)

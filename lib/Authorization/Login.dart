@@ -13,10 +13,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:innovator/helper/dialogs.dart';
 import 'package:innovator/innovator_home.dart';
-import 'package:innovator/screens/chatApp/FollowStatusManager.dart';
-import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/services/firebase_services.dart';
-import 'package:lottie/lottie.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,22 +82,22 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _saveCredentials() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      if (rememberMe) {
-        await prefs.setString('email', emailController.text.trim());
-        await prefs.setString('password', passwordController.text.trim());
-        await prefs.setBool('rememberMe', true);
-      } else {
-        await prefs.remove('email');
-        await prefs.remove('password');
-        await prefs.setBool('rememberMe', false);
-      }
-    } catch (e) {
-      debugPrint('Error saving credentials: $e');
-    }
-  }
+  // Future<void> _saveCredentials() async {
+  //   try {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     if (rememberMe) {
+  //       await prefs.setString('email', emailController.text.trim());
+  //       await prefs.setString('password', passwordController.text.trim());
+  //       await prefs.setBool('rememberMe', true);
+  //     } else {
+  //       await prefs.remove('email');
+  //       await prefs.remove('password');
+  //       await prefs.setBool('rememberMe', false);
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error saving credentials: $e');
+  //   }
+  // }
 
   // Request notification permission for FCM
   Future<void> _requestNotificationPermission() async {
@@ -612,250 +609,250 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  Future<bool> _attemptGoogleLoginForExistingUser(
-    User user,
-    String? idToken,
-  ) async {
-    try {
-      developer.log(
-        'Attempting to login existing Google user with Firebase token',
-      );
+  // Future<bool> _attemptGoogleLoginForExistingUser(
+  //   User user,
+  //   String? idToken,
+  // ) async {
+  //   try {
+  //     developer.log(
+  //       'Attempting to login existing Google user with Firebase token',
+  //     );
 
-      // First, try to get user data from your API using the Firebase token
-      bool apiLoginSuccess = await _tryApiLoginWithFirebaseToken(user, idToken);
-      if (apiLoginSuccess) {
-        return true;
-      }
+  //     // First, try to get user data from your API using the Firebase token
+  //     bool apiLoginSuccess = await _tryApiLoginWithFirebaseToken(user, idToken);
+  //     if (apiLoginSuccess) {
+  //       return true;
+  //     }
 
-      // If API login fails, save Firebase token and basic user data as fallback
-      if (idToken != null && idToken.isNotEmpty) {
-        try {
-          await AppData().setAuthToken(idToken);
-          developer.log('Firebase ID token saved to AppData successfully');
+  //     // If API login fails, save Firebase token and basic user data as fallback
+  //     if (idToken != null && idToken.isNotEmpty) {
+  //       try {
+  //         await AppData().setAuthToken(idToken);
+  //         developer.log('Firebase ID token saved to AppData successfully');
 
-          // Create user data with proper format and ID consistency
-          Map<String, dynamic> userData = {
-            '_id': user.uid,
-            'id': user.uid,
-            'userId': user.uid,
-            'uid': user.uid,
-            'email': user.email,
-            'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
-            'photoURL': user.photoURL,
-            'isEmailVerified': user.emailVerified,
-            'provider': 'google',
-            'firebaseUser': true,
-            'fcmTokens': [], // Initialize fcmTokens
-          };
+  //         // Create user data with proper format and ID consistency
+  //         Map<String, dynamic> userData = {
+  //           '_id': user.uid,
+  //           'id': user.uid,
+  //           'userId': user.uid,
+  //           'uid': user.uid,
+  //           'email': user.email,
+  //           'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
+  //           'photoURL': user.photoURL,
+  //           'isEmailVerified': user.emailVerified,
+  //           'provider': 'google',
+  //           'firebaseUser': true,
+  //           'fcmTokens': [], // Initialize fcmTokens
+  //         };
 
-          await AppData().setCurrentUser(userData);
-          developer.log(
-            'User data saved successfully with _id: ${userData['_id']}',
-          );
+  //         await AppData().setCurrentUser(userData);
+  //         developer.log(
+  //           'User data saved successfully with _id: ${userData['_id']}',
+  //         );
 
-          // ENHANCED: Use verifyAndCreateUser for better consistency
-          await FirebaseService.verifyAndCreateUser(
-            userId: user.uid,
-            name: user.displayName ?? user.email?.split('@')[0] ?? 'User',
-            email: user.email ?? '',
-            photoURL: user.photoURL,
-            provider: 'google',
-          );
+  //         // ENHANCED: Use verifyAndCreateUser for better consistency
+  //         await FirebaseService.verifyAndCreateUser(
+  //           userId: user.uid,
+  //           name: user.displayName ?? user.email?.split('@')[0] ?? 'User',
+  //           email: user.email ?? '',
+  //           photoURL: user.photoURL,
+  //           provider: 'google',
+  //         );
 
-          // Save FCM token
-          try {
-            final token = await _firebaseMessaging.getToken();
-            if (token != null) {
-              await AppData().saveFcmToken(token);
-              developer.log('FCM token saved for Google user: $token');
-              final updatedUserData = AppData().currentUser;
-              developer.log(
-                'Updated user data after FCM save: $updatedUserData',
-              );
-            } else {
-              developer.log('Failed to retrieve FCM token for Google user');
-            }
-          } catch (e) {
-            developer.log('Error saving FCM token for Google user: $e');
-          }
+  //         // Save FCM token
+  //         try {
+  //           final token = await _firebaseMessaging.getToken();
+  //           if (token != null) {
+  //             await AppData().saveFcmToken(token);
+  //             developer.log('FCM token saved for Google user: $token');
+  //             final updatedUserData = AppData().currentUser;
+  //             developer.log(
+  //               'Updated user data after FCM save: $updatedUserData',
+  //             );
+  //           } else {
+  //             developer.log('Failed to retrieve FCM token for Google user');
+  //           }
+  //         } catch (e) {
+  //           developer.log('Error saving FCM token for Google user: $e');
+  //         }
 
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => Homepage()),
-            (route) => false,
-          );
+  //         Navigator.pushAndRemoveUntil(
+  //           context,
+  //           MaterialPageRoute(builder: (_) => Homepage()),
+  //           (route) => false,
+  //         );
 
-          Dialogs.showSnackbar(context, 'Welcome back! Signed in with Google.');
-          return true;
-        } catch (e) {
-          developer.log('Error saving Firebase token or user data: $e');
-          Dialogs.showSnackbar(context, 'Error saving authentication data');
-          return false;
-        }
-      } else {
-        developer.log('No Firebase token available for existing user');
-        return false;
-      }
-    } catch (e) {
-      developer.log('Error in _attemptGoogleLoginForExistingUser: $e');
-      return false;
-    }
-  }
+  //         Dialogs.showSnackbar(context, 'Welcome back! Signed in with Google.');
+  //         return true;
+  //       } catch (e) {
+  //         developer.log('Error saving Firebase token or user data: $e');
+  //         Dialogs.showSnackbar(context, 'Error saving authentication data');
+  //         return false;
+  //       }
+  //     } else {
+  //       developer.log('No Firebase token available for existing user');
+  //       return false;
+  //     }
+  //   } catch (e) {
+  //     developer.log('Error in _attemptGoogleLoginForExistingUser: $e');
+  //     return false;
+  //   }
+  // }
 
-  Future<bool> _tryApiLoginWithFirebaseToken(User user, String? idToken) async {
-    try {
-      developer.log('Trying API login with Firebase token for existing user');
+  // Future<bool> _tryApiLoginWithFirebaseToken(User user, String? idToken) async {
+  //   try {
+  //     developer.log('Trying API login with Firebase token for existing user');
 
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
-      final body = jsonEncode({
-        'email': user.email,
-        'firebaseToken': idToken ?? '',
-        'isExistingGoogleUser': true,
-      });
+  //     final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
+  //     final body = jsonEncode({
+  //       'email': user.email,
+  //       'firebaseToken': idToken ?? '',
+  //       'isExistingGoogleUser': true,
+  //     });
 
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $idToken',
-      };
+  //     final headers = {
+  //       'Content-Type': 'application/json',
+  //       'Authorization': 'Bearer $idToken',
+  //     };
 
-      developer.log('Existing user login request: $body');
-      final response = await http.post(url, headers: headers, body: body);
+  //     developer.log('Existing user login request: $body');
+  //     final response = await http.post(url, headers: headers, body: body);
 
-      developer.log(
-        'Existing user login API Response: ${response.statusCode} - ${response.body}',
-      );
+  //     developer.log(
+  //       'Existing user login API Response: ${response.statusCode} - ${response.body}',
+  //     );
 
-      if (response.statusCode == 200) {
-        await _handleSuccessfulLogin(response.body);
-        return true;
-      } else {
-        developer.log(
-          'API login failed for existing user, will use Firebase token as fallback',
-        );
-        return false;
-      }
-    } catch (e) {
-      developer.log('Error in API login for existing user: $e');
-      return false;
-    }
-  }
+  //     if (response.statusCode == 200) {
+  //       await _handleSuccessfulLogin(response.body);
+  //       return true;
+  //     } else {
+  //       developer.log(
+  //         'API login failed for existing user, will use Firebase token as fallback',
+  //       );
+  //       return false;
+  //     }
+  //   } catch (e) {
+  //     developer.log('Error in API login for existing user: $e');
+  //     return false;
+  //   }
+  // }
 
-  Future<bool> _attemptGoogleLogin(User user, String? idToken) async {
-    try {
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
+  // Future<bool> _attemptGoogleLogin(User user, String? idToken) async {
+  //   try {
+  //     final url = Uri.parse('http://182.93.94.210:3067/api/v1/login');
 
-      // Try multiple request formats to see which one works
-      List<Map<String, dynamic>> requestFormats = [
-        {'firebaseToken': idToken ?? ''},
-        {'email': user.email, 'firebaseToken': idToken ?? ''},
-        {
-          'email': user.email,
-          'firebaseToken': idToken ?? '',
-          'isGoogleLogin': true,
-        },
-      ];
+  //     // Try multiple request formats to see which one works
+  //     List<Map<String, dynamic>> requestFormats = [
+  //       {'firebaseToken': idToken ?? ''},
+  //       {'email': user.email, 'firebaseToken': idToken ?? ''},
+  //       {
+  //         'email': user.email,
+  //         'firebaseToken': idToken ?? '',
+  //         'isGoogleLogin': true,
+  //       },
+  //     ];
 
-      for (int i = 0; i < requestFormats.length; i++) {
-        final body = requestFormats[i];
-        final jsonBody = jsonEncode(body);
-        final headers = {'Content-Type': 'application/json'};
+  //     for (int i = 0; i < requestFormats.length; i++) {
+  //       final body = requestFormats[i];
+  //       final jsonBody = jsonEncode(body);
+  //       final headers = {'Content-Type': 'application/json'};
 
-        developer.log('Google Login Attempt ${i + 1} Request Body: $jsonBody');
-        final response = await http.post(url, headers: headers, body: jsonBody);
+  //       developer.log('Google Login Attempt ${i + 1} Request Body: $jsonBody');
+  //       final response = await http.post(url, headers: headers, body: jsonBody);
 
-        developer.log(
-          'Google Login Attempt ${i + 1} API Response: ${response.statusCode} - ${response.body}',
-        );
+  //       developer.log(
+  //         'Google Login Attempt ${i + 1} API Response: ${response.statusCode} - ${response.body}',
+  //       );
 
-        if (response.statusCode == 200) {
-          await _handleSuccessfulLogin(response.body);
-          return true;
-        } else if (response.statusCode != 400) {
-          break;
-        }
-      }
+  //       if (response.statusCode == 200) {
+  //         await _handleSuccessfulLogin(response.body);
+  //         return true;
+  //       } else if (response.statusCode != 400) {
+  //         break;
+  //       }
+  //     }
 
-      developer.log(
-        'All Google login attempts failed, will attempt registration',
-      );
-      return false;
-    } catch (e) {
-      developer.log('Google login error: $e');
-      return false;
-    }
-  }
+  //     developer.log(
+  //       'All Google login attempts failed, will attempt registration',
+  //     );
+  //     return false;
+  //   } catch (e) {
+  //     developer.log('Google login error: $e');
+  //     return false;
+  //   }
+  // }
 
-  Future<bool> _attemptGoogleRegister(User user, String? idToken) async {
-    try {
-      final url = Uri.parse('http://182.93.94.210:3067/api/v1/register-user');
+  // Future<bool> _attemptGoogleRegister(User user, String? idToken) async {
+  //   try {
+  //     final url = Uri.parse('http://182.93.94.210:3067/api/v1/register-user');
 
-      // Prepare registration data with consistent ID fields
-      Map<String, dynamic> body = {
-        'email': user.email,
-        'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
-        'firebaseToken': idToken ?? '',
-        'isGoogleSignup': true,
-        'isEmailVerified': user.emailVerified,
-        'uid': user.uid, // Include Firebase UID
-      };
+  //     // Prepare registration data with consistent ID fields
+  //     Map<String, dynamic> body = {
+  //       'email': user.email,
+  //       'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
+  //       'firebaseToken': idToken ?? '',
+  //       'isGoogleSignup': true,
+  //       'isEmailVerified': user.emailVerified,
+  //       'uid': user.uid, // Include Firebase UID
+  //     };
 
-      if (user.photoURL != null) {
-        body['photoURL'] = user.photoURL;
-      }
+  //     if (user.photoURL != null) {
+  //       body['photoURL'] = user.photoURL;
+  //     }
 
-      final jsonBody = jsonEncode(body);
-      final headers = {'Content-Type': 'application/json'};
+  //     final jsonBody = jsonEncode(body);
+  //     final headers = {'Content-Type': 'application/json'};
 
-      developer.log('Google Register Request Body: $jsonBody');
-      final response = await http.post(url, headers: headers, body: jsonBody);
+  //     developer.log('Google Register Request Body: $jsonBody');
+  //     final response = await http.post(url, headers: headers, body: jsonBody);
 
-      developer.log(
-        'Google Register API Response: ${response.statusCode} - ${response.body}',
-      );
+  //     developer.log(
+  //       'Google Register API Response: ${response.statusCode} - ${response.body}',
+  //     );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // ENHANCED: Use verifyAndCreateUser for consistency
-        await FirebaseService.verifyAndCreateUser(
-          userId: user.uid,
-          name: user.displayName ?? user.email?.split('@')[0] ?? 'User',
-          email: user.email ?? '',
-          photoURL: user.photoURL,
-          provider: 'google',
-        );
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       // ENHANCED: Use verifyAndCreateUser for consistency
+  //       await FirebaseService.verifyAndCreateUser(
+  //         userId: user.uid,
+  //         name: user.displayName ?? user.email?.split('@')[0] ?? 'User',
+  //         email: user.email ?? '',
+  //         photoURL: user.photoURL,
+  //         provider: 'google',
+  //       );
 
-        await _handleSuccessfulLogin(response.body);
-        Dialogs.showSnackbar(
-          context,
-          'Account created successfully with Google!',
-        );
-        return true;
-      } else if (response.statusCode == 409) {
-        developer.log(
-          'Email already exists (409), will attempt login for existing user',
-        );
-        return false;
-      } else {
-        Map<String, dynamic>? responseData;
-        try {
-          responseData = jsonDecode(response.body) as Map<String, dynamic>?;
-        } catch (e) {
-          developer.log('Error parsing registration error response: $e');
-        }
+  //       await _handleSuccessfulLogin(response.body);
+  //       Dialogs.showSnackbar(
+  //         context,
+  //         'Account created successfully with Google!',
+  //       );
+  //       return true;
+  //     } else if (response.statusCode == 409) {
+  //       developer.log(
+  //         'Email already exists (409), will attempt login for existing user',
+  //       );
+  //       return false;
+  //     } else {
+  //       Map<String, dynamic>? responseData;
+  //       try {
+  //         responseData = jsonDecode(response.body) as Map<String, dynamic>?;
+  //       } catch (e) {
+  //         developer.log('Error parsing registration error response: $e');
+  //       }
 
-        final message =
-            responseData?['message'] ??
-            responseData?['error']?['error'] ??
-            responseData?['error'] ??
-            'Registration failed with status ${response.statusCode}';
-        Dialogs.showSnackbar(context, message.toString());
-        return false;
-      }
-    } catch (e) {
-      developer.log('Google registration error: $e');
-      Dialogs.showSnackbar(context, 'Registration failed. Please try again.');
-      return false;
-    }
-  }
+  //       final message =
+  //           responseData?['message'] ??
+  //           responseData?['error']?['error'] ??
+  //           responseData?['error'] ??
+  //           'Registration failed with status ${response.statusCode}';
+  //       Dialogs.showSnackbar(context, message.toString());
+  //       return false;
+  //     }
+  //   } catch (e) {
+  //     developer.log('Google registration error: $e');
+  //     Dialogs.showSnackbar(context, 'Registration failed. Please try again.');
+  //     return false;
+  //   }
+  // }
 
   Future<void> _handleSuccessfulLogin(String responseBody) async {
     try {
@@ -955,81 +952,81 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _initializeFollowStatusManager() async {
-    try {
-      developer.log('👥 Setting up Follow Status Manager...');
+  // Future<void> _initializeFollowStatusManager() async {
+  //   try {
+  //     developer.log('👥 Setting up Follow Status Manager...');
 
-      // Ensure FollowStatusManager is registered
-      if (!Get.isRegistered<FollowStatusManager>()) {
-        Get.put(FollowStatusManager(), permanent: true);
-      }
+  //     // Ensure FollowStatusManager is registered
+  //     if (!Get.isRegistered<FollowStatusManager>()) {
+  //       Get.put(FollowStatusManager(), permanent: true);
+  //     }
 
-      final followStatusManager = Get.find<FollowStatusManager>();
+  //     final followStatusManager = Get.find<FollowStatusManager>();
 
-      // Get all users from Firestore to preload follow statuses
-      final usersSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .get()
-          .timeout(const Duration(seconds: 10));
+  //     // Get all users from Firestore to preload follow statuses
+  //     final usersSnapshot = await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .get()
+  //         .timeout(const Duration(seconds: 10));
 
-      final emails =
-          usersSnapshot.docs
-              .map((doc) => doc.data()['email']?.toString())
-              .where((email) => email != null && email.isNotEmpty)
-              .cast<String>()
-              .toList();
+  //     final emails =
+  //         usersSnapshot.docs
+  //             .map((doc) => doc.data()['email']?.toString())
+  //             .where((email) => email != null && email.isNotEmpty)
+  //             .cast<String>()
+  //             .toList();
 
-      if (emails.isNotEmpty) {
-        developer.log(
-          '👥 Preloading follow statuses for ${emails.length} users...',
-        );
-        await followStatusManager.preloadFollowStatuses(emails);
-        developer.log('✅ Follow statuses preloaded successfully');
-      }
-    } catch (e) {
-      developer.log('❌ Error initializing Follow Status Manager: $e');
-      // Don't throw - let the app continue with limited functionality
-    }
-  }
+  //     if (emails.isNotEmpty) {
+  //       developer.log(
+  //         '👥 Preloading follow statuses for ${emails.length} users...',
+  //       );
+  //       await followStatusManager.preloadFollowStatuses(emails);
+  //       developer.log('✅ Follow statuses preloaded successfully');
+  //     }
+  //   } catch (e) {
+  //     developer.log('❌ Error initializing Follow Status Manager: $e');
+  //     // Don't throw - let the app continue with limited functionality
+  //   }
+  // }
 
   // 🔥 NEW: Initialize chat controller with follow status integration
-  Future<void> _initializeChatControllerWithFollowStatus() async {
-    try {
-      developer.log('💬 Initializing chat controller with follow status...');
+  // Future<void> _initializeChatControllerWithFollowStatus() async {
+  //   try {
+  //     developer.log('💬 Initializing chat controller with follow status...');
 
-      // Wait for Firebase Auth to be fully ready
-      await Future.delayed(const Duration(milliseconds: 1000));
+  //     // Wait for Firebase Auth to be fully ready
+  //     await Future.delayed(const Duration(milliseconds: 1000));
 
-      // Register chat controller if not already registered
-      if (!Get.isRegistered<FireChatController>()) {
-        Get.put(FireChatController(), permanent: true);
-        developer.log('💬 Chat controller registered');
-      }
+  //     // Register chat controller if not already registered
+  //     if (!Get.isRegistered<FireChatController>()) {
+  //       Get.put(FireChatController(), permanent: true);
+  //       developer.log('💬 Chat controller registered');
+  //     }
 
-      final chatController = Get.find<FireChatController>();
+  //     final chatController = Get.find<FireChatController>();
 
-      // Initialize user data
-      chatController.initializeUser();
-      developer.log('💬 Chat controller user initialized');
+  //     // Initialize user data
+  //     chatController.initializeUser();
+  //     developer.log('💬 Chat controller user initialized');
 
-      // 🔥 IMPORTANT: Load users with follow status filter
-      await Future.wait([
-        chatController
-            .loadAllUsersWithFollowFilter(), // Load only mutual followers
-        chatController
-            .loadUserChatsWithEnhancedProfiles(), // Load chats with API profile data
-      ]);
+  //     // 🔥 IMPORTANT: Load users with follow status filter
+  //     await Future.wait([
+  //       chatController
+  //           .loadAllUsersWithFollowFilter(), // Load only mutual followers
+  //       chatController
+  //           .loadUserChatsWithEnhancedProfiles(), // Load chats with API profile data
+  //     ]);
 
-      developer.log(
-        '✅ Chat controller fully initialized with follow status filtering',
-      );
-    } catch (e) {
-      developer.log(
-        '❌ Error initializing chat controller with follow status: $e',
-      );
-      // Don't throw - let the app continue even if chat has issues
-    }
-  }
+  //     developer.log(
+  //       '✅ Chat controller fully initialized with follow status filtering',
+  //     );
+  //   } catch (e) {
+  //     developer.log(
+  //       '❌ Error initializing chat controller with follow status: $e',
+  //     );
+  //     // Don't throw - let the app continue even if chat has issues
+  //   }
+  // }
 
   Future<void> _createFirebaseAuthSession(
     Map<String, dynamic>? userData,
