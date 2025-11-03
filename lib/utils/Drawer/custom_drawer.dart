@@ -1,6 +1,4 @@
 import 'dart:developer' as developer;
-import 'dart:io';
-import 'dart:ui';
 import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +10,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/Authorization/Login.dart';
-import 'package:innovator/Notification/FCM_Services.dart';
 import 'package:innovator/controllers/user_controller.dart';
 import 'package:innovator/main.dart';
 import 'package:innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
@@ -20,14 +17,12 @@ import 'package:innovator/screens/Events/Events.dart';
 import 'package:innovator/screens/F&Q/F&Qscreen.dart';
 import 'package:innovator/screens/Privacy_Policy/privacy_screen.dart';
 import 'package:innovator/screens/Profile/profile_page.dart';
-import 'package:innovator/screens/Project_Management/Project_idea.dart';
 import 'package:innovator/screens/Report/Report_screen.dart';
 import 'package:innovator/screens/Settings/settings.dart';
 import 'package:innovator/screens/chatApp/chat_homepage.dart';
 import 'package:innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/services/firebase_services.dart';
 import 'package:innovator/utils/Drawer/drawer_cache_manager.dart';
-import 'package:lottie/lottie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 

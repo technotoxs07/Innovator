@@ -1,16 +1,10 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/App_data/App_data.dart';
 import 'package:innovator/screens/Course/home.dart';
-import 'package:innovator/models/Course_models.dart';
-import 'package:innovator/screens/Course/services/api_services.dart';
-import 'package:innovator/screens/Events/Events.dart';
-import 'package:innovator/screens/Project_Management/Project_idea.dart';
 import 'package:innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/utils/Drawer/custom_drawer.dart';
 import 'package:innovator/Notification/FCM_Services.dart';
@@ -40,7 +34,8 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
     {'icon': Icons.home, 'name': 'FEED', 'action': 'navigate_golf'},
     {'icon': Icons.school, 'name': 'COURSE', 'action': 'open_search'},
     {'icon': Icons.add_a_photo, 'name': 'ADD POST', 'action': 'add_photo'},
-    {'icon': Icons.developer_mode, 'name': 'Events', 'action': 'show_events'},
+    //incase needed in future
+    // {'icon': Icons.developer_mode, 'name': 'Events', 'action': 'show_events'},
   ];
 
   final List<Map<String, dynamic>> _bottomIcons = [
@@ -161,12 +156,12 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
           MaterialPageRoute(builder: (_) => const CreatePostScreen()),
         );
         break;
-      case 'show_events':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => Project_HomeScreen()),
-        );
-        break;
+      // case 'show_events':
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(builder: (_) => Project_HomeScreen()),
+      //   );
+      //   break;
       case 'open_settings':
         if (!Get.isRegistered<CartStateManager>()) {
           Get.put(CartStateManager(), permanent: true);
@@ -405,7 +400,7 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
                               color: Colors.red,
                               shape: BoxShape.circle,
                             ),
-                            constraints: const BoxConstraints(
+                            constraints:  BoxConstraints(
                               minWidth: 14,
                               minHeight: 14,
                             ),

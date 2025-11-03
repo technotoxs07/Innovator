@@ -196,21 +196,21 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                               const SliverToBoxAdapter(
                                 child: SizedBox(height: 30),
                               ),
-                                         const SliverToBoxAdapter(
+                                          SliverToBoxAdapter(
                                 child: 
-                                                       Padding(
-                                                         padding: EdgeInsets.only(right: 10,left: 10),
-                                                         child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                           children: [
-                                                                Divider(),
-                                                             Text('Posts',style: TextStyle(
+                                                       Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                         children: [
+                                                              Divider(),
+                                                           Padding(
+                                                                padding: EdgeInsets.only(right: 10,left: 10),
+                                                             child: Text('Posts',style: TextStyle(
                                                               fontSize: 20,
                                                                                            fontWeight: FontWeight.bold
                                                                                          ),),
-                                                                                         Divider()
-                                                           ],
-                                                         ),
+                                                           ),
+                                                                                       Divider()
+                                                         ],
                                                        ),
                               ),
 
@@ -977,28 +977,13 @@ SizedBox(width: 30),
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withAlpha(10), color.withAlpha(5)],
-          ),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withAlpha(30), width: 1),
-        ),
+      child: Card(
+            color: Colors.white,
+        elevation: 0,
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withAlpha(15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 12),
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 5),
             Text(
               value,
               style: TextStyle(
@@ -1007,7 +992,7 @@ SizedBox(width: 30),
                 color: color,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
