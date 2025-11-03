@@ -746,39 +746,47 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Global Tech Events',style: TextStyle(color: Colors.white),
          ),
          backgroundColor: Color.fromRGBO(244, 135, 6, 1),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: loadEvents,
-            color: Colors.white,
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                selectedCountry = value;
-              });
-              filterEvents();
-            },
-            itemBuilder: (context) => countries.map((country) =>
-              PopupMenuItem(value: country, child: Text(country))
-            ).toList(),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.filter_list, color: Colors.white),
-                Text(' $selectedCountry', style: TextStyle(color: Colors.white)),
-              ],
+          
+          Padding(
+            padding:  EdgeInsets.only(right: 10,left: 10),
+            child: PopupMenuButton<String>(
+              onSelected: (value) {
+                setState(() {
+                  selectedCountry = value;
+                });
+                filterEvents();
+              },
+              itemBuilder: (context) => countries.map((country) =>
+                PopupMenuItem(value: country, child: Text(country))
+              ).toList(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.filter_list, color: Colors.white),
+                  Text(' $selectedCountry', style: TextStyle(color: Colors.white)),
+                ],
+              ),
             ),
           ),
         ],
         bottom: TabBar(
+          indicatorColor: Colors.red,
+
+          unselectedLabelStyle: TextStyle(color: Colors.black),
+          labelStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           controller: _tabController,
           tabs: [
-            Tab(text: 'All Events', icon: Icon(Icons.event, color: Colors.white,)),
+            Tab(text: 'All Events',
+        
+             icon: Icon(Icons.event,
+
+              color: Colors.white,)),
             Tab(text: 'Favorites', icon: Icon(Icons.favorite, color: Colors.white,)),
             Tab(text: 'Categories', icon: Icon(Icons.category, color: Colors.white,)),
           ],
@@ -818,11 +826,7 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: loadEvents,
-        child: Icon(Icons.refresh, color: Colors.white,),
-        backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-      ),
+      
     );
   }
 
@@ -875,6 +879,7 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
     
     return Card(
       margin: EdgeInsets.only(bottom: 16),
+      color: Colors.white,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -904,13 +909,13 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: [ 
                         Text(
                           event.title,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.indigo[900],
+                            // color: Colors.indigo[900],
                           ),
                         ),
                         SizedBox(height: 4),

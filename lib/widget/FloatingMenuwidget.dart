@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -36,7 +35,8 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
     {'icon': Icons.home, 'name': 'FEED', 'action': 'navigate_golf'},
     {'icon': Icons.school, 'name': 'COURSE', 'action': 'open_search'},
     {'icon': Icons.add_a_photo, 'name': 'ADD POST', 'action': 'add_photo'},
-    {'icon': Icons.developer_mode, 'name': 'Events', 'action': 'show_events'},
+    //incase needed in future
+    // {'icon': Icons.developer_mode, 'name': 'Events', 'action': 'show_events'},
   ];
 
   final List<Map<String, dynamic>> _bottomIcons = [
@@ -157,12 +157,12 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
           MaterialPageRoute(builder: (_) => const CreatePostScreen()),
         );
         break;
-      case 'show_events':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => Project_HomeScreen()),
-        );
-        break;
+      // case 'show_events':
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(builder: (_) => Project_HomeScreen()),
+      //   );
+      //   break;
       case 'open_settings':
         if (!Get.isRegistered<CartStateManager>()) {
           Get.put(CartStateManager(), permanent: true);
@@ -401,7 +401,7 @@ class _FloatingMenuWidgetState extends State<FloatingMenuWidget>
                               color: Colors.red,
                               shape: BoxShape.circle,
                             ),
-                            constraints: const BoxConstraints(
+                            constraints:  BoxConstraints(
                               minWidth: 14,
                               minHeight: 14,
                             ),
