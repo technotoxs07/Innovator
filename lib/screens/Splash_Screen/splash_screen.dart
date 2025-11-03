@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
       //await _checkAndHandleAuthState();
       
       // Add a small delay to show the splash screen
-      await Future.delayed(const Duration(milliseconds: 1500));
+      await Future.delayed(const Duration(milliseconds: 800));
       
       // Navigate based on final auth state
       if (AppData().isAuthenticated) {

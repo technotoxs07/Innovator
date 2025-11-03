@@ -3953,7 +3953,6 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
                         )
                       : Center(child: Image.asset('animation/IdeaBulb.gif'))),
             ),
-
             // Tap area for play/pause (only active when controls are visible or video is paused)
             Positioned.fill(
               child: GestureDetector(
@@ -3964,7 +3963,6 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
                 ),
               ),
             ),
-
             // Top bar with back button (always on top with higher z-index)
             AnimatedOpacity(
               opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
@@ -4006,7 +4004,6 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
                 ),
               ),
             ),
-
             // Center play/pause button (visible when paused)
             if (!_isPlaying)
               Center(
@@ -4027,7 +4024,6 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
                   ),
                 ),
               ),
-
             // Bottom controls (mute button)
             AnimatedOpacity(
               opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
