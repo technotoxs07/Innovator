@@ -874,67 +874,7 @@ IconButton(
           ),
         
         
-          // Row(
-          //   children: [
-          //     Expanded(
-          //       child: GestureDetector(
-          //         onTap: _showCategoryBottomSheet,
-          //         child: Container(
-          //           padding: const EdgeInsets.symmetric(
-          //             horizontal: 16,
-          //             vertical: 12,
-          //           ),
-          //           decoration: BoxDecoration(
-          //             color: Colors.grey[100],
-          //             borderRadius: BorderRadius.circular(20),
-          //             border: Border.all(color: Colors.grey.shade300),
-          //           ),
-          //           child: Row(
-          //             children: [
-          //               Icon(Icons.category, color: Colors.grey[600]),
-          //               const SizedBox(width: 8),
-          //               Expanded(
-          //                 child: Text(
-          //                   _selectedCategoryName,
-          //                   style: TextStyle(
-          //                     fontSize: 16,
-          //                     color: Colors.grey[700],
-          //                   ),
-          //                   overflow: TextOverflow.ellipsis,
-          //                 ),
-          //               ),
-          //               Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
-          //             ],
-          //           ),
-          //         ),
-          //       ),
-          //     ),
-          //     if (_selectedCategoryId != null)
-          //       Padding(
-          //         padding: const EdgeInsets.only(left: 8),
-          //         child: GestureDetector(
-          //           onTap: () => _onCategorySelected(null, 'All Categories'),
-          //           child: Container(
-          //             padding: const EdgeInsets.all(8),
-          //             decoration: BoxDecoration(
-          //               gradient: LinearGradient(
-          //                 colors: [Colors.green, Colors.green],
-          //                 begin: Alignment.topLeft,
-          //                 end: Alignment.bottomRight,
-          //               ),
-          //               shape: BoxShape.circle,
-          //             ),
-          //             child: const Icon(
-          //               Icons.clear,
-          //               color: Colors.white,
-          //               size: 20,
-          //             ),
-          //           ),
-          //         ),
-          //       ),
-
-          //   ],
-          // ),
+        
         ],
       ),
     );
@@ -974,20 +914,14 @@ IconButton(
       );
     }
 
-    if (_getFilteredAndSortedProducts().isEmpty && _isLoading) {
+    if (_getFilteredAndSortedProducts().isNotEmpty && _isLoading) {
       return Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
-        SizedBox(height: 16),
-        Text(
-          _searchQuery.isNotEmpty
-              ? 'No products found for "$_searchQuery"'
-              : 'No products available',
-          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          textAlign: TextAlign.center,
-        ),
+    CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+      ),
       ],
     ),
   );
@@ -1006,7 +940,7 @@ IconButton(
             const SizedBox(height: 16),
             Text(
               _searchQuery.isNotEmpty || _selectedCategoryId != null
-                  ? 'No products found for current filters'
+                  ? 'No products found for current search/category'
                   : 'No products available',
               style: TextStyle(fontSize: 18, color: Colors.grey[600]),
               textAlign: TextAlign.center,

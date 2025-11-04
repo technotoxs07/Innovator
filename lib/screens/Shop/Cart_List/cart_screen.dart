@@ -162,6 +162,43 @@ class _CartScreenState extends State<CartScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title:  Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('My Cart',style: TextStyle(
+              fontWeight: FontWeight.normal,
+              fontSize: 22,
+              color: Colors.black),),
+              SizedBox(width: 8,),
+
+            Text(' $_cartItemCount Items',style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500),)
+          ],
+        ),
+        centerTitle: true,
+        // backgroundColor: Color.fromRGBO(244, 135, 6, 1),
+        backgroundColor: Colors.white,
+        elevation: 0,
+ 
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            // borderRadius: BorderRadius.circular(8),
+            shape: BoxShape.circle
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new),
+            color: Colors.black,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      ),
+      backgroundColor: Colors.white,
       key: _scaffoldKey,
       body: Stack(
         children: [
@@ -228,39 +265,7 @@ class _CartScreenState extends State<CartScreen>
 
     return Column(
       children: [
-        // Cart summary
-        Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _primaryColor.withAlpha(4),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _primaryColor.withAlpha(12),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total Items: $_cartItemCount',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: _textColor,
-                ),
-              ),
-              Text(
-                'Total: \NPR${totalCartValue.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _priceColor,
-                ),
-              ),
-            ],
-          ),
-        ),
+ 
         // Cart items list
         Expanded(
           child: ListView.builder(
@@ -325,6 +330,39 @@ class _CartScreenState extends State<CartScreen>
             },
           ),
         ),
+               // Cart summary
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _primaryColor.withAlpha(4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _primaryColor.withAlpha(12),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Items: $_cartItemCount',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: _textColor,
+                ),
+              ),
+              Text(
+                'Total: \NPR${totalCartValue.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _priceColor,
+                ),
+              ),
+            ],
+          ),
+        ),
         // Checkout button
         Container(
           width: double.infinity,
@@ -353,7 +391,7 @@ class _CartScreenState extends State<CartScreen>
     elevation: 3,
   ),
   child: Text(
-    'PROCEED TO CHECKOUT (\NPR ${totalCartValue.toStringAsFixed(2)})',
+    'PROCEED TO CHECKOUT',
     style: TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.bold,
@@ -384,10 +422,10 @@ class _CartScreenState extends State<CartScreen>
           children: [
             // Product image
             Container(
-              width: 80,
-              height: 80,
+         height: 100,
+         width: 100,
               decoration: BoxDecoration(
-                color: _primaryColor.withAlpha(4),
+               border: Border.all(color: _primaryColor.withAlpha(20)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: ClipRRect(
@@ -407,111 +445,154 @@ class _CartScreenState extends State<CartScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.productName,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Price: \NPR ${item.price.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: _priceColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
-                        'Qty: ',
-                        style: TextStyle(
-                          color: _textColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                      // Minus button
-                      SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: IconButton(
-                          icon: Icon(Icons.remove, size: 16),
-                          onPressed: () {
-                            _updateCartItemQuantityLocal(
-                              item.id.toString(),
-                              item.quantity - 1,
-                            );
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: BoxConstraints(),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      // Quantity display
-                      Container(
-                        width: 28,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 2,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _accentColor.withAlpha(8),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        alignment: Alignment.center,
+                      Flexible(
                         child: Text(
-                          '${item.quantity}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          item.productName,
                           style: TextStyle(
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                            fontSize: 12,
+                            color: _textColor,
                           ),
                         ),
                       ),
-                      // Plus button
-                      SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: IconButton(
-                          icon: Icon(Icons.add, size: 16),
-                          onPressed: () {
-                            print('Plus button clicked for item: ${item.id}'); // Debug
-                            _updateCartItemQuantityLocal(
-                              item.id.toString(),
-                              item.quantity + 1,
-                            );
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: BoxConstraints(),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
+                    // SizedBox(width: 0,),
+                      IconButton(onPressed: (){
+                        showAdaptiveDialog(context: context, builder:(context){
+                          return AlertDialog(
+                            backgroundColor: Colors.white,
+                            title: Center(child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('Remove Item',style: TextStyle(fontWeight: FontWeight.bold),),
+                                SizedBox(width: 8,),
+                                Icon(Icons.warning_amber_rounded,color: Colors.red.shade400,),
+                              ],
+                            )),
+                            content: Text('Are you sure you want to remove this item from your cart?'),
+                            actions: [
+                              TextButton(onPressed: (){
+                                Navigator.pop(context);
+                              }, child: Text('CANCEL',style: TextStyle(color: Colors.black),)),
+                              TextButton(onPressed: (){
+                                Navigator.pop(context);
+                                 _deleteCartItemLocal(item.id.toString());
+                              }, child: Text('DELETE',style: TextStyle(color: Colors.red),)),
+                            ],
+                          );
+                        });
+                        
+                      }, icon: Icon(Icons.delete,color: Colors.red.shade400,))
                     ],
                   ),
+                 
+             
+                  FittedBox(
+                    child: Container(
+                            margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(30),
+                                // shape: BoxShape.circle
+                              ),
+                      child: Row(
+                        children: [
+                          
+                          // Minus button
+                          Container(
+                                  margin: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                 
+                                  shape: BoxShape.circle
+                                ),
+                            
+                            child: IconButton(
+                              icon: Icon(Icons.remove, size: 16,color: Colors.black,),
+                              onPressed: () {
+                                _updateCartItemQuantityLocal(
+                                  item.id.toString(),
+                                  item.quantity - 1,
+                                );
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          // Quantity display
+                          Container(
+                            width: 28,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _accentColor.withAlpha(8),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '${item.quantity}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                                fontSize: 18
+                              
+                              ),
+                            ),
+                          ),
+                          
+                          // Plus button
+                          Container(
+                                  margin: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                 
+                                  shape: BoxShape.circle
+                                ),
+                            child: IconButton(
+                              icon: Icon(Icons.add, size: 16,color: Colors.black,),
+                              onPressed: () {
+                                print('Plus button clicked for item: ${item.id}'); // Debug
+                                _updateCartItemQuantityLocal(
+                                  item.id.toString(),
+                                  item.quantity + 1,
+                                );
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+
+                        ],
+                      ),
+                    ),
+                  ),
+                                   // Item total price
+                                  Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: Text(
+                                      '\NPR${(item.price * item.quantity).toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.black
+                                      ),
+                                    ),
+                                  ),
                 ],
               ),
             ),
-            // Item total price
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _priceColor.withAlpha(4),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '\NPR${(item.price * item.quantity).toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: _priceColor,
-                ),
-              ),
-            ),
+
+Divider(),
           ],
         ),
       ),
+  
     );
   }
 }
