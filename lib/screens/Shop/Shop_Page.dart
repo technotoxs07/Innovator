@@ -403,7 +403,7 @@ Future<void> _addToCart(
   double price, {
   int quantity = 1,
 }) async {
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
+
 
   if (_appData.authToken == null) {
     _showErrorSnackbar('Please log in to add items to your cart');
@@ -491,8 +491,11 @@ Future<void> _addToCart(
       if (isSuccess) {
 
         if (_isMounted) {
-          scaffoldMessenger.showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            
             SnackBar(
+              
+             
               content: Row(
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
@@ -501,8 +504,11 @@ Future<void> _addToCart(
                     children: [
                       Text(message),
                       TextButton(onPressed: (){
+                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         Navigator.push(
+
                           context,
+                          
                           MaterialPageRoute(builder: (_) => CartScreen()),
                         ).then((_) {
                       
@@ -510,14 +516,16 @@ Future<void> _addToCart(
                             cartManager.refreshCartCount();
                           }
                         });
-                      }, child: Text('View Cart',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),))
+                      }, child: Text('View Cart',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),)),
+                   
                     ],
                   )),
                 ],
               ),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 5),
-              behavior: SnackBarBehavior.floating,
+
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical:0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -1015,15 +1023,16 @@ IconButton(
       color: Colors.blue,
       child: Column(
         children: [
-          const SizedBox(height:100), 
+          const SizedBox(height:130), 
           Expanded(
             child: GridView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.only(right: 5,left:5),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisSpacing: 16,
+                crossAxisSpacing: 10,
                 crossAxisCount: 2,
-                mainAxisSpacing: 16,
+              
+                mainAxisSpacing: 10,
                 childAspectRatio: 0.66,
               ),
          
@@ -1113,7 +1122,7 @@ Widget _buildProductCard(dynamic product) {
            
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.only(right: 10,left: 10,bottom: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1130,7 +1139,7 @@ Widget _buildProductCard(dynamic product) {
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    const SizedBox(height: 4),
+            
 
                     
                     Container(
@@ -1141,6 +1150,8 @@ Widget _buildProductCard(dynamic product) {
                       ),
                       child: Text(
                         category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.blue.shade700,
