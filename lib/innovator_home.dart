@@ -1,9 +1,9 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'package:innovator/screens/Feed/Inner_Homepage.dart';
-import 'package:innovator/screens/Feed/Video_Feed.dart';
-import 'package:innovator/widget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovatorscreens/Feed/Inner_Homepage.dart';
+import 'package:innovator/Innovatorscreens/Feed/Video_Feed.dart';
+import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});

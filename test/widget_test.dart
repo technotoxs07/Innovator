@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:innovator/Notification/FCM_Class.dart';
-import 'package:innovator/main.dart';
+import 'package:innovator/InnovatorNotification/FCM_Class.dart';
+import 'package:innovator/Innovatormain.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
