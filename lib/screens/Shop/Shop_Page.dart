@@ -506,12 +506,9 @@ Future<void> _addToCart(
                       TextButton(onPressed: (){
                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         Navigator.push(
-
-                          context,
-                          
+                          context,                          
                           MaterialPageRoute(builder: (_) => CartScreen()),
-                        ).then((_) {
-                      
+                        ).then((_) {                   
                           if (_isMounted) {
                             cartManager.refreshCartCount();
                           }
@@ -616,120 +613,6 @@ Future<void> _addToCart(
 
     cartManager.refreshCartCount();
   }
-
-  void _showCategoryBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        child: Column(
-          children: [
-
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-         
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Select Category',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-
-            // Expanded(
-            //   child: ListView(
-            //     padding: const EdgeInsets.symmetric(horizontal: 20),
-            //     children: [
-            //       _buildCategoryTile(
-            //         icon: Icons.all_inclusive,
-            //         title: 'All Categories',
-            //         isSelected: _selectedCategoryId == null,
-            //         onTap: () {
-            //           _onCategorySelected(null, 'All Categories');
-            //           Navigator.pop(context);
-            //         },
-            //       ),
-            //       const Divider(height: 1),
-            //       ..._categories.map((category) {
-            //         final categoryId = category['_id'] ?? '';
-            //         final categoryName =
-            //             category['name'] ?? 'Unknown Category';
-            //         final isSelected = _selectedCategoryId == categoryId;
-
-            //         return _buildCategoryTile(
-            //           icon: Icons.category,
-            //           title: categoryName,
-            //           isSelected: isSelected,
-            //           onTap: () {
-            //             _onCategorySelected(categoryId, categoryName);
-            //             Navigator.pop(context);
-            //           },
-            //         );
-            //       }).toList(),
-            //     ],
-            //   ),
-            // ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryTile({
-    required IconData icon,
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.blue.withAlpha(10) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: isSelected ? Colors.blue : Colors.grey[600]),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.blue : Colors.black,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-        trailing: isSelected
-            ? const Icon(Icons.check_circle, color: Colors.blue)
-            : null,
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _isMounted = false;
@@ -737,7 +620,6 @@ Future<void> _addToCart(
     _searchController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -776,7 +658,6 @@ Future<void> _addToCart(
       ),
     );
   }
-
   Widget _buildTopBar() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 10,
@@ -852,12 +733,12 @@ Future<void> _addToCart(
 
 IconButton(
   onPressed: (){
-                                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => OrdersHistoryPage(),
-                                  ),
-                                );
+   Navigator.push(
+   context,
+   MaterialPageRoute(
+     builder: (context) => OrdersHistoryPage(),
+   ),
+ );
   },
   icon: 
       Container(
