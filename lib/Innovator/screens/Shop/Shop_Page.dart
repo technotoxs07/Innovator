@@ -1,3 +1,4 @@
+//shopepage.dart
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -842,7 +843,7 @@ IconButton(
           Expanded(
             child: GridView.builder(
               controller: _scrollController,
-              padding: EdgeInsets.only(right: 5,left:5),
+              padding: EdgeInsets.only(right: 5,left:5,bottom: 45),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisSpacing: 10,
                 crossAxisCount: 2,
