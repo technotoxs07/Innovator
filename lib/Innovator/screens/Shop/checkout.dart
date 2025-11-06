@@ -698,17 +698,40 @@ Future<void> _placeCodOrder() async {
           Column(
             children: [
               TabBar(
-                controller: _qrTabController,
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelStyle: TextStyle(color:Colors.black,fontWeight: FontWeight.bold),
-                        
-                        unselectedLabelStyle: TextStyle(color: Colors.black),
-                indicator: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 4, offset: const Offset(0, 2))]),
-                labelColor: _textColor,
-        
+  
+                      
+                        tabAlignment: TabAlignment.fill,
+                      controller: _qrTabController,
+                      dividerColor: Colors.transparent,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      unselectedLabelColor: _primaryColor,
+                      
+                      labelColor: Colors.white,
+                      padding:
+                          const EdgeInsets.only(top: 9, bottom: 9, left: 9),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      labelPadding: EdgeInsets.all(0),
+                      unselectedLabelStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      indicator: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: _primaryColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withAlpha(20),
+                            spreadRadius: 1,
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
                 tabs:  [
                   Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.account_balance_wallet, size: 18),  Text('eSewa')])),
-                  Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.payment, size: 18), Text('Laxmi Bank')])),
+                  Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.account_balance), Text('Laxmi Bank')])),
                   Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.payment, size: 18),  Text('COD')])),
                   
                 ],
