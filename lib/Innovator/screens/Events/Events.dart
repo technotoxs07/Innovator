@@ -776,9 +776,9 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
           ),
         ],
         bottom: TabBar(
-          indicatorColor: Colors.red,
+          indicatorColor: Colors.white,
 
-          unselectedLabelStyle: TextStyle(color: Colors.black),
+          unselectedLabelStyle: TextStyle(color: Colors.white),
           labelStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           controller: _tabController,
           tabs: [
@@ -873,166 +873,126 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
     );
   }
 
-  Widget _buildEventCard(TechEvent event) {
-    final bool isUpcoming = event.date.isAfter(DateTime.now());
-    final int daysUntil = event.date.difference(DateTime.now()).inDays;
-    
-    return Card(
-      margin: EdgeInsets.only(bottom: 16),
-      color: Colors.white,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          if (event.isBackendEvent) {
-            // Navigate to detailed page for backend events
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EventDetailPage(eventId: event.id),
-              ),
-            );
-          } else {
-            // Launch URL for non-backend events
-            launchURL(event.url);
-          }
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [ 
-                        Text(
-                          event.title,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            // color: Colors.indigo[900],
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          event.organizer,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
+Widget _buildEventCard(TechEvent event) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final eventDay = DateTime(event.date.year, event.date.month, event.date.day);
+
+  final daysUntil = eventDay.difference(today).inDays;
+  if (daysUntil < 0) return const SizedBox.shrink();
+
+  final bool isToday = daysUntil == 0;
+  final bool isTomorrow = daysUntil == 1;
+
+  return Card(
+    margin: const EdgeInsets.only(bottom: 16),
+    color: Colors.white,
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: InkWell(
+      onTap: () => event.isBackendEvent
+          ? Navigator.push(context, MaterialPageRoute(builder: (_) => EventDetailPage(eventId: event.id)))
+          : launchURL(event.url),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+           
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(event.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(event.organizer, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(
-                      event.isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: event.isFavorite ? Colors.red : Colors.grey,
-                    ),
-                    onPressed: () => toggleFavorite(event),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12),
-              Text(
-                event.description,
-                style: TextStyle(fontSize: 14, height: 1.4),
+                ),
+                IconButton(
+                  icon: Icon(event.isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: event.isFavorite ? Colors.red : Colors.grey),
+                  onPressed: () => toggleFavorite(event),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(event.description,
+                style: const TextStyle(fontSize: 14, height: 1.4),
                 maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                  SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      event.location,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
+                overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 12),
+
+          
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Expanded(child: Text(event.location, style: const TextStyle(color: Colors.grey, fontSize: 14))),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(event.category),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getCategoryColor(event.category),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      event.category,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                  child: Text(event.category,
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+         
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${event.date.day}/${event.date.month}/${event.date.year}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ), 
+                    const SizedBox(width: 8),
+                   
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: daysUntil <= 1 ? Colors.orange : Colors.green,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isToday
+                            ? 'Today'
+                            : isTomorrow
+                                ? 'Tomorrow'
+                                : '$daysUntil days',
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500),
                       ),
                     ),
+                  ],
+                ), 
+                Text(
+                  event.price,
+                  style: TextStyle(
+                    color: event.price.toLowerCase() == 'free' ? Colors.green : Colors.grey[600],
+                    fontSize: 14,
+                    fontWeight: event.price.toLowerCase() == 'free' ? FontWeight.w600 : FontWeight.normal,
                   ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                      SizedBox(width: 4),
-                      Text(
-                        '${event.date.day}/${event.date.month}/${event.date.year}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                      if (isUpcoming) ...[
-                        SizedBox(width: 8),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: daysUntil <= 7 ? Colors.orange : Colors.green,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            daysUntil == 0 ? 'Today' : 
-                            daysUntil == 1 ? 'Tomorrow' : 
-                            '$daysUntil days',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.monetization_on, size: 16, color: Colors.grey[600]),
-                      SizedBox(width: 4),
-                      Text(
-                        event.price,
-                        style: TextStyle(
-                          color: event.price.toLowerCase() == 'free' 
-                            ? Colors.green 
-                            : Colors.grey[600],
-                          fontSize: 14,
-                          fontWeight: event.price.toLowerCase() == 'free' 
-                            ? FontWeight.w600 
-                            : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCategoriesView() {
     final categories = events.map((e) => e.category).toSet().toList();
@@ -1048,6 +1008,8 @@ bool _hasNewEvents(List<TechEvent> newEvents, List<TechEvent> cachedEvents) {
         return Card(
           margin: EdgeInsets.only(bottom: 12),
           child: ListTile(
+            tileColor: Colors.white,
+        
             leading: CircleAvatar(
               backgroundColor: _getCategoryColor(category),
               child: Icon(
