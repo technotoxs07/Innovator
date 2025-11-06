@@ -189,6 +189,7 @@ class _CartScreenState extends State<CartScreen>
       body: Stack(
         children: [
           Container(
+            padding: EdgeInsets.only(bottom:40),
             child: _isLoading
                 ? Center(
                     child: CircularProgressIndicator(
@@ -294,7 +295,7 @@ class _CartScreenState extends State<CartScreen>
   },
   style: ElevatedButton.styleFrom(
    backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-    padding: const EdgeInsets.symmetric(vertical: 16),
+    padding: const EdgeInsets.symmetric(vertical: 20),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
     ),

@@ -51,14 +51,15 @@ class ApiService {
 Future<CheckoutResponse> checkout({
   required CustomerInfo customerInfo,
   required double paidAmount,
-  required File paymentProof,
+   File? paymentProof,
   String? notes,
+  bool isCod = false
 }) async {
   try {
     final url = Uri.parse('$baseUrl/checkout');
     
     // Validate file exists and is readable
-    if (!await paymentProof.exists()) {
+    if (!await paymentProof!.exists()) {
       throw Exception('Payment proof file does not exist');
     }
 
