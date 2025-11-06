@@ -1,10 +1,10 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:innovator/InnovatorAuthorization/Login.dart';
-import 'package:innovator/InnovatorAuthorization/OTP_Validation.dart';
-import 'package:innovator/Innovatorhelper/dialogs.dart';
-import 'package:innovator/Innovatormain.dart';
-import 'package:innovator/Innovatorservices/firebase_services.dart';
+import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/Innovator/Authorization/OTP_Validation.dart';
+import 'package:innovator/Innovator/helper/dialogs.dart';
+import 'package:innovator/main.dart';
+import 'package:innovator/Innovator/services/firebase_services.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';

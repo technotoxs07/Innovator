@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/InnovatorAuthorization/Login.dart';
-import 'package:innovator/Innovatorinnovator_home.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/innovator_home.dart';
 import 'dart:developer' as developer;
 
 class SplashScreen extends StatefulWidget {

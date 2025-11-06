@@ -4,11 +4,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/InnovatorAuthorization/Login.dart';
-import 'package:innovator/Innovatorscreens/Follow/follow_Button.dart';
-import 'package:innovator/Innovatorscreens/comment/JWT_Helper.dart';
-import 'package:innovator/Innovatorscreens/SHow_Specific_Profile/Show_Specific_Profile.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/Innovator/screens/Follow/follow_Button.dart';
+import 'package:innovator/Innovator/screens/comment/JWT_Helper.dart';
+import 'package:innovator/Innovator/screens/SHow_Specific_Profile/Show_Specific_Profile.dart';
 
 class SuggestedUser {
   final String id;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:innovator/Innovatorscreens/Likes/Content-Like-Service.dart';
+import 'package:innovator/Innovator/screens/Likes/Content-Like-Service.dart';
 
 class LikeButton extends StatefulWidget {
   final String contentId;

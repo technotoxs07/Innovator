@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:innovator/Innovatorconstant/app_colors.dart';
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/constant/app_colors.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 
 class PrivacyPolicy extends StatefulWidget {
   const PrivacyPolicy({super.key});

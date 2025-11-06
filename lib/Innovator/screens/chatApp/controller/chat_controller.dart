@@ -6,13 +6,13 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorscreens/chatApp/FollowStatusManager.dart'
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/screens/chatApp/FollowStatusManager.dart'
     show FollowStatusManager;
-import 'package:innovator/Innovatorservices/Firebase_Messaging.dart';
-import 'package:innovator/Innovatorservices/call_permission_service.dart';
-import 'package:innovator/Innovatorservices/firebase_services.dart';
-import 'package:innovator/Innovatorservices/webrtc_call_service.dart';
+import 'package:innovator/Innovator/services/Firebase_Messaging.dart';
+import 'package:innovator/Innovator/services/call_permission_service.dart';
+import 'package:innovator/Innovator/services/firebase_services.dart';
+import 'package:innovator/Innovator/services/webrtc_call_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 class FireChatController extends GetxController {

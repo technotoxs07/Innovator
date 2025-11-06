@@ -3,19 +3,19 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:innovator/Innivator//App_data/App_data.dart';
-import 'package:innovator/Innivator//Authorization/Forget_PWD.dart';
-import 'package:innovator/Innivator//Authorization/cross_platform.dart';
-import 'package:innovator/Innivator//Authorization/signup.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/Authorization/Forget_PWD.dart';
+import 'package:innovator/Innovator/Authorization/cross_platform.dart';
+import 'package:innovator/Innovator/Authorization/signup.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
-import 'package:innovator/Innovatorhelper/dialogs.dart';
-import 'package:innovator/Innovatorinnovator_home.dart';
-import 'package:innovator/Innovatorservices/firebase_services.dart';
+import 'package:innovator/Innovator/helper/dialogs.dart';
+import 'package:innovator/Innovator/services/firebase_services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:innovator/innovator_home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {

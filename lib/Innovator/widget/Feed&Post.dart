@@ -2,8 +2,8 @@
 // You can add this to both Homepage and VideoFeedPage for better UX
 
 import 'package:flutter/material.dart';
-import 'package:innovator/Innovatorinnovator_home.dart';
-import 'package:innovator/Innovatorscreens/Feed/Video_Feed.dart';
+import 'package:innovator/innovator_home.dart';
+import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart';
 
 class _SwipeIndicator extends StatefulWidget {
   final bool isLeftSwipe;

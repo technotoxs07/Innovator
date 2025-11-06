@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/Innivator//Authorization/OTP_Verification.dart';
-import 'package:innovator/Innivator//helper/dialogs.dart';
+import 'package:innovator/Innovator/Authorization/OTP_Verification.dart';
+import 'package:innovator/Innovator/helper/dialogs.dart';
 
 class Forgot_PWD extends StatefulWidget {
   const Forgot_PWD({super.key});

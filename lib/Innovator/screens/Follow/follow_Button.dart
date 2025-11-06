@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:innovator/Innovatorscreens/Follow/Follow_status_Manager.dart';
-import 'package:innovator/Innovatorscreens/Follow/follow-Service.dart';
+import 'package:innovator/Innovator/screens/Follow/Follow_status_Manager.dart';
+import 'package:innovator/Innovator/screens/Follow/follow-Service.dart';
 import 'dart:async';
 
-import 'package:innovator/Innovatorscreens/chatrrom/sound/soundplayer.dart';
+import 'package:innovator/Innovator/screens/chatrrom/sound/soundplayer.dart';
 
 // Include the FollowStatusManager class here or import it
 

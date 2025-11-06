@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorcontrollers/user_controller.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/controllers/user_controller.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:innovator/Innovatorscreens/show_Specific_Profile/Show_Specific_Profile.dart';
+import 'package:innovator/Innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
 
 class FollowersFollowingScreen extends StatefulWidget {
   final String userId;

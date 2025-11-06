@@ -3,24 +3,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/InnovatorAuthorization/Login.dart';
-import 'package:innovator/Innovatormain.dart';
-import 'package:innovator/Innovatorscreens/Feed/VideoPlayer/videoplayerpackage.dart';
-import 'package:innovator/Innovatorscreens/Likes/Content-Like-Service.dart';
-import 'package:innovator/Innovatorscreens/Likes/content-Like-Button.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/main.dart';
+import 'package:innovator/Innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
+import 'package:innovator/Innovator/screens/Likes/Content-Like-Service.dart';
+import 'package:innovator/Innovator/screens/Likes/content-Like-Button.dart';
 
-import 'package:innovator/Innovatorscreens/chatrrom/sound/soundplayer.dart';
-import 'package:innovator/Innovatorscreens/comment/comment_section.dart';
-import 'package:innovator/Innovatorwidget/Feed&Post.dart';
+import 'package:innovator/Innovator/screens/chatrrom/sound/soundplayer.dart';
+import 'package:innovator/Innovator/screens/comment/comment_section.dart';
+import 'package:innovator/Innovator/widget/Feed&Post.dart';
 import 'dart:convert';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:io';
-import 'package:innovator/Innovatorscreens/Follow/follow_Button.dart';
-import 'package:innovator/Innovatorscreens/Follow/follow-Service.dart';
+import 'package:innovator/Innovator/screens/Follow/follow_Button.dart';
+import 'package:innovator/Innovator/screens/Follow/follow-Service.dart';
 
 // Updated Models for new API structure
 class Author {

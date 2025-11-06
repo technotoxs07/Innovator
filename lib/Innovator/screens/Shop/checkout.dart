@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:innovator/Innovatorscreens/Shop/Cart_List/api_services.dart';
-import 'package:innovator/Innovatormodels/Shop_cart_model.dart';
+import 'package:innovator/Innovator/screens/Shop/Cart_List/api_services.dart';
+import 'package:innovator/Innovator/models/Shop_cart_model.dart';
 import 'package:path/path.dart' as path;
 
 class CheckoutScreen extends StatefulWidget {

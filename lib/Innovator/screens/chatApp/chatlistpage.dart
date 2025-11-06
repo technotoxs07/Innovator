@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:innovator/Innovatorscreens/chatApp/EnhancedUserAvtar.dart';
-import 'package:innovator/Innovatorscreens/chatApp/controller/chat_controller.dart';
+import 'package:innovator/Innovator/screens/chatApp/EnhancedUserAvtar.dart';
+import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:lottie/lottie.dart';
 
 class OptimizedChatListPage extends GetView<FireChatController> {

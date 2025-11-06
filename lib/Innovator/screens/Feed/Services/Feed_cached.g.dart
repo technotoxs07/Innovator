@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
-import 'package:innovator/Innovatormodels/Feed_Content_Model.dart';
-import 'package:innovator/Innovatorscreens/Feed/Inner_Homepage.dart';
+import 'package:innovator/Innovator/models/Feed_Content_Model.dart';
+import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
 
 import '../../../models/Author_model.dart';
 

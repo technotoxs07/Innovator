@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 

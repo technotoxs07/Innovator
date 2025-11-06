@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/InnovatorAuthorization/Login.dart';
-import 'package:innovator/Innovatorscreens/Shop/Cart_List/api_services.dart';
-import 'package:innovator/Innovatorscreens/Shop/checkout.dart';
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/Innovator/screens/Shop/Cart_List/api_services.dart';
+import 'package:innovator/Innovator/screens/Shop/checkout.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import '../../../models/Shop_cart_model.dart';
 
 class CartScreen extends StatefulWidget {

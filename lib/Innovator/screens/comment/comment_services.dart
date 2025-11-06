@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
 
 class CommentService {
   static const String _baseUrl = 'http://182.93.94.210:3067/api/v1';

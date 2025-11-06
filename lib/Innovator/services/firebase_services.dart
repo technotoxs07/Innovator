@@ -7,8 +7,8 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'dart:developer' as developer;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorscreens/chatApp/FollowStatusManager.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/screens/chatApp/FollowStatusManager.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;

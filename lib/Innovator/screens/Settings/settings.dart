@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:innovator/Innovatorscreens/Blocked/BlockedUser.dart';
-import 'package:innovator/Innovatorscreens/Profile/Edit_Profile.dart';
-import 'package:innovator/Innovatorwidget/testnotifcation.dart';
+import 'package:innovator/Innovator/screens/Blocked/BlockedUser.dart';
+import 'package:innovator/Innovator/screens/Profile/Edit_Profile.dart';
+import 'package:innovator/Innovator/widget/testnotifcation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:innovator/InnovatorAuthorization/change_pwd.dart';
+import 'package:innovator/Innovator/Authorization/change_pwd.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);

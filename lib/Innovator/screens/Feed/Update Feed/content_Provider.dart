@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:innovator/Innovatorscreens/Feed/Update%20Feed/API_Service.dart';
-import 'package:innovator/Innovatorscreens/Feed/Update%20Feed/Content_model.dart';
+import 'package:innovator/Innovator/screens/Feed/Update%20Feed/API_Service.dart';
+import 'package:innovator/Innovator/screens/Feed/Update%20Feed/Content_model.dart';
 
 
 class ContentProvider extends ChangeNotifier {

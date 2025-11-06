@@ -1,7 +1,7 @@
 import 'dart:developer' as developer;
 
-import 'package:innovator/Innovatormodels/Author_model.dart';
-import 'package:innovator/Innovatorscreens/Feed/Inner_Homepage.dart';
+import 'package:innovator/Innovator/models/Author_model.dart';
+import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
 
 class FeedContent {
   final String id;

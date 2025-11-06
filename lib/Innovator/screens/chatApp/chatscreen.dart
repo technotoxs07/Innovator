@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:innovator/Innovatorscreens/chatApp/EnhancedUserAvtar.dart';
-import 'package:innovator/Innovatorscreens/chatApp/controller/chat_controller.dart';
-import 'package:innovator/Innovatorscreens/chatrrom/sound/soundplayer.dart';
+import 'package:innovator/Innovator/screens/chatApp/EnhancedUserAvtar.dart';
+import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
+import 'package:innovator/Innovator/screens/chatrrom/sound/soundplayer.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:developer' as developer;
 

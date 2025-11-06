@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorscreens/chatrrom/sound/soundplayer.dart';
-import 'package:innovator/Innovatorscreens/comment/JWT_Helper.dart';
-import 'package:innovator/Innovatormodels/comment_Model.dart';
-import 'package:innovator/Innovatorscreens/comment/comment_services.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/screens/chatrrom/sound/soundplayer.dart';
+import 'package:innovator/Innovator/screens/comment/JWT_Helper.dart';
+import 'package:innovator/Innovator/models/comment_Model.dart';
+import 'package:innovator/Innovator/screens/comment/comment_services.dart';
 
 class CommentSection extends StatefulWidget {
   final String contentId;

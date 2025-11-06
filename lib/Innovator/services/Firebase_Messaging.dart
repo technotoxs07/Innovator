@@ -9,10 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'dart:developer' as developer;
-import 'package:innovator/Innovatorscreens/chatApp/controller/chat_controller.dart';
-import 'package:innovator/Innovatorservices/firebase_services.dart';
+import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
+import 'package:innovator/Innovator/services/firebase_services.dart';
 
 class FirebaseNotificationService {
   static final FirebaseNotificationService _instance = 

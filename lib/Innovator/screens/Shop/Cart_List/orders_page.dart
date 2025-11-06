@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorscreens/Shop/Cart_List/Orders_detail_page.dart';
-import 'package:innovator/Innovatormodels/Shop_cart_model.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/screens/Shop/Cart_List/Orders_detail_page.dart';
+import 'package:innovator/Innovator/models/Shop_cart_model.dart';
 import 'package:intl/intl.dart';
 
 class OrdersHistoryPage extends StatefulWidget {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import '../../controllers/user_controller.dart';
-import '../../models/Author_model.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/Notification/models/Author_model.dart';
+import 'package:innovator/Innovator/controllers/user_controller.dart';
 
 class InstantProfilePicture extends StatelessWidget {
   final String userId;

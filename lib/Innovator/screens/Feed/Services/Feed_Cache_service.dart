@@ -1,7 +1,7 @@
 // Updated CacheManager with better offline handling and error resilience
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:innovator/Innovatormodels/Feed_Content_Model.dart';
-import 'package:innovator/Innovatorscreens/Feed/Services/Feed_cached.g.dart';
+import 'package:innovator/Innovator/models/Feed_Content_Model.dart';
+import 'package:innovator/Innovator/screens/Feed/Services/Feed_cached.g.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:developer' as developer;
 

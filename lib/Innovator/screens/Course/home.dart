@@ -1,13 +1,13 @@
 // home_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorcontrollers/user_controller.dart';
-import 'package:innovator/Innovatorscreens/Course/course_details_screen.dart';
-import 'package:innovator/Innovatormodels/Course_models.dart';
-import 'package:innovator/Innovatorscreens/Course/services/api_services.dart';
-import 'package:innovator/Innovatorutils/Drawer/custom_drawer.dart';
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/controllers/user_controller.dart';
+import 'package:innovator/Innovator/screens/Course/course_details_screen.dart';
+import 'package:innovator/Innovator/models/Course_models.dart';
+import 'package:innovator/Innovator/screens/Course/services/api_services.dart';
+import 'package:innovator/Innovator/utils/Drawer/custom_drawer.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:developer' as developer;
 
 class HomeScreen extends StatefulWidget {

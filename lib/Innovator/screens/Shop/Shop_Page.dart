@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart'; // Changed from provider to get
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorscreens/Shop/CardIconWidget/CardIconWidget.dart';
-import 'package:innovator/Innovatorscreens/Shop/CardIconWidget/cart_state_manager.dart'; // GetX version
-import 'package:innovator/Innovatorscreens/Shop/Cart_List/cart_screen.dart';
-import 'package:innovator/Innovatorscreens/Shop/Cart_List/orders_page.dart';
-import 'package:innovator/Innovatorscreens/Shop/Product_detail_Page.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/screens/Shop/CardIconWidget/CardIconWidget.dart';
+import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart'; // GetX version
+import 'package:innovator/Innovator/screens/Shop/Cart_List/cart_screen.dart';
+import 'package:innovator/Innovator/screens/Shop/Cart_List/orders_page.dart';
+import 'package:innovator/Innovator/screens/Shop/Product_detail_Page.dart';
 import 'dart:convert';
 
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 
 class ShopPage extends StatefulWidget {
   const ShopPage({Key? key}) : super(key: key);

@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
 
-import 'package:innovator/Innovatorscreens/show_Specific_Profile/Show_Specific_Profile.dart';
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import '../../controllers/user_controller.dart';
 
 class SearchPage extends StatefulWidget {

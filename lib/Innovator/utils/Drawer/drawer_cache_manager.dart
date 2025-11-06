@@ -1,5 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:innovator/Innovatorutils/Drawer/Drawer_Hivetype.dart';
+import 'package:innovator/Innovator/utils/Drawer/Drawer_Hivetype.dart';
 
 class DrawerProfileCache {
   static const String boxName = 'drawer_profile_cache';

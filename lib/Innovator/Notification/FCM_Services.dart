@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorinnovator_home.dart';
-import 'package:innovator/Innovatorscreens/show_Specific_Profile/Show_Specific_Profile.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/innovator_home.dart';
+import 'package:innovator/Innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
 import 'package:intl/intl.dart';
-import 'package:innovator/Innovatorscreens/Feed/post_detail_screen.dart';
+import 'package:innovator/Innovator/screens/Feed/post_detail_screen.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key});

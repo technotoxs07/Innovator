@@ -3,12 +3,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:innovator/Innovatorinnovator_home.dart';
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/innovator_home.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:mime/mime.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:path/path.dart' as path;
 import 'package:image_picker/image_picker.dart';
 

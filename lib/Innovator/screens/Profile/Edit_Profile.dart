@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorscreens/Profile/profile_page.dart';
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/screens/Profile/profile_page.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import 'package:innovator/Innovatorscreens/comment/JWT_Helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({Key? key}) : super(key: key);

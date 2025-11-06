@@ -4,8 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatormodels/Blocked_Model.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/models/Blocked_Model.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({Key? key}) : super(key: key);

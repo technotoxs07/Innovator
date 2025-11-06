@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorconstant/app_colors.dart';
-import 'package:innovator/Innovatorwidget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/constant/app_colors.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:innovator/Innovatorscreens/comment/JWT_Helper.dart';
+import 'package:innovator/Innovator/screens/comment/JWT_Helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FAQScreen extends StatefulWidget {

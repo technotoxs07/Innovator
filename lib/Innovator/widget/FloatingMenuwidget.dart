@@ -3,17 +3,17 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/InnovatorApp_data/App_data.dart';
-import 'package:innovator/Innovatorscreens/Course/home.dart';
-import 'package:innovator/Innovatorscreens/Events/Events.dart';
-import 'package:innovator/Innovatorscreens/Project_Management/Project_idea.dart';
-import 'package:innovator/Innovatorscreens/Shop/CardIconWidget/cart_state_manager.dart';
-import 'package:innovator/Innovatorutils/Drawer/custom_drawer.dart';
-import 'package:innovator/InnovatorNotification/FCM_Services.dart';
-import 'package:innovator/Innovatorinnovator_home.dart';
-import 'package:innovator/Innovatorscreens/Add_Content/Create_post.dart';
-import 'package:innovator/Innovatorscreens/Search/Searchpage.dart';
-import 'package:innovator/Innovatorscreens/Shop/Shop_Page.dart';
+import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/screens/Course/home.dart';
+import 'package:innovator/Innovator/screens/Events/Events.dart';
+import 'package:innovator/Innovator/screens/Project_Management/Project_idea.dart';
+import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
+import 'package:innovator/Innovator/utils/Drawer/custom_drawer.dart';
+import 'package:innovator/Innovator/Notification/FCM_Services.dart';
+import 'package:innovator/innovator_home.dart';
+import 'package:innovator/Innovator/screens/Add_Content/Create_post.dart';
+import 'package:innovator/Innovator/screens/Search/Searchpage.dart';
+import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
 
 class FloatingMenuWidget extends StatefulWidget {
   const FloatingMenuWidget({super.key});

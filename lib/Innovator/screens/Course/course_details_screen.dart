@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:innovator/Innovatormodels/Course_models.dart';
-import 'package:innovator/Innovatorscreens/Course/services/api_services.dart';
+import 'package:innovator/Innovator/models/Course_models.dart';
+import 'package:innovator/Innovator/screens/Course/services/api_services.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:developer' as developer;
 import 'dart:async';

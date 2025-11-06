@@ -2,7 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:innovator/Innovatorservices/Daily_Notifcation.dart';
+import 'package:innovator/Innovator/services/Daily_Notifcation.dart';
 
 class DailyNotificationSettings extends StatefulWidget {
   const DailyNotificationSettings({Key? key}) : super(key: key);

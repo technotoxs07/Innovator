@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'package:innovator/Innovatorscreens/Profile/profile_page.dart';
+import 'package:innovator/Innovator/screens/Profile/profile_page.dart';
 
 @HiveType(typeId: 0)
 class UserProfileAdapter extends TypeAdapter<UserProfile> {
