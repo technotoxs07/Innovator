@@ -107,7 +107,6 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
     });
   }
 
-  // ... (keep existing methods like _scrollToPost, _openCommentsForPost, dispose, etc.)
 
   @override
   Widget build(BuildContext context) {
@@ -117,11 +116,12 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
     
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: isDarkMode ? const Color(0xFF0A0A0A) : const Color(0xFFF8F9FA),
+      backgroundColor: isDarkMode ? const Color(0xFF0A0A0A) : Colors.white,
       extendBodyBehindAppBar: true,
-      // appBar: _buildAppBar(isDarkMode),
+
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+     backgroundColor: Colors.transparent,
+        // backgroundColor:   Color.fromRGBO(244, 135, 6, 1),
         elevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
@@ -130,8 +130,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
         ),
         leading: IconButton(
           iconSize: 25,
-          icon: Icon(
-            
+          icon: Icon(           
             Icons.arrow_back_ios_new,
             color: isDarkMode ? Colors.white : Colors.black,
             // size: 18,
@@ -532,34 +531,23 @@ SizedBox(width: 30),
               ),
  
   
-              const SizedBox(height: 20),
+       SizedBox(
+  height: (profileData['bio'] != null && profileData['bio'].isNotEmpty) ? 2 :12,
+),
   
               // Bio preview - only show if not private or if user can view
               if ((profileData['bio'] != null && profileData['bio'].isNotEmpty) && 
                   canViewPrivateContent)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                Text(
+                  profileData['bio'],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                    fontStyle: FontStyle.italic,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(20),
-                    ),
-                  ),
-                  child: Text(
-                    profileData['bio'],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: isDarkMode ? Colors.white : Colors.white,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
             ],
           ),

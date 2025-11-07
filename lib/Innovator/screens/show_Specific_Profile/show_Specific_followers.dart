@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
@@ -688,8 +689,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => SpecificUserProfilePage(userId: userId!), // Non-null assertion
-          ),
+            builder: (_) => SpecificUserProfilePage(userId: userId!),),
         );
       } catch (error) {
         print('Navigation error: $error');
@@ -714,6 +714,8 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
 
   Widget _buildUserTile(Map<String, dynamic> user) {
     final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
+    log('$isCurrentUser');
+    log('USER id:${widget.userId}');
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -729,8 +731,12 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
           radius: 22,
           backgroundColor: Colors.grey[300],
           backgroundImage: user['picture'] != null && user['picture'].toString().isNotEmpty
-              ? NetworkImage('http://182.93.94.210:3067${user['picture']}')
+              ? NetworkImage(
+                'http://182.93.94.210:3067${user['picture']}',
+              
+                )
               : null,
+              
           child: user['picture'] == null || user['picture'].toString().isEmpty
               ? Text(
                   (user['name'] ?? 'U')[0].toUpperCase(),

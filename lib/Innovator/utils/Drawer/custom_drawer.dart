@@ -276,8 +276,9 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
 
   Widget _buildHeader() {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.34,
-      width: MediaQuery.of(context).size.width * 0.68,
+      // height: MediaQuery.of(context).size.height * 0.34,
+      // width: MediaQuery.of(context).size.width * 0.68,
+      width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -346,9 +347,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                 ),
               ),
               
-              //const SizedBox(height: 8),
-              
-              // User name
+
               Text(
                 _userName,
                 style: const TextStyle(
@@ -364,9 +363,9 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
               
               // Email
               if (_userEmail.isNotEmpty) ...[
-                //const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              
+                Container(             
+              padding: EdgeInsets.only(right: 10,left: 10,top: 0,bottom: 0),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(20),
                     borderRadius: BorderRadius.circular(15),
