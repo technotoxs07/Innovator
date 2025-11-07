@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -45,6 +46,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
   bool hasError = false;
   String errorMessage = '';
   bool _showComments = false;
+  
   late AnimationController _highlightController;
   late Animation<Color?> _highlightAnimation;
 
@@ -89,65 +91,161 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
   }
 
   Future<void> fetchSpecificPost() async {
-    try {
-      setState(() {
-        isLoading = true;
-        hasError = false;
-      });
+  try {
+    setState(() {
+      isLoading = true;
+      hasError = false;
+    });
 
-      final String? authToken = AppData().authToken;
-      if (authToken == null || authToken.isEmpty) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => LoginPage()),
-          (route) => false,
-        );
-        return;
-      }
+    final String? authToken = AppData().authToken;
+    if (authToken == null || authToken.isEmpty) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => LoginPage()),
+        (route) => false,
+      );
+      return;
+    }
 
-      final response = await http.get(
-        Uri.parse('http://182.93.94.210:3067/api/v1/content/${widget.contentId}'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $authToken',
-        },
-      ).timeout(const Duration(seconds: 30));
+    final response = await http.get(
+      Uri.parse('http://182.93.94.210:3067/api/v1/content/${widget.contentId}'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+    ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
+    debugPrint('📡 Specific Post Response Status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      
+      if (data['status'] == 200 && data['data'] != null) {
+        Map<String, dynamic> contentData;
         
-        if (data['status'] == 200 && data['data'] != null) {
-          setState(() {
-            content = SpecificPostContent.fromJson(data['data']);
-            isLoading = false;
-          });
+        if (data['data'] is String) {
+          contentData = json.decode(data['data']) as Map<String, dynamic>;
+        } else if (data['data'] is Map<String, dynamic>) {
+          contentData = data['data'] as Map<String, dynamic>;
+        } else if (data['data'] is Map) {
+          contentData = Map<String, dynamic>.from(data['data'] as Map);
         } else {
-          throw Exception(data['message'] ?? 'Failed to load post');
+          throw Exception('Unexpected data format: ${data['data'].runtimeType}');
         }
-      } else if (response.statusCode == 401) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => LoginPage()),
-          (route) => false,
-        );
-      } else if (response.statusCode == 404) {
+        
+        // ✅ NEW: Check if author is just a string (incomplete data)
+        final authorData = contentData['author'];
+        bool needsAuthorFetch = false;
+        String? authorId;
+        
+        if (authorData is String) {
+          debugPrint('⚠️ Author is just a name string, need to fetch full author data');
+          needsAuthorFetch = true;
+          // Try to get author ID from the content's creator field or other source
+          authorId = contentData['userId'] ?? contentData['createdBy'];
+        } else if (authorData is Map) {
+          final authorMap = Map<String, dynamic>.from(authorData as Map);
+          // Check if author object is incomplete (missing picture)
+          if (authorMap['picture'] == null || authorMap['picture'].toString().isEmpty) {
+            debugPrint('⚠️ Author object missing picture field');
+            needsAuthorFetch = true;
+            authorId = authorMap['_id'] ?? authorMap['id'];
+          }
+        }
+        
         setState(() {
-          hasError = true;
-          errorMessage = 'Post not found';
+          content = SpecificPostContent.fromJson(contentData);
           isLoading = false;
         });
+        
+        // ✅ NEW: Fetch complete author data if needed
+        if (needsAuthorFetch && authorId != null && authorId.isNotEmpty) {
+          await _fetchAuthorData(authorId);
+        }
+        
+        debugPrint('✅ Content loaded successfully: ${content?.id}');
       } else {
-        throw Exception('Failed to load post: ${response.statusCode}');
+        throw Exception(data['message'] ?? 'Failed to load post');
       }
-    } catch (e) {
+    } else if (response.statusCode == 401) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => LoginPage()),
+        (route) => false,
+      );
+    } else if (response.statusCode == 404) {
       setState(() {
         hasError = true;
-        errorMessage = 'Error loading post: $e';
+        errorMessage = 'Post not found';
         isLoading = false;
       });
+    } else {
+      throw Exception('Failed to load post: ${response.statusCode}');
     }
+  } catch (e, stackTrace) {
+    debugPrint('❌ Error loading post: $e');
+    debugPrint('📍 Stack trace: $stackTrace');
+    
+    setState(() {
+      hasError = true;
+      errorMessage = 'Error loading post: $e';
+      isLoading = false;
+    });
   }
+}
+
+
+Future<void> _fetchAuthorData(String authorId) async {
+  try {
+    final String? authToken = AppData().authToken;
+    if (authToken == null || authToken.isEmpty) return;
+
+    debugPrint('🔍 Fetching author data for: $authorId');
+
+    final response = await http.get(
+      Uri.parse('http://182.93.94.210:3067/api/v1/user/$authorId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      
+      debugPrint('📡 Author API Response: ${response.body}');
+      
+      if (data['status'] == 200 && data['data'] != null) {
+        final userData = data['data'];
+        
+        debugPrint('👤 User data received:');
+        debugPrint('   - ID: ${userData['_id'] ?? userData['id']}');
+        debugPrint('   - Name: ${userData['name']}');
+        debugPrint('   - Picture: ${userData['picture']}');
+        
+        // Update the content's author with complete data
+        if (mounted && content != null) {
+          setState(() {
+            content!.author.id = userData['_id'] ?? userData['id'] ?? authorId;
+            content!.author.name = userData['name'] ?? content!.author.name;
+            content!.author.email = userData['email'] ?? '';
+            content!.author.picture = userData['picture'] ?? '';
+          });
+          
+          debugPrint('✅ Author data updated in state');
+          debugPrint('   - New picture path: ${content!.author.picture}');
+        }
+      }
+    } else {
+      debugPrint('❌ Author API returned status: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('❌ Error fetching author data: $e');
+    // Don't throw error, just continue with partial data
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +392,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
                             fontWeight: FontWeight.w700,
                             fontSize: 16.0,
                             color: Color(0xFF1A1A1A),
+
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -309,10 +408,12 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
                           ),
                         ),
                         const SizedBox(width: 8.0),
+                        if(_isAuthorCurrentUser() == true)
                         FollowButton(
                           targetUserEmail: content!.author.email,
                           initialFollowStatus: content!.engagement.following,
                           onFollowSuccess: () {
+                            
                             setState(() {
                               content!.engagement.following = true;
                             });
@@ -339,7 +440,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                         child: Text(
-                          content!.type,
+                          content!.type.toUpperCase(),
                           style: TextStyle(
                             color: _getTypeColor(content!.type),
                             fontSize: 13.0,
@@ -368,47 +469,123 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
     );
   }
 
-  Widget _buildAuthorAvatar() {
-    if (_isAuthorCurrentUser()) {
-      return Obx(() {
-        final userController = Get.find<UserController>();
-        final picturePath = userController.getFullProfilePicturePath();
-        final version = userController.profilePictureVersion.value;
+  
 
-        return CircleAvatar(
-          radius: 24,
-          backgroundImage: picturePath != null
-              ? NetworkImage('$picturePath?v=$version')
-              : null,
-          child: picturePath == null || picturePath.isEmpty
-              ? Text(content!.author.name.isNotEmpty
-                  ? content!.author.name[0].toUpperCase()
-                  : '?')
-              : null,
-        );
-      });
+  // Replace the _buildAuthorAvatar method in SpecificPostScreen with this:
+
+Widget _buildAuthorAvatar() {
+  final userController = Get.find<UserController>();
+
+  // For current user - use reactive profile picture
+  if (_isAuthorCurrentUser()) {
+    return Obx(() {
+      final picturePath = userController.getFullProfilePicturePath();
+      final version = userController.profilePictureVersion.value;
+
+      return CircleAvatar(
+        key: ValueKey('specific_post_avatar_${content!.author.id}_$version'),
+        radius: 24,
+        backgroundColor: Colors.grey[300],
+        backgroundImage: picturePath != null && picturePath.isNotEmpty
+            ? CachedNetworkImageProvider('$picturePath?v=$version')
+            : null,
+        child: picturePath == null || picturePath.isEmpty
+            ? Text(
+                content!.author.name.isNotEmpty
+                    ? content!.author.name[0].toUpperCase()
+                    : '?',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              )
+            : null,
+      );
+    });
+  }
+
+  // ✅ For other users - directly use the URL from content
+  final authorPicture = content!.author.picture;
+  
+  // Format the image URL
+  String? imageUrl;
+  if (authorPicture.isNotEmpty) {
+    if (authorPicture.startsWith('http')) {
+      imageUrl = authorPicture;
+    } else {
+      imageUrl = 'http://182.93.94.210:3067$authorPicture';
     }
+  }
 
-    return CachedNetworkImage(
-      imageUrl: content!.author.picture,
-      imageBuilder: (context, imageProvider) => CircleAvatar(
-        radius: 24,
-        backgroundImage: imageProvider,
-      ),
-      placeholder: (context, url) => const CircleAvatar(
-        radius: 24,
-        child: CircularProgressIndicator(strokeWidth: 2.0),
-      ),
-      errorWidget: (context, url, error) => CircleAvatar(
-        radius: 24,
-        child: Text(
-          content!.author.name.isNotEmpty
-              ? content!.author.name[0].toUpperCase()
-              : '?',
+  debugPrint('🖼️ Loading avatar for ${content!.author.name}');
+  debugPrint('   Picture path: $authorPicture');
+  debugPrint('   Full URL: $imageUrl');
+
+  // If no image URL, show initials
+  if (imageUrl == null || imageUrl.isEmpty) {
+    debugPrint('   ⚠️ No image URL, showing initials');
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: Colors.grey[400],
+      child: Text(
+        content!.author.name.isNotEmpty
+            ? content!.author.name[0].toUpperCase()
+            : '?',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );
   }
+
+  // Show image with caching
+  return CachedNetworkImage(
+    imageUrl: imageUrl,
+    imageBuilder: (context, imageProvider) {
+      debugPrint('   ✅ Image loaded successfully');
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey[300],
+        backgroundImage: imageProvider,
+      );
+    },
+    placeholder: (context, url) {
+      debugPrint('   ⏳ Loading image...');
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey[300],
+        child: Container(
+          width: 20,
+          height: 20,
+          child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+        ),
+      );
+    },
+    errorWidget: (context, url, error) {
+      debugPrint('   ❌ Error loading image: $error');
+      debugPrint('   ❌ Failed URL: $url');
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey[400],
+        child: Text(
+          content!.author.name.isNotEmpty
+              ? content!.author.name[0].toUpperCase()
+              : '?',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    },
+    memCacheWidth: 96,
+    memCacheHeight: 96,
+  );
+}
 
   Widget _buildStatusSection() {
     return Container(
@@ -461,6 +638,7 @@ class _SpecificPostScreenState extends State<SpecificPostScreen>
             ),
           ),
         );
+        
       }
       // } else if (optimizedFile.type == 'video') {
       //   return Container(
@@ -878,30 +1056,131 @@ class SpecificPostContent {
   bool get hasMedia => files.isNotEmpty || optimizedFiles.isNotEmpty;
 
   factory SpecificPostContent.fromJson(Map<String, dynamic> json) {
-    return SpecificPostContent(
-      id: json['_id'] ?? '',
-      status: json['status'] ?? '',
-      files: List<String>.from(json['files'] ?? []),
-      type: json['type'] ?? '',
-      author: SpecificPostAuthor.fromJson(json['author'] ?? {}),
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      views: json['views'] ?? 0,
-      isShared: json['isShared'] ?? false,
-      optimizedFiles: (json['optimizedFiles'] as List<dynamic>? ?? [])
-          .map((file) => OptimizedFile.fromJson(file))
-          .toList(),
-      contentType: json['contentType'] ?? '',
-      engagement: SpecificPostEngagement.fromJson(json['engagement'] ?? {}),
-      metadata: SpecificPostMetadata.fromJson(json['metadata'] ?? {}),
-    );
+    try {
+      debugPrint('🔍 Parsing SpecificPostContent');
+      debugPrint('   - author type: ${json['author']?.runtimeType}');
+      debugPrint('   - engagement type: ${json['engagement']?.runtimeType}');
+      debugPrint('   - metadata type: ${json['metadata']?.runtimeType}');
+      
+      // CRITICAL FIX: Parse nested objects that might be Strings
+      Map<String, dynamic> authorData = _parseNestedJson(json['author'], 'author');
+      Map<String, dynamic> engagementData = _parseNestedJson(json['engagement'], 'engagement');
+      Map<String, dynamic> metadataData = _parseNestedJson(json['metadata'], 'metadata');
+      
+      // Parse optimizedFiles array
+      List<OptimizedFile> optimizedFilesList = [];
+      if (json['optimizedFiles'] != null) {
+        final optimizedFilesRaw = json['optimizedFiles'];
+        if (optimizedFilesRaw is String) {
+          // If it's a string, parse it
+          try {
+            final parsed = jsonDecode(optimizedFilesRaw) as List<dynamic>;
+            optimizedFilesList = parsed.map((file) => OptimizedFile.fromJson(file as Map<String, dynamic>)).toList();
+          } catch (e) {
+            debugPrint('⚠️ Failed to parse optimizedFiles string: $e');
+          }
+        } else if (optimizedFilesRaw is List) {
+          optimizedFilesList = (optimizedFilesRaw as List<dynamic>)
+              .map((file) {
+                if (file is String) {
+                  try {
+                    final parsed = jsonDecode(file) as Map<String, dynamic>;
+                    return OptimizedFile.fromJson(parsed);
+                  } catch (e) {
+                    debugPrint('⚠️ Failed to parse optimized file: $e');
+                    return null;
+                  }
+                } else if (file is Map<String, dynamic>) {
+                  return OptimizedFile.fromJson(file);
+                } else if (file is Map) {
+                  return OptimizedFile.fromJson(Map<String, dynamic>.from(file as Map));
+                }
+                return null;
+              })
+              .where((file) => file != null)
+              .cast<OptimizedFile>()
+              .toList();
+        }
+      }
+      
+      return SpecificPostContent(
+        id: json['_id'] ?? '',
+        status: json['status'] ?? '',
+        files: List<String>.from(json['files'] ?? []),
+        type: json['type'] ?? '',
+        author: SpecificPostAuthor.fromJson(authorData),
+        createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+        views: json['views'] ?? 0,
+        isShared: json['isShared'] ?? false,
+        optimizedFiles: optimizedFilesList,
+        contentType: json['contentType'] ?? '',
+        engagement: SpecificPostEngagement.fromJson(engagementData),
+        metadata: SpecificPostMetadata.fromJson(metadataData),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error in SpecificPostContent.fromJson: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      debugPrint('📄 JSON keys: ${json.keys.toList()}');
+      rethrow;
+    }
+  }
+  
+  // Helper method to parse nested JSON that might be a String
+  static Map<String, dynamic> _parseNestedJson(dynamic data, String fieldName) {
+    if (data == null) {
+      debugPrint('⚠️ $fieldName is null, returning empty map');
+      return {};
+    }
+    
+    if (data is String) {
+      debugPrint('🔧 $fieldName is String: "$data"');
+      
+      // Special case for author: if it's just a plain string (author name), create a basic author object
+      if (fieldName == 'author') {
+        debugPrint('✅ Creating basic author object from name string');
+        return {
+          '_id': '',
+          'name': data,
+          'email': '',
+          'picture': '',
+        };
+      }
+      
+      // For other fields, try to parse as JSON
+      try {
+        final parsed = jsonDecode(data);
+        if (parsed is Map<String, dynamic>) {
+          return parsed;
+        } else if (parsed is Map) {
+          return Map<String, dynamic>.from(parsed as Map);
+        } else {
+          debugPrint('❌ $fieldName parsed to unexpected type: ${parsed.runtimeType}');
+          return {};
+        }
+      } catch (e) {
+        debugPrint('❌ Failed to parse $fieldName as JSON: $e');
+        debugPrint('   Content: ${data.toString().substring(0, math.min(200, data.toString().length))}');
+        // Return empty map for non-author fields, or basic author for author field
+        return {};
+      }
+    } else if (data is Map<String, dynamic>) {
+      debugPrint('✅ $fieldName is already Map<String, dynamic>');
+      return data;
+    } else if (data is Map) {
+      debugPrint('🔧 $fieldName is generic Map, converting...');
+      return Map<String, dynamic>.from(data as Map);
+    } else {
+      debugPrint('❌ $fieldName has unexpected type: ${data.runtimeType}');
+      return {};
+    }
   }
 }
 
 class SpecificPostAuthor {
-  final String id;
-  final String name;
-  final String email;
-  final String picture;
+  String id;
+  String name;
+  String email;
+  String picture;
 
   SpecificPostAuthor({
     required this.id,
@@ -911,14 +1190,25 @@ class SpecificPostAuthor {
   });
 
   factory SpecificPostAuthor.fromJson(Map<String, dynamic> json) {
-    return SpecificPostAuthor(
-      id: json['_id'] ?? '',
-      name: json['name'] ?? 'Unknown',
-      email: json['email'] ?? '',
-      picture: json['picture'] ?? '',
-    );
+    try {
+      return SpecificPostAuthor(
+        id: json['_id'] ?? json['id'] ?? '',
+        name: json['name'] ?? 'Unknown',
+        email: json['email'] ?? '',
+        picture: json['picture'] ?? '',
+      );
+    } catch (e) {
+      debugPrint('❌ Error parsing SpecificPostAuthor: $e');
+      return SpecificPostAuthor(
+        id: '',
+        name: 'Unknown',
+        email: '',
+        picture: '',
+      );
+    }
   }
 }
+
 
 class OptimizedFile {
   final String url;
@@ -934,12 +1224,23 @@ class OptimizedFile {
   });
 
   factory OptimizedFile.fromJson(Map<String, dynamic> json) {
-    return OptimizedFile(
-      url: json['url'] ?? '',
-      type: json['type'] ?? '',
-      thumbnail: json['thumbnail'],
-      compressed: json['compressed'] ?? false,
-    );
+    try {
+      return OptimizedFile(
+        url: json['url'] ?? '',
+        type: json['type'] ?? '',
+        thumbnail: json['thumbnail'],
+        compressed: json['compressed'] ?? false,
+      );
+    } catch (e) {
+      debugPrint('❌ Error parsing OptimizedFile: $e');
+      // Return default on error
+      return OptimizedFile(
+        url: '',
+        type: '',
+        thumbnail: null,
+        compressed: false,
+      );
+    }
   }
 }
 
@@ -963,15 +1264,29 @@ class SpecificPostEngagement {
   });
 
   factory SpecificPostEngagement.fromJson(Map<String, dynamic> json) {
-    return SpecificPostEngagement(
-      likes: json['likes'] ?? 0,
-      comments: json['comments'] ?? 0,
-      shares: json['shares'] ?? 0,
-      liked: json['liked'] ?? false,
-      commented: json['commented'] ?? false,
-      following: json['following'] ?? false,
-      engagementRate: (json['engagementRate'] ?? 0.0).toDouble(),
-    );
+    try {
+      return SpecificPostEngagement(
+        likes: json['likes'] ?? 0,
+        comments: json['comments'] ?? 0,
+        shares: json['shares'] ?? 0,
+        liked: json['liked'] ?? false,
+        commented: json['commented'] ?? false,
+        following: json['following'] ?? false,
+        engagementRate: (json['engagementRate'] ?? 0.0).toDouble(),
+      );
+    } catch (e) {
+      debugPrint('❌ Error parsing SpecificPostEngagement: $e');
+      // Return default on error
+      return SpecificPostEngagement(
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        liked: false,
+        commented: false,
+        following: false,
+        engagementRate: 0.0,
+      );
+    }
   }
 }
 
@@ -991,16 +1306,27 @@ class SpecificPostMetadata {
   });
 
   factory SpecificPostMetadata.fromJson(Map<String, dynamic> json) {
-    return SpecificPostMetadata(
-      canShare: json['canShare'] ?? true,
-      canDownload: json['canDownload'] ?? false,
-      loadPriority: json['loadPriority'] ?? 'normal',
-      isPublic: json['isPublic'] ?? true,
-      processingStatus: json['processingStatus'] ?? 'completed',
-    );
+    try {
+      return SpecificPostMetadata(
+        canShare: json['canShare'] ?? true,
+        canDownload: json['canDownload'] ?? false,
+        loadPriority: json['loadPriority'] ?? 'normal',
+        isPublic: json['isPublic'] ?? true,
+        processingStatus: json['processingStatus'] ?? 'completed',
+      );
+    } catch (e) {
+      debugPrint('❌ Error parsing SpecificPostMetadata: $e');
+      // Return default on error
+      return SpecificPostMetadata(
+        canShare: true,
+        canDownload: false,
+        loadPriority: 'normal',
+        isPublic: true,
+        processingStatus: 'completed',
+      );
+    }
   }
 }
-
 // Enhanced LinkifyText widget for handling URLs in post content
 class _LinkifyText extends StatelessWidget {
   final String text;

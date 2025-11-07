@@ -95,92 +95,92 @@ class FirebaseNotificationService {
   }
 
   // ENHANCED: Call notification handling
-  Future<void> sendCallNotification({
-    required String token,
-    required String callId,
-    required String callerName,
-    required bool isVideoCall,
-  }) async {
-    try {
-      developer.log('📞 Sending ${isVideoCall ? 'video' : 'voice'} call notification');
+  // Future<void> sendCallNotification({
+  //   required String token,
+  //   required String callId,
+  //   required String callerName,
+  //   required bool isVideoCall,
+  // }) async {
+  //   try {
+  //     developer.log('📞 Sending ${isVideoCall ? 'video' : 'voice'} call notification');
       
-      final callType = isVideoCall ? 'Video Call' : 'Voice Call';
+  //     final callType = isVideoCall ? 'Video Call' : 'Voice Call';
       
-      // Enhanced call notification with high priority
-      final androidDetails = AndroidNotificationDetails(
-        _callChannelId,
-        'Call Notifications',
-        channelDescription: 'Incoming call notifications',
-        importance: Importance.max,
-        priority: Priority.max,
-        category: AndroidNotificationCategory.call,
-        fullScreenIntent: true, // Show as full screen
-        ongoing: true, // Keep notification until answered/declined
-        autoCancel: false,
-        showWhen: false,
-        icon: '@mipmap/ic_launcher',
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-        styleInformation: BigTextStyleInformation(
-          'Incoming $callType from $callerName',
-          htmlFormatBigText: true,
-          contentTitle: callType,
-          htmlFormatContentTitle: true,
-        ),
-        actions: [
-          AndroidNotificationAction(
-            'accept_call',
-            'Accept',
-            titleColor: Colors.green,
-          ),
-          AndroidNotificationAction(
-            'decline_call',
-            'Decline',
-            titleColor: Colors.red,
-          ),
-        ],
-        timeoutAfter: 30000, // 30 seconds timeout
-        enableVibration: true,
-        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
-        enableLights: true,
-        ledColor: Colors.blue,
-        playSound: true,
-        sound: const RawResourceAndroidNotificationSound('default'),
-      );
+  //     // Enhanced call notification with high priority
+  //     final androidDetails = AndroidNotificationDetails(
+  //       _callChannelId,
+  //       'Call Notifications',
+  //       channelDescription: 'Incoming call notifications',
+  //       importance: Importance.max,
+  //       priority: Priority.max,
+  //       category: AndroidNotificationCategory.call,
+  //       fullScreenIntent: true, // Show as full screen
+  //       ongoing: true, // Keep notification until answered/declined
+  //       autoCancel: false,
+  //       showWhen: false,
+  //       icon: '@mipmap/ic_launcher',
+  //       largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+  //       styleInformation: BigTextStyleInformation(
+  //         'Incoming $callType from $callerName',
+  //         htmlFormatBigText: true,
+  //         contentTitle: callType,
+  //         htmlFormatContentTitle: true,
+  //       ),
+  //       actions: [
+  //         AndroidNotificationAction(
+  //           'accept_call',
+  //           'Accept',
+  //           titleColor: Colors.green,
+  //         ),
+  //         AndroidNotificationAction(
+  //           'decline_call',
+  //           'Decline',
+  //           titleColor: Colors.red,
+  //         ),
+  //       ],
+  //       timeoutAfter: 30000, // 30 seconds timeout
+  //       enableVibration: true,
+  //       vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
+  //       enableLights: true,
+  //       ledColor: Colors.blue,
+  //       playSound: true,
+  //       sound: const RawResourceAndroidNotificationSound('default'),
+  //     );
 
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-        sound: 'default',
-        interruptionLevel: InterruptionLevel.critical, // Critical for calls
-        categoryIdentifier: 'CALL_CATEGORY',
-      );
+  //     const iosDetails = DarwinNotificationDetails(
+  //       presentAlert: true,
+  //       presentBadge: true,
+  //       presentSound: true,
+  //       sound: 'default',
+  //       interruptionLevel: InterruptionLevel.critical, // Critical for calls
+  //       categoryIdentifier: 'CALL_CATEGORY',
+  //     );
 
-      final notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
+  //     final notificationDetails = NotificationDetails(
+  //       android: androidDetails,
+  //       iOS: iosDetails,
+  //     );
 
-      await _flutterLocalNotificationsPlugin.show(
-        callId.hashCode,
-        callType,
-        'Incoming $callType from $callerName',
-        notificationDetails,
-        payload: jsonEncode({
-          'type': 'call',
-          'callId': callId,
-          'callerName': callerName,
-          'isVideoCall': isVideoCall,
-          'action': 'incoming_call',
-        }),
-      );
+  //     await _flutterLocalNotificationsPlugin.show(
+  //       callId.hashCode,
+  //       callType,
+  //       'Incoming $callType from $callerName',
+  //       notificationDetails,
+  //       payload: jsonEncode({
+  //         'type': 'call',
+  //         'callId': callId,
+  //         'callerName': callerName,
+  //         'isVideoCall': isVideoCall,
+  //         'action': 'incoming_call',
+  //       }),
+  //     );
       
-      developer.log('✅ Call notification displayed');
+  //     developer.log('✅ Call notification displayed');
       
-    } catch (e) {
-      developer.log('❌ Error showing call notification: $e');
-    }
-  }
+  //   } catch (e) {
+  //     developer.log('❌ Error showing call notification: $e');
+  //   }
+  // }
 
   // ENHANCED: Handle call notification actions
   // void _handleCallNotificationAction(String action, Map<String, dynamic> data) {

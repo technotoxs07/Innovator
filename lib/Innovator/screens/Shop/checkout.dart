@@ -628,7 +628,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             const SizedBox(height: 16),
             _buildTextField('Notes(Optional)',_notesController, 'Order Notes (Optional)', Icons.note, maxLines: 2),
             const SizedBox(height: 20),
-            
+             
           ],
         ),
       ),
