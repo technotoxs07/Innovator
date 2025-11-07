@@ -295,11 +295,7 @@ class _CartScreenState extends State<CartScreen>
   },
   style: ElevatedButton.styleFrom(
    backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-<<<<<<< HEAD
     padding: const EdgeInsets.symmetric(vertical: 20),
-=======
-    padding: const EdgeInsets.symmetric(vertical: 16),
->>>>>>> 4d543bd49a85fcd9326e6b9ccf929d864cfbf238
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
     ),

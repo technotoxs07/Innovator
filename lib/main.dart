@@ -29,8 +29,8 @@ import 'dart:developer' as developer;
 // ============================================================================
 late Size mq;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
 // ✅ CRITICAL: Track Firebase initialization state
 bool _isFirebaseInitialized = false;
 
@@ -562,4 +562,4 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       ),
     );
   }
-} 
+}

@@ -843,11 +843,7 @@ IconButton(
           Expanded(
             child: GridView.builder(
               controller: _scrollController,
-<<<<<<< HEAD
               padding: EdgeInsets.only(right: 5,left:5,bottom: 45),
-=======
-              padding: EdgeInsets.only(right: 5,left:5),
->>>>>>> 4d543bd49a85fcd9326e6b9ccf929d864cfbf238
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisSpacing: 10,
                 crossAxisCount: 2,
@@ -1028,8 +1024,4 @@ Widget _buildProductCard(dynamic product) {
       ),
     ),
   );
-<<<<<<< HEAD
 }}
-=======
-}}
->>>>>>> 4d543bd49a85fcd9326e6b9ccf929d864cfbf238
