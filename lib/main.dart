@@ -2,16 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
-import 'package:innovator/Innovator/services/Notification_Like.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
@@ -22,19 +21,17 @@ import 'package:innovator/Innovator/screens/chatApp/chatlistpage.dart';
 import 'package:innovator/Innovator/screens/chatApp/chatscreen.dart';
 import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/Innovator/services/Daily_Notifcation.dart';
+import 'package:innovator/Innovator/services/Firebase_Messaging.dart';
+import 'dart:developer' as developer;
 
 // ============================================================================
 // GLOBAL VARIABLES
 // ============================================================================
 late Size mq;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-// CRITICAL: Initialize this immediately (not late)
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
-
-// Global notification service
-NotificationService? globalNotificationService;
+// ✅ CRITICAL: Track Firebase initialization state
 bool _isFirebaseInitialized = false;
 
 // ============================================================================
@@ -43,223 +40,359 @@ bool _isFirebaseInitialized = false;
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
+    // ✅ FIX: Check if Firebase is already initialized
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-    developer.log('🔔 Background: ${message.messageId}');
+    await _showBackgroundNotification(message);
   } catch (e) {
     developer.log('❌ Background handler error: $e');
   }
 }
 
-// ============================================================================
-// FAST CRITICAL INIT - Only Firebase (< 100ms)
-// ============================================================================
-Future<void> _initializeCritical() async {
+Future<void> _showBackgroundNotification(RemoteMessage message) async {
   try {
-    // Initialize Firebase - super fast
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      _isFirebaseInitialized = true;
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-      developer.log('✅ Firebase ready (fast)');
-    }
+    final title = message.notification?.title ?? 'New Notification';
+    final body = message.notification?.body ?? 'You have a new notification';
+
+    const androidDetails = AndroidNotificationDetails(
+      'general_notifications',
+      'General Notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title,
+      body,
+      const NotificationDetails(android: androidDetails),
+      payload: jsonEncode(message.data),
+    );
   } catch (e) {
-    developer.log('❌ Firebase init failed: $e');
+    developer.log('❌ Background notification error: $e');
   }
 }
 
 // ============================================================================
-// DEFERRED INIT - Everything else runs AFTER UI shows
+// INITIALIZATION FUNCTIONS
 // ============================================================================
-Future<void> _initializeDeferred() async {
+
+// ✅ STEP 1: Initialize ONLY what's needed for first screen
+Future<void> _initializeCriticalOnly() async {
   try {
-    developer.log('🔧 Starting deferred init...');
+    developer.log('🚀 Starting critical initialization...');
     
-    // Small delay to let UI render first
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Initialize local notifications
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     
-    // Step 1: Initialize notification service
-    developer.log('🔔 Initializing notifications...');
-    globalNotificationService = NotificationService();
-    await globalNotificationService!.initialize();
-    developer.log('✅ Notifications ready');
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
     
-    // Step 2: Setup FCM listeners IMMEDIATELY
-    _setupFCMListeners();
+    await flutterLocalNotificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (details) {
+        if (details.payload != null) {
+          try {
+            final data = jsonDecode(details.payload!);
+            _navigateToChatFromNotification(data);
+          } catch (e) {
+            developer.log('Notification tap error: $e');
+          }
+        }
+      },
+    );
+
+    // Create notification channel
+    final androidPlugin = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'chat_messages',
+          'Chat Messages',
+          importance: Importance.high,
+          enableVibration: true,
+          playSound: true,
+        ),
+      );
+    }
     
-    // Step 3: Initialize other services in parallel (non-blocking)
-    Future.wait([
+    developer.log('✅ Critical initialization complete');
+  } catch (e) {
+    developer.log('❌ Critical init failed: $e');
+  }
+}
+
+// ✅ STEP 2: Initialize non-critical services in parallel
+Future<void> _initializeNonCriticalServices() async {
+  try {
+    developer.log('🔧 Starting non-critical services...');
+    
+    await Future.wait([
+      _initializeFirebase(),
       _initializeAppData(),
       _initializeDailyNotifications(),
     ], eagerError: false);
     
-    developer.log('✅ Deferred init complete');
+    developer.log('✅ Non-critical services complete');
   } catch (e) {
-    developer.log('❌ Deferred init error: $e');
+    developer.log('❌ Non-critical services error: $e');
+  }
+}
+
+Future<void> _initializeFirebase() async {
+  try {
+    // ✅ FIX: Only initialize if not already initialized
+    if (_isFirebaseInitialized) {
+      developer.log('ℹ️ Firebase already initialized, skipping...');
+      return;
+    }
+
+    if (Firebase.apps.isEmpty) {
+      developer.log('🔥 Initializing Firebase...');
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      _isFirebaseInitialized = true;
+      
+      // Set background message handler AFTER initialization
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      
+      developer.log('✅ Firebase initialized successfully');
+    } else {
+      developer.log('ℹ️ Firebase already initialized (apps exist)');
+      _isFirebaseInitialized = true;
+    }
+  } catch (e) {
+    developer.log('❌ Firebase init failed: $e');
+    _isFirebaseInitialized = false;
   }
 }
 
 Future<void> _initializeAppData() async {
   try {
+    developer.log('📦 Initializing AppData...');
     await AppData().initialize();
-    developer.log('✅ AppData ready');
+    developer.log('✅ AppData initialized');
   } catch (e) {
-    developer.log('⚠️ AppData failed: $e');
+    developer.log('⚠️ AppData init failed, trying offline: $e');
     try {
       await AppData().initializeOffline();
-      developer.log('✅ AppData offline mode');
-    } catch (_) {}
+      developer.log('✅ AppData initialized (offline mode)');
+    } catch (offlineError) {
+      developer.log('❌ Offline init failed: $offlineError');
+    }
   }
 }
 
 Future<void> _initializeDailyNotifications() async {
   try {
+    developer.log('📅 Initializing daily notifications...');
     await DailyNotificationService.initialize();
-    developer.log('✅ Daily notifications ready');
+    developer.log('✅ Daily notifications initialized');
   } catch (e) {
-    developer.log('⚠️ Daily notifications failed: $e');
+    developer.log('⚠️ Daily notification failed (non-critical): $e');
   }
 }
 
-// ============================================================================
-// SETUP FCM LISTENERS
-// ============================================================================
-void _setupFCMListeners() {
-  if (globalNotificationService == null) {
-    developer.log('❌ Cannot setup listeners - service not ready!');
-    return;
+// ✅ STEP 3: Initialize deferred services after UI is shown
+Future<void> _initializeDeferredServices() async {
+  try {
+    developer.log('⏰ Starting deferred services...');
+    
+    // Wait for UI to render
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // ✅ Make sure Firebase is initialized before these services
+    if (!_isFirebaseInitialized) {
+      developer.log('⚠️ Firebase not ready, initializing now...');
+      await _initializeFirebase();
+    }
+    
+    await Future.wait([
+      _initializeNotificationServices(),
+      _setupNotificationListeners(),
+    ], eagerError: false);
+    
+    developer.log('✅ Deferred services complete');
+  } catch (e) {
+    developer.log('❌ Deferred services error: $e');
   }
+}
 
-  // FOREGROUND MESSAGE HANDLER
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    developer.log('📨 ═══════════════════════════════════════');
-    developer.log('📨 FOREGROUND MESSAGE!');
-    developer.log('📨 Title: ${message.notification?.title}');
-    developer.log('📨 Body: ${message.notification?.body}');
-    developer.log('📨 Data: ${message.data}');
-    developer.log('📨 ═══════════════════════════════════════');
-    
-    // Show notification
-    globalNotificationService?.handleForegroundMessage(message);
-    
-    // Show in-app banner (non-blocking)
-    _showInAppBanner(message);
-  }, onError: (error) {
-    developer.log('❌ Foreground listener error: $error');
-  });
+Future<void> _initializeNotificationServices() async {
+  try {
+    // ✅ Check Firebase is ready
+    if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
+      developer.log('⚠️ Cannot initialize notification service - Firebase not ready');
+      return;
+    }
 
-  // App opened from notification
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    developer.log('📱 App opened from notification');
-    _handleNotificationTap(message.data);
-  });
+    developer.log('🔔 Initializing notification service...');
+    final notificationService = FirebaseNotificationService();
+    Get.put(notificationService, permanent: true);
+    await notificationService.initialize();
+    developer.log('✅ Notification service initialized');
+  } catch (e) {
+    developer.log('❌ Notification service failed: $e');
+  }
+}
 
-  // Initial message
-  FirebaseMessaging.instance.getInitialMessage().then((message) {
-    if (message != null) {
-      developer.log('🚀 Launched from notification');
-      Future.delayed(const Duration(seconds: 1), () {
-        _handleNotificationTap(message.data);
+Future<void> _setupNotificationListeners() async {
+  try {
+    // ✅ Check dependencies
+    if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
+      developer.log('⚠️ Cannot setup listeners - Firebase not ready');
+      return;
+    }
+
+    if (!Get.isRegistered<FirebaseNotificationService>()) {
+      developer.log('⚠️ Cannot setup listeners - Service not registered');
+      return;
+    }
+
+    developer.log('👂 Setting up notification listeners...');
+    final notificationService = Get.find<FirebaseNotificationService>();
+
+    // Foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      developer.log('📨 Foreground message received');
+      notificationService.handleForegroundMessage(message);
+      _showImmediateFeedback(message);
+    });
+
+    // App opened from notification
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      developer.log('📱 App opened from notification');
+      _handleNotificationTapFromMessage(message);
+    });
+
+    // Initial message (app launched from terminated state)
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      developer.log('🚀 App launched from notification');
+      Future.delayed(const Duration(seconds: 2), () {
+        _handleNotificationTapFromMessage(initialMessage);
       });
     }
-  });
-  
-  developer.log('✅ FCM listeners active');
+    
+    developer.log('✅ Notification listeners setup complete');
+  } catch (e) {
+    developer.log('❌ Listener setup failed: $e');
+  }
 }
 
 // ============================================================================
 // NOTIFICATION HANDLERS
 // ============================================================================
-void _showInAppBanner(RemoteMessage message) {
+
+void _showImmediateFeedback(RemoteMessage message) {
   try {
     final title = message.notification?.title ?? 
                   message.data['senderName'] ?? 
                   'New Message';
     final body = message.notification?.body ?? 
                  message.data['message'] ?? 
-                 'New notification';
+                 'New message';
 
-    // Check if GetX is ready before showing snackbar
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (Get.context != null) {
-        Get.snackbar(
-          title,
-          body,
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: const Color.fromRGBO(244, 135, 6, 0.95),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 3),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-          mainButton: TextButton(
-            onPressed: () {
-              Get.back();
-              _handleNotificationTap(message.data);
-            },
-            child: const Text(
-              'View',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        );
-        HapticFeedback.lightImpact();
-      }
-    });
+    Get.snackbar(
+      title,
+      body,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color.fromRGBO(244, 135, 6, 0.95),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      isDismissible: true,
+      mainButton: TextButton(
+        onPressed: () {
+          Get.back();
+          _handleNotificationTapFromMessage(message);
+        },
+        child: const Text(
+          'View',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+
+    HapticFeedback.lightImpact();
   } catch (e) {
-    developer.log('❌ Banner error: $e');
+    developer.log('❌ Immediate feedback error: $e');
   }
 }
 
-void _handleNotificationTap(Map<String, dynamic> data) {
+void _handleNotificationTapFromMessage(RemoteMessage message) {
   try {
-    final type = data['type']?.toString().toLowerCase() ?? '';
-    
-    Future.delayed(const Duration(milliseconds: 100), () {
-      switch (type) {
-        case 'chat':
-        case 'message':
-          final senderId = data['senderId']?.toString() ?? '';
-          final senderName = data['senderName']?.toString() ?? 'Unknown';
-          final chatId = data['chatId']?.toString() ?? '';
+    final data = message.data;
+    final type = data['type']?.toString() ?? '';
 
-          if (senderId.isNotEmpty) {
-            Get.toNamed('/chat', arguments: {
-              'receiverUser': {
-                'id': senderId,
-                'userId': senderId,
-                '_id': senderId,
-                'name': senderName,
-              },
-              'chatId': chatId,
-              'fromNotification': true,
-            });
-          }
-          break;
-          
-        default:
-          Get.toNamed('/home');
-      }
-    });
+    switch (type) {
+      case 'chat':
+      case 'message':
+        _navigateToChatFromNotification(data);
+        break;
+      default:
+        Get.offAllNamed('/home');
+        break;
+    }
   } catch (e) {
-    developer.log('❌ Navigation error: $e');
+    developer.log('❌ Notification tap error: $e');
+  }
+}
+
+void _navigateToChatFromNotification(Map<String, dynamic> data) {
+  try {
+    final senderId = data['senderId']?.toString() ?? '';
+    final senderName = data['senderName']?.toString() ?? 'Unknown';
+    final chatId = data['chatId']?.toString() ?? '';
+
+    if (senderId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.toNamed(
+          '/chat',
+          arguments: {
+            'receiverUser': {
+              'id': senderId,
+              'userId': senderId,
+              '_id': senderId,
+              'name': senderName,
+            },
+            'chatId': chatId,
+            'fromNotification': true,
+          },
+        );
+      });
+    }
+  } catch (e) {
+    developer.log('❌ Chat navigation error: $e');
   }
 }
 
 // ============================================================================
-// MAIN ENTRY POINT - FAST START
+// MAIN ENTRY POINT
 // ============================================================================
+
 void main() async {
+  // Wrap in error handling zone
   runZonedGuarded(() async {
     try {
       developer.log('🚀 App starting...');
       
+      // Ensure Flutter is initialized
       WidgetsFlutterBinding.ensureInitialized();
       
+      // Set system UI
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
@@ -267,29 +400,45 @@ void main() async {
         ),
       );
       
-      // FAST: Only initialize Firebase (< 100ms)
-      await _initializeCritical();
+      // ✅ CRITICAL: Initialize Firebase FIRST before anything else
+      developer.log('🔥 Pre-initializing Firebase in main()...');
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        _isFirebaseInitialized = true;
+        developer.log('✅ Firebase pre-initialized');
+      }
       
-      // START UI IMMEDIATELY
-      developer.log('🎨 Starting UI (fast)...');
+      // Set background message handler (must be after Firebase init)
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      
+      // Initialize critical UI components
+      await _initializeCriticalOnly();
+      
+      // Start the app
+      developer.log('🎨 Starting UI...');
       runApp(const ProviderScope(child: InnovatorHomePage()));
       
-      // Initialize everything else in background (non-blocking)
-      _initializeDeferred();
+      // Initialize non-critical services in background
+      developer.log('🔧 Starting background initialization...');
+      _initializeNonCriticalServices();
       
-      developer.log('✅ App started (UI visible)');
+      developer.log('✅ App started successfully');
     } catch (e, stackTrace) {
-      developer.log('❌ Error: $e\n$stackTrace');
+      developer.log('❌ Critical error in main: $e\n$stackTrace');
+      // Still try to run the app
       runApp(const ProviderScope(child: InnovatorHomePage()));
     }
   }, (error, stackTrace) {
-    developer.log('❌ Uncaught: $error\n$stackTrace');
+    developer.log('❌ Uncaught error: $error\n$stackTrace');
   });
 }
 
 // ============================================================================
 // MAIN APP WIDGET
 // ============================================================================
+
 class InnovatorHomePage extends ConsumerStatefulWidget {
   const InnovatorHomePage({super.key});
 
@@ -301,32 +450,14 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
   @override
   void initState() {
     super.initState();
-    developer.log('🏠 HomePage init');
     
-    // Setup FCM token after UI loads
+    developer.log('🏠 InnovatorHomePage initialized');
+    
+    // Initialize deferred services after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setupFCMToken();
+      developer.log('🎬 First frame rendered, starting deferred services...');
+      _initializeDeferredServices();
     });
-  }
-
-  Future<void> _setupFCMToken() async {
-    try {
-      // Wait a bit for notification service to be ready
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token != null) {
-        developer.log('📱 FCM Token: ${token.substring(0, 20)}...');
-        await AppData().saveFcmToken(token);
-      }
-      
-      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-        developer.log('🔄 Token refreshed');
-        AppData().saveFcmToken(newToken);
-      });
-    } catch (e) {
-      developer.log('❌ FCM token error: $e');
-    }
   }
 
   @override
@@ -340,13 +471,20 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
       onInit: () {
-        developer.log('🎮 GetX init');
+        developer.log('🎮 GetX onInit called');
+        // Lazy initialization of controllers
         try {
-          Get.lazyPut<FireChatController>(() => FireChatController(), fenix: true);
-          Get.lazyPut<CartStateManager>(() => CartStateManager(), fenix: true);
+          Get.lazyPut<FireChatController>(
+            () => FireChatController(), 
+            fenix: true
+          );
+          Get.lazyPut<CartStateManager>(
+            () => CartStateManager(), 
+            fenix: true
+          );
           developer.log('✅ Controllers registered');
         } catch (e) {
-          developer.log('❌ Controller error: $e');
+          developer.log('❌ Controller initialization error: $e');
         }
       },
       getPages: [
@@ -424,4 +562,4 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       ),
     );
   }
-}
+} 

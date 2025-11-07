@@ -620,6 +620,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
            
+<<<<<<< HEAD
             _buildTextField('Full Name *',_nameController, 'Full Name *', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Required' : null),
             const SizedBox(height: 16),
             _buildTextField('Phone Number *',_phoneController, 'Phone Number *', Icons.phone, keyboardType: TextInputType.phone, validator: (v) => v!.length < 10 ? 'Invalid phone' : null),
@@ -629,6 +630,17 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             _buildTextField('Notes(Optional)',_notesController, 'Order Notes (Optional)', Icons.note, maxLines: 2),
             const SizedBox(height: 20),
              
+=======
+            _buildTextField('Full Name',_nameController, 'Full Name *', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Required' : null),
+            const SizedBox(height: 16),
+            _buildTextField('Phone Number',_phoneController, 'Phone Number *', Icons.phone, keyboardType: TextInputType.phone, validator: (v) => v!.length < 10 ? 'Invalid phone' : null),
+            const SizedBox(height: 16),
+            _buildTextField('Delivery Address',_addressController, 'Delivery Address *', Icons.location_on, maxLines: 3, validator: (v) => v!.trim().isEmpty ? 'Required' : null),
+            const SizedBox(height: 16),
+            _buildTextField('Notes(Optional)',_notesController, 'Order Notes (Optional)', Icons.note, maxLines: 2),
+            const SizedBox(height: 20),
+            
+>>>>>>> 4d543bd49a85fcd9326e6b9ccf929d864cfbf238
           ],
         ),
       ),
