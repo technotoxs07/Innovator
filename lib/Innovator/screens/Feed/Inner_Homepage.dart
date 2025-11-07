@@ -1556,66 +1556,95 @@ class ContentData {
   ContentData({required this.contents, required this.hasMore, this.nextCursor});
 
   factory ContentData.fromNewFeedApi(Map<String, dynamic> json) {
-    try {
-      debugPrint('📊 Raw API Response structure:');
-      debugPrint('   - Status: ${json['status']}');
-      debugPrint('   - Message: ${json['message']}');
+  try {
+    debugPrint('📊 Raw API Response structure:');
+    debugPrint('   - Status: ${json['status']}');
+    debugPrint('   - Message: ${json['message']}');
 
-      final data = json['data'] as Map<String, dynamic>? ?? {};
-      debugPrint('📊 Data structure keys: ${data.keys.toList()}');
+    // FIXED: Handle both String and Map types for 'data'
+    Map<String, dynamic> data;
+    
+    if (json['data'] is String) {
+      // If data is a String, parse it as JSON
+      debugPrint('   - Data is String, parsing...');
+      data = jsonDecode(json['data']) as Map<String, dynamic>;
+    } else if (json['data'] is Map<String, dynamic>) {
+      // If data is already a Map, use it directly
+      debugPrint('   - Data is already Map');
+      data = json['data'] as Map<String, dynamic>;
+    } else {
+      debugPrint('   - Data is null or invalid type: ${json['data']?.runtimeType}');
+      data = {};
+    }
 
-      // Parse different content arrays from the API response
-      final normalContentList = data['normalContent'] as List<dynamic>? ?? [];
-      final videoContentList = data['videoContent'] as List<dynamic>? ?? [];
-      final normalList = data['normal'] as List<dynamic>? ?? [];
-      final videosList = data['videos'] as List<dynamic>? ?? [];
+    debugPrint('📊 Data structure keys: ${data.keys.toList()}');
 
-      // Combine all content arrays
-      final allItems = <dynamic>[];
-      allItems.addAll(normalContentList);
-      allItems.addAll(videoContentList);
-      allItems.addAll(normalList);
-      allItems.addAll(videosList);
+    // Parse different content arrays from the API response
+    final normalContentList = data['normalContent'] as List<dynamic>? ?? [];
+    final videoContentList = data['videoContent'] as List<dynamic>? ?? [];
+    final normalList = data['normal'] as List<dynamic>? ?? [];
+    final videosList = data['videos'] as List<dynamic>? ?? [];
 
-      // Parse pagination info
-      final hasMore = data['hasMore'] as bool? ?? false;
-      final nextCursor = data['nextCursor'] as String?;
+    // Combine all content arrays
+    final allItems = <dynamic>[];
+    allItems.addAll(normalContentList);
+    allItems.addAll(videoContentList);
+    allItems.addAll(normalList);
+    allItems.addAll(videosList);
 
-      debugPrint('📊 ContentData parsing:');
-      debugPrint('   - Total items: ${allItems.length}');
-      debugPrint('   - Has more: $hasMore');
-      debugPrint('   - Next cursor: $nextCursor');
+    // Parse pagination info
+    final hasMore = data['hasMore'] as bool? ?? false;
+    final nextCursor = data['nextCursor'] as String?;
 
-      final contents =
-          allItems
-              .map((item) {
-                try {
-                  return FeedContent.fromJson(item as Map<String, dynamic>);
-                } catch (e) {
-                  debugPrint('❌ Error parsing individual content item: $e');
+    debugPrint('📊 ContentData parsing:');
+    debugPrint('   - Total items: ${allItems.length}');
+    debugPrint('   - Has more: $hasMore');
+    debugPrint('   - Next cursor: $nextCursor');
+
+    final contents =
+        allItems
+            .map((item) {
+              try {
+                // Handle case where item might be a String
+                Map<String, dynamic> itemData;
+                if (item is String) {
+                  itemData = jsonDecode(item) as Map<String, dynamic>;
+                } else if (item is Map<String, dynamic>) {
+                  itemData = item;
+                } else {
+                  debugPrint('❌ Invalid item type: ${item.runtimeType}');
                   return null;
                 }
-              })
-              .where((content) => content != null && content.id.isNotEmpty)
-              .cast<FeedContent>()
-              .toList();
+                
+                return FeedContent.fromJson(itemData);
+              } catch (e) {
+                debugPrint('❌ Error parsing individual content item: $e');
+                debugPrint('❌ Item type: ${item.runtimeType}');
+                debugPrint('❌ Item data: ${item.toString().substring(0, math.min(200, item.toString().length))}');
+                return null;
+              }
+            })
+            .where((content) => content != null && content.id.isNotEmpty)
+            .cast<FeedContent>()
+            .toList();
 
-      debugPrint('   - Valid contents parsed: ${contents.length}');
+    debugPrint('   - Valid contents parsed: ${contents.length}');
 
-      // ✅ NEW: Cache all user data immediately after parsing
-      _cacheUsersFromContents(contents);
+    // ✅ Cache all user data immediately after parsing
+    _cacheUsersFromContents(contents);
 
-      return ContentData(
-        contents: contents,
-        hasMore: hasMore,
-        nextCursor: nextCursor,
-      );
-    } catch (e) {
-      debugPrint('❌ ContentData.fromNewFeedApi error: $e');
-      debugPrint('❌ JSON structure: ${json.toString()}');
-      return ContentData(contents: [], hasMore: false, nextCursor: null);
-    }
+    return ContentData(
+      contents: contents,
+      hasMore: hasMore,
+      nextCursor: nextCursor,
+    );
+  } catch (e, stackTrace) {
+    debugPrint('❌ ContentData.fromNewFeedApi error: $e');
+    debugPrint('❌ Stack trace: $stackTrace');
+    debugPrint('❌ JSON structure: ${json.toString().substring(0, math.min(500, json.toString().length))}');
+    return ContentData(contents: [], hasMore: false, nextCursor: null);
   }
+}
 
   // ✅ NEW: Cache user data from feed contents
   static void _cacheUsersFromContents(List<FeedContent> contents) {
