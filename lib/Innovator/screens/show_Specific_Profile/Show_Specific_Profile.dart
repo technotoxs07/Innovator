@@ -910,47 +910,44 @@ SizedBox(width: 30),
 
   Widget _buildProfileInfo(Map<String, dynamic> profileData, BuildContext context) {
 
-    return Padding(
-      padding:  EdgeInsets.only(right: 20.0,left: 20.0,),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  profileData['followers']?.toString() ?? '0',
-                  'Followers',
-                  Icons.people_outline,
-                  Colors.blue,
-                  onTap: () =>
-                      showFollowersFollowingDialog(context, widget.userId),
-                ),
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                profileData['followers']?.toString() ?? '0',
+                'Followers',
+                Icons.people_outline,
+                Colors.blue,
+                onTap: () =>
+                    showFollowersFollowingDialog(context, widget.userId),
               ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: _buildStatCard(
-                  profileData['followings']?.toString() ?? '0',
-                  'Following',
-                  Icons.person_add_outlined,
-                  Colors.green,
-                  onTap: () =>
-                      showFollowersFollowingDialog(context, widget.userId),
-                ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: _buildStatCard(
+                profileData['followings']?.toString() ?? '0',
+                'Following',
+                Icons.person_add_outlined,
+                Colors.green,
+                onTap: () =>
+                    showFollowersFollowingDialog(context, widget.userId),
               ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: _buildStatCard(
-                 profileData['achievements'] != null ? '1' : '0', 
-                  'Achievements',
-                  Icons.emoji_events_outlined,
-                  Colors.orange,
-                ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: _buildStatCard(
+               profileData['achievements'] != null ? '1' : '0', 
+                'Achievements',
+                Icons.emoji_events_outlined,
+                Colors.orange,
               ),
-            ],
-          ),
-          SizedBox(height: 20),
-        ],
-      ),
+            ),
+          ],
+        ),
+        SizedBox(height: 20),
+      ],
     );
   }
 
