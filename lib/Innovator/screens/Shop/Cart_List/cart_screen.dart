@@ -188,16 +188,13 @@ class _CartScreenState extends State<CartScreen>
       key: _scaffoldKey,
       body: Stack(
         children: [
-          Container(
-            padding: EdgeInsets.only(bottom:40),
-            child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
-                    ),
-                  )
-                : _buildCartContent(),
-          ),
+          _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+                  ),
+                )
+              : _buildCartContent(),
           FloatingMenuWidget(),
         ],
       ),
@@ -278,7 +275,7 @@ class _CartScreenState extends State<CartScreen>
         // Checkout button
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(bottom: 20,right: 20,left: 20),
           child: ElevatedButton(
   onPressed: () {
     // Navigate to checkout screen

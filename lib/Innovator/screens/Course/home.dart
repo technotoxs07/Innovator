@@ -2,11 +2,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
-import 'package:innovator/Innovator/controllers/user_controller.dart';
 import 'package:innovator/Innovator/screens/Course/course_details_screen.dart';
 import 'package:innovator/Innovator/models/Course_models.dart';
 import 'package:innovator/Innovator/screens/Course/services/api_services.dart';
-import 'package:innovator/Innovator/utils/Drawer/custom_drawer.dart';
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:developer' as developer;
 
@@ -711,18 +709,17 @@ Widget _buildProfileAvatar(AppData appData) {
             // Course info
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.only(right: 5,left: 5,top: 5),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          course.title,
+                         '${course.title}',
                           style: const TextStyle(
-                            fontSize: 14,
+                    
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -731,19 +728,20 @@ Widget _buildProfileAvatar(AppData appData) {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          course.instructor.name,
+                          '${course.instructor.name}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          // maxLines: 2,
+                          // overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                    Column(
+                    SizedBox(height: 8,),
+                    Row(
                       children: [
-                        Row(
+                       Row(
                           children: [
                             Icon(Icons.star, size: 14, color: Colors.amber[700]),
                             const SizedBox(width: 2),
@@ -763,7 +761,7 @@ Widget _buildProfileAvatar(AppData appData) {
                               ),
                             ),
                           ],
-                        ),
+                        ), 
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -803,41 +801,6 @@ Widget _buildProfileAvatar(AppData appData) {
       default:
         return Colors.grey;
     }
-  }
-
-  //
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _selectedIndex == index;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-        if (index == 1 && AppData().isAuthenticated) {
-          _fetchEnrolledCourses();
-        }
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? const Color.fromRGBO(244, 135, 6, 1) : Colors.grey,
-            size: 26,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isSelected ? const Color.fromRGBO(244, 135, 6, 1) : Colors.grey,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildLoadingWidget() {

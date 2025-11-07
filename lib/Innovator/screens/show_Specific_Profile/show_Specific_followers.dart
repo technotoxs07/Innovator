@@ -688,8 +688,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => SpecificUserProfilePage(userId: userId!), // Non-null assertion
-          ),
+            builder: (_) => SpecificUserProfilePage(userId: userId!),),
         );
       } catch (error) {
         print('Navigation error: $error');
@@ -729,7 +728,10 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
           radius: 22,
           backgroundColor: Colors.grey[300],
           backgroundImage: user['picture'] != null && user['picture'].toString().isNotEmpty
-              ? NetworkImage('http://182.93.94.210:3067${user['picture']}')
+              ? NetworkImage(
+                user['picture'].toString().startsWith('http://')|| user['picture'].toString().startsWith('https://')? user['picture']
+                :'http://182.93.94.210:3067${user['picture']}'
+                )
               : null,
           child: user['picture'] == null || user['picture'].toString().isEmpty
               ? Text(

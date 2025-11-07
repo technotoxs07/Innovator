@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:innovator/Innovator/models/Course_models.dart';
+
 import 'package:innovator/Innovator/screens/Course/services/api_services.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:developer' as developer;
@@ -843,80 +843,89 @@ Widget _buildCourseInfo(Map<String, dynamic> course) {
   }
 
   Widget _buildTabSection() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(5),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
+    return Column(
+      children: [
+        TabBar(
+          // controller: _tabController,
+          // labelColor: const Color.fromRGBO(244, 135, 6, 1),
+          // unselectedLabelColor: Colors.grey,
+          // indicatorColor: const Color.fromRGBO(244, 135, 6, 1),
+          // indicatorWeight: 3,
+                      tabAlignment: TabAlignment.fill,
+                      controller: _tabController,
+                      dividerColor: Colors.transparent,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      unselectedLabelColor:   Color.fromRGBO(244, 135, 6, 1),
+                    
+                      
+                      labelColor: Colors.white,
+                      padding:
+                          const EdgeInsets.only(top: 9, bottom: 9, left: 9),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      labelPadding: EdgeInsets.all(0),
+                      unselectedLabelStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      indicator: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color:   Color.fromRGBO(244, 135, 6, 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withAlpha(20),
+                            spreadRadius: 1,
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.play_lesson, size: 16),
+              
+                  Text('Lessons (${_courseDetail?['lessons']?.length ?? 0})'),
+                ],
               ),
             ),
-            child: TabBar(
-              controller: _tabController,
-              labelColor: const Color.fromRGBO(244, 135, 6, 1),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color.fromRGBO(244, 135, 6, 1),
-              indicatorWeight: 3,
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.play_lesson, size: 16),
-                      const SizedBox(width: 1),
-                      Text('Lessons (${_courseDetail?['lessons']?.length ?? 0})'),
-                    ],
-                  ),
-                ),
-                const Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.note, size: 18),
-                      SizedBox(width: 4),
-                      Text('Notes'),
-                    ],
-                  ),
-                ),
-                const Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.info_outline, size: 18),
-                      SizedBox(width: 4),
-                      Text('About'),
-                    ],
-                  ),
-                ),
-              ],
+            const Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.note, size: 18),
+                  SizedBox(width: 4),
+                  Text('Notes'),
+                ],
+              ),
             ),
-          ),
-          SizedBox(
-            height: 400,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildLessonsTab(),
-                _buildNotesTab(),
-                _buildAboutTab(),
-              ],
+            const Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline, size: 18),
+                  SizedBox(width: 4),
+                  Text('About'),
+                ],
+              ),
             ),
+          ],
+        ),
+        SizedBox(
+          height: 400,
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildLessonsTab(),
+              _buildNotesTab(),
+              _buildAboutTab(),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

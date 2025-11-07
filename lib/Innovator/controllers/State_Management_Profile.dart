@@ -103,22 +103,9 @@ class InstantProfilePicture extends StatelessWidget {
                 width: radius * 2,
                 height: radius * 2,
                 fit: BoxFit.cover,
+             
                 cacheKey: 'user_${userId}_${imageUrl.hashCode}',
-                placeholder: (context, url) => Container(
-                  width: radius * 2,
-                  height: radius * 2,
-                  color: Colors.grey[200],
-                  child: Center(
-                    child: Text(
-                      displayName[0].toUpperCase(),
-                      style: TextStyle(
-                        fontSize: radius * 0.7,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ),
+            
                 errorWidget: (context, url, error) => Container(
                   width: radius * 2,
                   height: radius * 2,
@@ -134,8 +121,7 @@ class InstantProfilePicture extends StatelessWidget {
                     ),
                   ),
                 ),
-                memCacheWidth: (radius * 4).toInt(),
-                memCacheHeight: (radius * 4).toInt(),
+              
               ),
             )
           : Text(

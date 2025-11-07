@@ -248,6 +248,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Color.fromRGBO(244, 135, 6, 1),
         title: Text(_product != null ? _product!['name'] ?? 'Product Detail' : 'Product Detail', style: TextStyle(color: Colors.white),),
@@ -300,6 +301,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final String category = _product!['category']?['name'] ?? 'Uncategorized';
 
     return SingleChildScrollView(
+      
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,19 +521,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Widget _buildBottomBar() {
     final int stock = _product!['stock'] ?? 0;
     
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(10),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
+    return Padding(
+      padding:  EdgeInsets.only(right: 15,left: 15,bottom: 40,top: 5),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Quantity selector
           Container(
@@ -547,14 +540,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    '$_quantity',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                Text(
+                  '$_quantity',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
@@ -566,35 +556,33 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          
+    
           // Add to cart button
-          Expanded(
-            child: ElevatedButton(
-              onPressed: (stock > 0 && !_addingToCart) ? _addToCart : null,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 25),
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey.shade400,
-              ),
-              child: _addingToCart
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      'Add to Cart',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+          ElevatedButton(
+            
+            onPressed: (stock > 0 && !_addingToCart) ? _addToCart : null,
+            style: ElevatedButton.styleFrom(
+                 
+                     backgroundColor: Color.fromRGBO(244, 135, 6, 1),
+              disabledBackgroundColor: Colors.grey.shade400,
+              minimumSize: Size(15, 50)
             ),
+            child: _addingToCart
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Add to Cart',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
       ),

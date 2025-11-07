@@ -418,7 +418,12 @@ void main() async {
       
       // Start the app
       developer.log('🎨 Starting UI...');
-      runApp(const ProviderScope(child: InnovatorHomePage()));
+      runApp( DevicePreview(
+        enabled:kDebugMode,
+        builder:(context) {
+          return ProviderScope(child: InnovatorHomePage());
+        },
+  ));
       
       // Initialize non-critical services in background
       developer.log('🔧 Starting background initialization...');

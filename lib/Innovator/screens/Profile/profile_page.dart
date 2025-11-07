@@ -538,6 +538,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       context: context,
       builder: (context) {
         return Dialog(
+          backgroundColor: Colors.white,
           insetPadding: EdgeInsets.all(16),
           child: Container(
             padding: EdgeInsets.all(16),
@@ -548,10 +549,33 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 TabBar(
+              
                   controller: _tabController,
-                  labelColor: Color.fromRGBO(244, 135, 6, 1),
-                  unselectedLabelColor: Colors.grey,
-                  tabs: [Tab(text: 'Followers'), Tab(text: 'Following')],
+                   labelColor: const Color.fromRGBO(244, 135, 6, 1),
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color.fromRGBO(244, 135, 6, 1),
+                  tabs: [
+                          Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.people_outline, size: 16),
+                  const SizedBox(width: 4),
+                  Text('Followers'),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.person_add_outlined, size: 16),
+                  const SizedBox(width: 4),
+                  Text('Following '),
+                ],
+              ),
+            ),
+      ]
                 ),
                 Expanded(
                   child: TabBarView(
@@ -619,12 +643,18 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                           leading: CircleAvatar(
                             radius: 24,
                             backgroundColor: Color.fromRGBO(235, 111, 70, 0.2),
-                            backgroundImage:
-                                follow.picture != null
-                                    ? NetworkImage(
-                                      'http://182.93.94.210:3067${follow.picture}',
-                                    )
-                                    : null,
+                            // backgroundImage:
+                            //     follow.picture != null
+                            //         ? NetworkImage(
+                            //           'http://182.93.94.210:3067${follow.picture}',
+                            //         )
+                            //         : null,
+                              backgroundImage: follow.picture.toString().isNotEmpty
+              ? NetworkImage(
+                follow.picture.toString().toString().startsWith('http://')|| follow.picture.toString().toString().startsWith('https://')? follow.picture.toString()
+                :'http://182.93.94.210:3067${follow.picture}'
+                )
+              : null,
                             child:
                                 follow.picture == null
                                     ? Icon(
@@ -636,6 +666,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                           title: GestureDetector(
                             child: Text(follow.name),
                             onTap: () {
+                              Navigator.pop(context);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -661,34 +692,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   },
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back),
-                    onPressed:
-                        _currentPageFollowing > 1
-                            ? () {
-                              setState(() {
-                                _currentPageFollowing--;
-                              });
-                            }
-                            : null,
-                  ),
-                  Text('Page $_currentPageFollowing'),
-                  IconButton(
-                    icon: Icon(Icons.arrow_forward),
-                    onPressed:
-                        following.length == _itemsPerPage
-                            ? () {
-                              setState(() {
-                                _currentPageFollowing++;
-                              });
-                            }
-                            : null,
-                  ),
-                ],
-              ),
+              
             ],
           );
         } else {
@@ -738,12 +742,19 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                           leading: CircleAvatar(
                             radius: 24,
                             backgroundColor: Color.fromRGBO(235, 111, 70, 0.2),
-                            backgroundImage:
-                                follower.picture != null
-                                    ? NetworkImage(
-                                      'http://182.93.94.210:3067${follower.picture}',
-                                    )
-                                    : NetworkImage(''),
+                            // backgroundImage:
+                            //     follower.picture != null
+                            //         ? NetworkImage(
+                            //           'http://182.93.94.210:3067${follower.picture}',
+                            //         )
+                            //         : NetworkImage(''),
+
+                               backgroundImage: follower.picture.toString().toString().isNotEmpty
+              ? NetworkImage(
+                follower.picture.toString().toString().startsWith('http://')|| follower.picture.toString().toString().startsWith('https://')? follower.picture.toString()
+                :'http://182.93.94.210:3067${follower.picture.toString()}'
+                )
+              : null,
                             child:
                                 follower.picture == null
                                     ? Icon(
@@ -755,6 +766,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                           title: GestureDetector(
                             child: Text(follower.name),
                             onTap: () {
+                              Navigator.pop(context);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -780,34 +792,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   },
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back),
-                    onPressed:
-                        _currentPageFollowers > 1
-                            ? () {
-                              setState(() {
-                                _currentPageFollowers--;
-                              });
-                            }
-                            : null,
-                  ),
-                  Text('Page $_currentPageFollowers'),
-                  IconButton(
-                    icon: Icon(Icons.arrow_forward),
-                    onPressed:
-                        followers.length == _itemsPerPage
-                            ? () {
-                              setState(() {
-                                _currentPageFollowers++;
-                              });
-                            }
-                            : null,
-                  ),
-                ],
-              ),
+              
             ],
           );
         } else {

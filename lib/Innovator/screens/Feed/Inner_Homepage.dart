@@ -2165,97 +2165,83 @@ class _FeedItemState extends State<FeedItem>
               height: 1.0,
               thickness: 1.0,
             ),
-            Container(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 4.0,
-                  right: 16.0,
-                  bottom: 4.0,
-                  top: 7.0,
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              color: Colors.black,
-                              icon: LikeButton(
-                                contentId: widget.content.id,
-                                initialLikeStatus: widget.content.isLiked,
-                                likeService: likeService,
-                                onLikeToggled: (isLiked) {
-                                  widget.onLikeToggled(isLiked);
-                                  SoundPlayer player = SoundPlayer();
-                                  player.playlikeSound();
-                                },
-                              ),
-                              onPressed: () {},
-                            ),
-                            SizedBox(width: 4.0),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _showComments = !_showComments;
-                                });
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(             
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          LikeButton(
+                              contentId: widget.content.id,
+                              initialLikeStatus: widget.content.isLiked,
+                              likeService: likeService,
+                              onLikeToggled: (isLiked) {
+                                widget.onLikeToggled(isLiked);
+                                SoundPlayer player = SoundPlayer();
+                                player.playlikeSound();
                               },
-                              child: Image.asset(
-                                'assets/icon/comment.png',
-                                color:
-                                    _showComments
-                                        ? Colors.blue.shade700
-                                        : Colors.grey.shade800,
-                                width: 25,
-                                height: 25,
-                              ),
                             ),
-                          ],
+                          SizedBox(width: 4.0),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _showComments = !_showComments;
+                              });
+                            },
+                            child: Image.asset(
+                              'assets/icon/comment.png',
+                              color:
+                                  _showComments
+                                      ? Colors.blue.shade700
+                                      : Colors.grey.shade800,
+                              width: 25,
+                              height: 25,
+                            ),
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: () {
+                          _showShareOptions(context);
+                        },
+                        child: Image.asset(
+                          'assets/icon/send.png',
+                          width: 20,
+                          height: 20,
                         ),
-                        InkWell(
-                          onTap: () {
-                            _showShareOptions(context);
-                          },
-                          child: Image.asset(
-                            'assets/icon/send.png',
-                            width: 20,
-                            height: 20,
+                      ),
+                    ],
+                  ),
+                
+                  Padding(
+                    padding: EdgeInsets.only(left: 10,top: 10),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${widget.content.likes} Likes',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                            fontSize: 11.0,
+                          ),
+                        ),
+                        SizedBox(width: 10.0),
+                        Text(
+                          '${widget.content.comments} Comments',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                            fontSize: 11.0,
                           ),
                         ),
                       ],
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(left: 20.0, bottom: 8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                '${widget.content.likes} Likes',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
-                                  fontSize: 11.0,
-                                ),
-                              ),
-                              SizedBox(width: 10.0),
-                              Text(
-                                '${widget.content.comments} Comments',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
-                                  fontSize: 11.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 

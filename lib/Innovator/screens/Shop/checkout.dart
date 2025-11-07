@@ -115,12 +115,19 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   final Color _backgroundColor = Colors.grey.shade50;
   final Color _cardColor = Colors.white;
   final Color _textColor = Colors.blueGrey.shade800;
+   bool isCOD = false;
+  final double codFee = 120.0;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    _qrTabController = TabController(length: 2, vsync: this);
+    _qrTabController = TabController(length: 3, vsync: this);
+    _qrTabController.addListener(() {
+    if (!_qrTabController.indexIsChanging) {
+      setState(() => isCOD = _qrTabController.index == 2);
+    }
+  });
   }
 
   @override
@@ -149,7 +156,13 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     }
 
     if (_currentStep == 2) {
-      _submitOrder();
+      if(isCOD){
+        _placeCodOrder();
+      }
+      else{
+
+      
+      _submitOrder();}
       return;
     }
 
@@ -165,7 +178,40 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     setState(() => _currentStep--);
     _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
+  double get _finalTotal {
+  return isCOD ? widget.totalAmount + codFee : widget.totalAmount;
+}
 
+//Helper method for the COD
+Future<void> _placeCodOrder() async {
+  setState(() => _isProcessing = true);
+
+  try {
+    final customerInfo = CustomerInfo(
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
+      address: _addressController.text.trim(),
+    );
+
+
+    final response = await _apiService.checkout(
+      customerInfo: customerInfo,
+      paidAmount: _finalTotal,
+      paymentProof: null,                
+      notes: _notesController.text.trim().isNotEmpty
+          ? _notesController.text.trim()
+          : null,
+      isCod: true,                        
+    );
+
+    setState(() => _isProcessing = false);
+    _showOrderSuccessDialog(response);
+  } catch (e) {
+    setState(() => _isProcessing = false);
+    final msg = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+    _showSnackBar('Order failed: $msg', Colors.red);
+  }
+}
   Future<void> _pickPaymentScreenshot() async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -280,65 +326,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  // Future<void> _submitOrder() async {
-  //   if (!_formKey.currentState!.validate()) {
-  //     _currentStep = 0;
-  //     _pageController.jumpToPage(0);
-  //     return;
-  //   }
 
-  //   if (_paymentScreenshot == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Please attach payment screenshot first'), backgroundColor: Colors.orange),
-  //     );
-  //     _currentStep = 2;
-  //     _pageController.jumpToPage(2);
-  //     return;
-  //   }
-
-  //   if (!await _paymentScreenshot!.exists()) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('File missing. Please upload again.'), backgroundColor: Colors.red),
-  //     );
-  //     setState(() => _paymentScreenshot = null);
-  //     return;
-  //   }
-
-  //   setState(() => _isProcessing = true);
-
-  //   try {
-  //     final customerInfo = CustomerInfo(
-  //       name: _nameController.text.trim(),
-  //       phone: _phoneController.text.trim(),
-  //       address: _addressController.text.trim(),
-  //     );
-
-  //     final response = await _apiService.checkout(
-  //       customerInfo: customerInfo,
-  //       paidAmount: widget.totalAmount,
-  //       paymentProof: _paymentScreenshot!,
-  //       notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
-  //     );
-
-  //     setState(() {
-  //       _isProcessing = false;
-  //       _isPaymentVerified = true;
-  //     });
-
-  //     _showOrderSuccessDialog(response);
-  //   } catch (e) {
-  //     setState(() => _isProcessing = false);
-  //     String msg = e.toString();
-  //     if (msg.contains('Exception:')) msg = msg.split('Exception:').last.trim();
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Order failed: $msg'),
-  //         backgroundColor: Colors.red,
-  //         action: SnackBarAction(label: 'RETRY', textColor: Colors.white, onPressed: _submitOrder),
-  //       ),
-  //     );
-  //   }
-  // }
    void _showSnackBar(String message, Color bgColor) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -454,17 +442,15 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             const SizedBox(height: 16),
             _buildStepper(),
             const SizedBox(height: 16),       
-                   const Text('Customer Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-              const SizedBox(height: 24),
+           
             Expanded(
               child: PageView(
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-        
                   _buildCustomerInfoTab(),
                   _buildQRPaymentTab(),
-                  _buildUploadProofTab(),
+             if (!isCOD) _buildUploadProofTab(),
                 ],
               ),
             ),
@@ -482,6 +468,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     final steps = [
       {'icon': Icons.person, 'label': 'Customer Info'},
       {'icon': Icons.qr_code, 'label': 'QR Payment'},
+    if (!isCOD)
       {'icon': Icons.upload_file, 'label': 'Upload Proof'},
     ];
 
@@ -546,6 +533,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         _buildSummaryRow('Total Items', '${widget.itemCount}'),
         _buildSummaryRow('Sub-Total', 'NPR ${widget.totalAmount.toStringAsFixed(2)}'),
         _buildSummaryRow('Shipping', 'NPR 0.00'),
+        if(isCOD)
+        _buildSummaryRow('COD Charge', 'NPR ${codFee.toStringAsFixed(2)}',
+            isTotal: false),
          Container(
       width: double.infinity,
       height: 10,
@@ -556,7 +546,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         dashSpace: 10,
       ),
     ),
-        _buildSummaryRow('Total Amount', 'NPR ${widget.totalAmount.toStringAsFixed(2)}', isTotal: true),
+        _buildSummaryRow('Total Amount', 'NPR ${_finalTotal.toStringAsFixed(2)}', isTotal: true),
       ],
     );
   }
@@ -578,7 +568,15 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   Widget _buildBottomNavigation() {
     final isLastStep = _currentStep == 2;
     final isQRStep = _currentStep == 1;
-    final buttonText = isLastStep ? 'SUBMIT ORDER' : (isQRStep ? 'PAY THE AMOUNT' : 'NEXT');
+    String buttonText;
+    // final buttonText = isLastStep ? 'SUBMIT ORDER' : (isQRStep ? 'PAY THE AMOUNT' : 'NEXT');
+    if (isLastStep) {
+    buttonText = isCOD ? 'PLACE ORDER' : 'SUBMIT ORDER';
+  } else if (isQRStep) {
+    buttonText = isCOD ? 'PLACE ORDER' : 'PAY THE AMOUNT';
+  } else {
+    buttonText = 'NEXT';
+  }
 
     return Container(
       padding: const EdgeInsets.only(bottom: 10),
@@ -614,23 +612,30 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   Widget _buildCustomerInfoTab() {
     return SingleChildScrollView(
    
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-           
-            _buildTextField('Full Name *',_nameController, 'Full Name *', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Required' : null),
-            const SizedBox(height: 16),
-            _buildTextField('Phone Number *',_phoneController, 'Phone Number *', Icons.phone, keyboardType: TextInputType.phone, validator: (v) => v!.length < 10 ? 'Invalid phone' : null),
-            const SizedBox(height: 16),
-            _buildTextField('Delivery Address *',_addressController, 'Delivery Address *', Icons.location_on, maxLines: 3, validator: (v) => v!.trim().isEmpty ? 'Required' : null),
-            const SizedBox(height: 16),
-            _buildTextField('Notes(Optional)',_notesController, 'Order Notes (Optional)', Icons.note, maxLines: 2),
-            const SizedBox(height: 20),
-             
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+            Text('Customer Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+            const SizedBox(height: 24),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+               
+                _buildTextField('Full Name',_nameController, 'Full Name *', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Required' : null),
+                const SizedBox(height: 16),
+                _buildTextField('Phone Number',_phoneController, 'Phone Number *', Icons.phone, keyboardType: TextInputType.phone, validator: (v) => v!.length < 10 ? 'Invalid phone' : null),
+                const SizedBox(height: 16),
+                _buildTextField('Delivery Address',_addressController, 'Delivery Address *', Icons.location_on, maxLines: 3, validator: (v) => v!.trim().isEmpty ? 'Required' : null),
+                const SizedBox(height: 16),
+                _buildTextField('Notes(Optional)',_notesController, 'Order Notes (Optional)', Icons.note, maxLines: 2),
+                const SizedBox(height: 20),
+                
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -692,31 +697,62 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         children: [
           Column(
             children: [
-              Container(
-                // margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.grey.shade100, 
-                border: Border.all(color: Colors.black),
-                borderRadius: BorderRadius.circular(8)),
-                child: TabBar(
-                  controller: _qrTabController,
-                  indicatorSize: TabBarIndicatorSize.tab,
-          
-                  indicator: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 4, offset: const Offset(0, 2))]),
-                  labelColor: _textColor,
-                  unselectedLabelColor: _textColor.withAlpha(60),
-                  tabs:  [
-                    Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.account_balance_wallet, size: 18), SizedBox(width: 8), Text('eSewa')])),
-                    Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.payment, size: 18), SizedBox(width: 8), Text('Laxmi Bank')])),
-                  ],
-                ),
+              TabBar(
+  
+                      
+                        tabAlignment: TabAlignment.fill,
+                      controller: _qrTabController,
+                      dividerColor: Colors.transparent,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      unselectedLabelColor: _primaryColor,
+                      
+                      labelColor: Colors.white,
+                      padding:
+                          const EdgeInsets.only(top: 9, bottom: 9, left: 9),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      labelPadding: EdgeInsets.all(0),
+                      unselectedLabelStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      indicator: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: _primaryColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withAlpha(20),
+                            spreadRadius: 1,
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                tabs:  [
+                  Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.account_balance_wallet, size: 18),  Text('eSewa')])),
+                  Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.account_balance), Text('Laxmi Bank')])),
+                  Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.payment, size: 18),  Text('COD')])),
+                  
+                ],
               ),
-               SizedBox(height: 300, child: TabBarView(controller: _qrTabController, children: [_buildEsewaQRTab(), _buildLaxmiQRTab()])),
+               SizedBox(
+                height: 300, 
+               child: TabBarView(
+                controller: _qrTabController, 
+                children: [
+                  _buildEsewaQRTab(), _buildLaxmiQRTab(),
+                  _buildCodTab()
+             
+               ])),
             ],
           ),
           const SizedBox(height: 16),
+         if (!isCOD) ...[
           _buildPaymentDetailsCard(),
           const SizedBox(height: 16),
           _buildInstructionsCard(),
+        ] 
         ],
       ),
     );
@@ -724,6 +760,22 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 
   Widget _buildEsewaQRTab() => _buildQRTabContent('eSewa Payment', 'assets/images/qr_code.jpeg', Colors.green);
   Widget _buildLaxmiQRTab() => _buildQRTabContent('Laxmi Bank Payment', 'assets/images/laxmi_sunrise.jpeg', Colors.purple);
+  Widget _buildCodTab() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: const [
+        Icon(Icons.local_shipping, size: 80, color: Colors.orange),
+        SizedBox(height: 16),
+        Text('Cash on Delivery',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Text('Pay when you receive the parcel',
+            style: TextStyle(color: Colors.grey)),
+      ],
+    ),
+  );
+}
 
   Widget _buildQRTabContent(String title, String asset, Color color) {
     return Padding(
