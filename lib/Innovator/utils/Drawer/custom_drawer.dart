@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/Innovator/Payment/payment_screen.dart';
 import 'package:innovator/Innovator/controllers/user_controller.dart';
 import 'package:innovator/main.dart';
 import 'package:innovator/Innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
@@ -424,6 +425,9 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       child: Column(
         children: [
           _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
+                 _QuickMenuItem(icon: Icons.help_rounded, title: 'Payment', onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>PaymentScreen()));
+                 }),
           _QuickMenuItem(icon: Icons.person_rounded, title: 'Profile', onTap: _goToProfile),
           _QuickMenuItem(icon: Icons.psychology_rounded, title: 'Eliza ChatBot', onTap: _goToEliza),
           _QuickMenuItem(icon: Icons.event_available, title: 'Events', onTap: _goToEvents),
@@ -431,6 +435,8 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
           _QuickMenuItem(icon: Icons.privacy_tip_rounded, title: 'Privacy & Policy', onTap: _goToPrivacy),
           _QuickMenuItem(icon: Icons.settings, title: 'Settings', onTap: _goToSettings),
           _QuickMenuItem(icon: Icons.help_rounded, title: 'FAQ', onTap: _goToFAQ),
+             
+
           
           const SizedBox(height: 20),
           _buildDivider(),

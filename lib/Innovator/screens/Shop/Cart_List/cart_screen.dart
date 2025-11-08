@@ -1,24 +1,26 @@
-import 'dart:convert';
+
 import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
-import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/Innovator/screens/Shop/Cart_List/Update%20Cart/update_provider.dart';
 import 'package:innovator/Innovator/screens/Shop/Cart_List/api_services.dart';
 import 'package:innovator/Innovator/screens/Shop/checkout.dart';
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import '../../../models/Shop_cart_model.dart';
 
-class CartScreen extends StatefulWidget {
+
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
 
   @override
-  _CartScreenState createState() => _CartScreenState();
+  ConsumerState<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen>
+class _CartScreenState extends ConsumerState<CartScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -51,7 +53,7 @@ class _CartScreenState extends State<CartScreen>
 
     _cartListFuture = _apiService.getCartList().then((cartResponse) {
       setState(() {
-        _localCartItems = List.from(cartResponse.data); // Create local copy
+        _localCartItems = List.from(cartResponse.data);
         _cartItemCount = _localCartItems.length;
         _isLoading = false;
       });
@@ -64,33 +66,65 @@ class _CartScreenState extends State<CartScreen>
     });
   }
 
-  // Local quantity update function
-  void _updateCartItemQuantityLocal(String itemId, int newQuantity) {
-    setState(() {
-      final itemIndex = _localCartItems.indexWhere((item) => item.id == itemId);
-      if (itemIndex != -1) {
-        if (newQuantity <= 0) {
-       return;
-          
+  // Updated quantity update function using Riverpod
+  Future<void> _updateCartItemQuantityLocal(String productId, int newQuantity) async {
+    if (newQuantity <= 0) {
+      return;
+    }
 
-        } else {
-          // Update quantity
-          _localCartItems[itemIndex] = CartItem(
-            id: _localCartItems[itemIndex].id,
-            email: _localCartItems[itemIndex].email,
-            productId: _localCartItems[itemIndex].productId,
-            productName: _localCartItems[itemIndex].productName,
-            price: _localCartItems[itemIndex].price,
-            quantity: newQuantity,
-            v: _localCartItems[itemIndex].v,
-            images: _localCartItems[itemIndex].images,
-          );
-        }
+    // Optimistically update UI
+    setState(() {
+      final itemIndex = _localCartItems.indexWhere((item) => item.productId == productId);
+      if (itemIndex != -1) {
+        _localCartItems[itemIndex] = CartItem(
+          id: _localCartItems[itemIndex].id,
+          email: _localCartItems[itemIndex].email,
+          productId: _localCartItems[itemIndex].productId,
+          productName: _localCartItems[itemIndex].productName,
+          price: _localCartItems[itemIndex].price,
+          quantity: newQuantity,
+          v: _localCartItems[itemIndex].v,
+          images: _localCartItems[itemIndex].images,
+        );
       }
     });
 
-    // Optional: Sync with server in background (without blocking UI)
-    _syncWithServerInBackground(itemId, newQuantity);
+    // Update via API using Riverpod
+    try {
+      final result = await ref.read(
+        updateCartProvider((productId, newQuantity)).future,
+      );
+      
+      log('Cart updated successfully: ${result.product}, quantity: ${result.quantity}');
+      
+      // Optional: Show success feedback
+   if(kDebugMode)   if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Cart updated'),
+            backgroundColor: _accentColor,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(milliseconds: 800),
+          ),
+        );
+      }
+    } catch (e) {
+      log('Failed to update cart: $e');
+      
+      // Revert the optimistic update on error
+      _loadCartItems();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to update cart. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   // Local delete function
@@ -105,34 +139,20 @@ class _CartScreenState extends State<CartScreen>
         content: const Text('Item removed from cart'),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 800),
-        
+        duration: const Duration(milliseconds: 800),
       ),
     );
 
-    // Optional: Sync with server in background
+    // Sync with server in background
     _syncDeleteWithServerInBackground(itemId);
-  }
-
-  // Background sync functions (optional - won't block UI)
-  Future<void> _syncWithServerInBackground(String itemId, int newQuantity) async {
-    try {
-      // If you have an update API endpoint, use it here
-      // await _apiService.updateCartItem(itemId, newQuantity);
-      print('Synced item $itemId with quantity $newQuantity to server');
-    } catch (e) {
-      print('Background sync failed: $e');
-      // Don't show error to user since this is background sync
-    }
   }
 
   Future<void> _syncDeleteWithServerInBackground(String itemId) async {
     try {
       await _apiService.deleteCartItem(itemId);
-      print('Synced deletion of item $itemId to server');
+      log('Synced deletion of item $itemId to server');
     } catch (e) {
-      print('Background delete sync failed: $e');
-      // Don't show error to user since this is background sync
+      log('Background delete sync failed: $e');
     }
   }
 
@@ -149,31 +169,35 @@ class _CartScreenState extends State<CartScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:  Row(
+        title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('My Cart',style: TextStyle(
-              fontWeight: FontWeight.normal,
-              fontSize: 22,
-              color: Colors.black),),
-              SizedBox(width: 8,),
-
-            Text(' $_cartItemCount Items',style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500),)
+            const Text(
+              'My Cart',
+              style: TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 22,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$_cartItemCount Items',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
+            )
           ],
         ),
         centerTitle: true,
-        // backgroundColor: Color.fromRGBO(244, 135, 6, 1),
         backgroundColor: Colors.white,
         elevation: 0,
- 
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Colors.grey.shade200,
-            // borderRadius: BorderRadius.circular(8),
-            shape: BoxShape.circle
+            shape: BoxShape.circle,
           ),
           child: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new),
@@ -195,7 +219,7 @@ class _CartScreenState extends State<CartScreen>
                   ),
                 )
               : _buildCartContent(),
-          FloatingMenuWidget(),
+          const FloatingMenuWidget(),
         ],
       ),
     );
@@ -249,10 +273,8 @@ class _CartScreenState extends State<CartScreen>
 
     return Column(
       children: [
-        // Cart items list
         Flexible(
           child: ListView.builder(
-            // padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: _localCartItems.length,
             itemBuilder: (context, index) {
               final item = _localCartItems[index];
@@ -260,52 +282,48 @@ class _CartScreenState extends State<CartScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildCartItemCard(item),
-                  Divider(
-     thickness: 1,
-     endIndent: 10,
-     indent: 10,
-    ),
+                  const Divider(
+                    thickness: 1,
+                    endIndent: 10,
+                    indent: 10,
+                  ),
                 ],
               );
-              
             },
           ),
         ),
-       
-        // Checkout button
         Container(
           width: double.infinity,
-              padding: const EdgeInsets.only(bottom: 20,right: 20,left: 20),
+          padding: const EdgeInsets.only(bottom: 20, right: 20, left: 20),
           child: ElevatedButton(
-  onPressed: () {
-    // Navigate to checkout screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CheckoutScreen(
-          totalAmount: totalCartValue,
-          itemCount: _localCartItems.length,
-          cartItems: _localCartItems,
-        ),
-      ),
-    );
-  },
-  style: ElevatedButton.styleFrom(
-   backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-    padding: const EdgeInsets.symmetric(vertical: 20),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    elevation: 3,
-  ),
-  child: Text(
-    'PROCEED TO CHECKOUT (Rs ${totalCartValue})',
-    style: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CheckoutScreen(
+                    totalAmount: totalCartValue,
+                    itemCount: _localCartItems.length,
+                    cartItems: _localCartItems,
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+            ),
+            child: Text(
+              'PROCEED TO CHECKOUT (Rs ${totalCartValue.toStringAsFixed(2)})',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -313,21 +331,15 @@ class _CartScreenState extends State<CartScreen>
 
   Widget _buildCartItemCard(CartItem item) {
     return Padding(
-      padding: EdgeInsets.only(
-        right: 10,
-        left: 10,
-        top: 10
-
-      ),
+      padding: const EdgeInsets.only(right: 10, left: 10, top: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product image
           Container(
-       height: 150,
-       width: 150,
+            height: 150,
+            width: 150,
             decoration: BoxDecoration(
-             border: Border.all(color: _primaryColor.withAlpha(20)),
+              border: Border.all(color: _primaryColor.withAlpha(20)),
               borderRadius: BorderRadius.circular(8),
             ),
             child: ClipRRect(
@@ -342,7 +354,6 @@ class _CartScreenState extends State<CartScreen>
             ),
           ),
           const SizedBox(width: 16),
-          // Product details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,90 +363,121 @@ class _CartScreenState extends State<CartScreen>
                   children: [
                     Flexible(
                       child: Text(
+                        item.productName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        item.productName,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black
-                          ),
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-        
-                    IconButton(onPressed: (){
-                      showAdaptiveDialog(
-                        barrierDismissible: false,
-                        context: context, builder:(context){
-                      
-                        return AlertDialog(
-                          
-                          backgroundColor: Colors.white,
-              
-                          title: Center(child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Remove Item',style: TextStyle(fontWeight: FontWeight.bold),),
-                              SizedBox(width: 8,),
-                              Icon(Icons.warning_amber_rounded,color: Colors.red.shade400,),
-                            ],
-                          )),
-                          content: Text('Are you sure you want to remove this item from your cart?'),
-                          actions: [
-                            TextButton(onPressed: (){
-                              Navigator.pop(context);
-                            }, child: Text('No',style: TextStyle(color: Colors.black54,fontSize: 13),)),
-                            TextButton(onPressed: (){
-                              Navigator.pop(context);
-                               _deleteCartItemLocal(item.id.toString());
-                            }, child: Text('Yes',style: TextStyle(color: Colors.red),)),
-                          ],
+                    IconButton(
+                      onPressed: () {
+                        showAdaptiveDialog(
+                          barrierDismissible: false,
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              backgroundColor: Colors.white,
+                              title: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Remove Item',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.red.shade400,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              content: const Text(
+                                'Are you sure you want to remove this item from your cart?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text(
+                                    'No',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _deleteCartItemLocal(item.id.toString());
+                                  },
+                                  child: const Text(
+                                    'Yes',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         );
-                      });
-                      
-                    }, icon: Icon(Icons.delete,color: Colors.red.shade400,))
+                      },
+                      icon: Icon(
+                        Icons.delete,
+                        color: Colors.red.shade400,
+                      ),
+                    )
                   ],
                 ),
-               
-                    Text('Quantity: ${item.quantity}',style: TextStyle(fontSize: 14,
+                Text(
+                  'Quantity: ${item.quantity}',
+                  style: const TextStyle(
+                    fontSize: 14,
                     color: Colors.black,
                     fontStyle: FontStyle.normal,
-                    fontFamily: 'Monteserrat'),),
+                    fontFamily: 'Monteserrat',
+                  ),
+                ),
                 FittedBox(
                   child: Container(
-                          margin: EdgeInsets.only(top: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(30),
-                              // shape: BoxShape.circle
-                            ),
+                    margin: const EdgeInsets.only(top: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                     child: Row(
-                      children: [               
-                                             // Minus button
+                      children: [
                         Container(
-                                margin: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                               
-                                shape: BoxShape.circle
-                              ),
-                          
+                          margin: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
                           child: IconButton(
-                            icon: Icon(Icons.remove, size: 25,
-                           
-                            color: item.quantity ==1? Colors.grey:Colors.black,),
-                            onPressed:item.quantity>1  ?() {
-                              _updateCartItemQuantityLocal(
-                                item.id.toString(),
-                                item.quantity - 1,
-                              );
-                            }:null,
+                            icon: Icon(
+                              Icons.remove,
+                              size: 25,
+                              color: item.quantity == 1 ? Colors.grey : Colors.black,
+                            ),
+                            onPressed: item.quantity > 1
+                                ? () {
+                                    _updateCartItemQuantityLocal(
+                                      item.productId,
+                                      item.quantity - 1,
+                                    );
+                                  }
+                                : null,
                             padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
+                            constraints: const BoxConstraints(),
                             visualDensity: VisualDensity.compact,
                           ),
                         ),
-                        // Quantity display
                         Container(
                           width: 28,
                           padding: const EdgeInsets.symmetric(
@@ -449,60 +491,55 @@ class _CartScreenState extends State<CartScreen>
                           alignment: Alignment.center,
                           child: Text(
                             '${item.quantity}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
-                              fontSize: 18
-                            
+                              fontSize: 18,
                             ),
                           ),
                         ),
-                        
-                        // Plus button
                         Container(
-                                margin: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                               
-                                shape: BoxShape.circle
-                              ),
+                          margin: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
                           child: IconButton(
-                            icon: Icon(Icons.add, size: 25,color: Colors.black,),
+                            icon: const Icon(
+                              Icons.add,
+                              size: 25,
+                              color: Colors.black,
+                            ),
                             onPressed: () {
-                          
                               _updateCartItemQuantityLocal(
-                                item.id.toString(),
+                                item.productId,
                                 item.quantity + 1,
                               );
-                                  log('Plus button clicked for item: ${item.id}'); 
+                              log('Plus button clicked for item: ${item.productId}');
                             },
                             padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
+                            constraints: const BoxConstraints(),
                             visualDensity: VisualDensity.compact,
                           ),
                         ),
-    
                       ],
                     ),
                   ),
                 ),
-                            // Item total price
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Text(
-                                    '\RS ${(item.price * item.quantity).toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12.8,
-                                      color: Colors.black
-                                    ),
-                                  ),
-                                ),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Text(
+                    'RS ${(item.price * item.quantity).toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12.8,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-    
-
         ],
       ),
     );
@@ -556,4 +593,3 @@ class SafeImage extends StatelessWidget {
     );
   }
 }
-
