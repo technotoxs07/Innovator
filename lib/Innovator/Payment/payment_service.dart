@@ -32,6 +32,7 @@ Future<List<PaymentModel>> fetchPayment() async{
    
 }
  on DioException catch (e){
+   log('$e');
      throw Exception(
       'Failed to get the payment option'
      );
