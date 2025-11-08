@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -559,6 +560,9 @@ SizedBox(width: 30),
   
   Future<Map<String, dynamic>> _fetchUserProfile() async {
   try {
+    debugPrint('🔄 Fetching profile for userId: ${widget.userId}');
+    debugPrint('🔄 Auth token present: ${_appData.authToken != null}');
+    
     final response = await http.get(
       Uri.parse('http://182.93.94.210:3067/api/v1/stalk-profile/${widget.userId}'),
       headers: {
@@ -566,10 +570,27 @@ SizedBox(width: 30),
         'Accept': 'application/json',
         'authorization': 'Bearer ${_appData.authToken}',
       },
+    ).timeout(
+      Duration(seconds: 30),
+      onTimeout: () {
+        throw Exception('Request timed out after 30 seconds');
+      },
     );
 
+    debugPrint('📡 Profile API Response Status: ${response.statusCode}');
+    debugPrint('📡 Profile API Response Body: ${response.body.substring(0, math.min(500, response.body.length))}');
+
     if (response.statusCode == 200) {
-      final profileData = json.decode(response.body)['data'];
+      final responseBody = json.decode(response.body);
+      
+      // Check if data exists in response
+      if (responseBody['data'] == null) {
+        throw Exception('No profile data in response');
+      }
+      
+      final profileData = responseBody['data'];
+      debugPrint('✅ Profile data loaded successfully');
+      debugPrint('📊 Profile keys: ${profileData.keys.toList()}');
       
       // Cache user data in UserController immediately after fetching
       if (profileData['_id'] != _appData.currentUserId) {
@@ -589,10 +610,16 @@ SizedBox(width: 30),
       }
       
       return profileData;
+    } else if (response.statusCode == 404) {
+      throw Exception('User not found (404)');
+    } else if (response.statusCode == 401) {
+      throw Exception('Authentication failed (401)');
     } else {
-      throw Exception('Failed to load profile: ${response.statusCode}');
+      throw Exception('Failed to load profile: ${response.statusCode} - ${response.body}');
     }
   } catch (e) {
+    debugPrint('❌ Error fetching profile: $e');
+    debugPrint('❌ Stack trace: ${StackTrace.current}');
     throw Exception('Error fetching profile: $e');
   }
 }

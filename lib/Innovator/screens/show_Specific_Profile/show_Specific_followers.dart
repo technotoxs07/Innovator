@@ -47,139 +47,227 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
   }
 
   Future<void> _fetchFollowers() async {
-    setState(() {
-      isLoadingFollowers = true;
-      errorFollowers = null;
-    });
+  setState(() {
+    isLoadingFollowers = true;
+    errorFollowers = null;
+  });
 
-    try {
-      final response = await http.get(
-        Uri.parse('http://182.93.94.210:3067/api/v1/followers/${widget.userId}'),
-        headers: {
-          'authorization': 'Bearer ${appData.authToken}',
-          'Content-Type': 'application/json',
-        },
-      );
+  try {
+    final response = await http.get(
+      Uri.parse('http://182.93.94.210:3067/api/v1/followers/${widget.userId}?page=0'),
+      headers: {
+        'authorization': 'Bearer ${appData.authToken}',
+        'Content-Type': 'application/json',
+      },
+    );
 
+    debugPrint('📡 Followers API Status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       
-      if (data['status'] == 200) {
-        final fetchedFollowers = List<Map<String, dynamic>>.from(data['data']);
+      if (data['status'] == 200 && data['data'] != null) {
+        // ✅ Parse as List of Maps - preserving ALL fields including _id
+        final List<dynamic> rawData = data['data'] as List<dynamic>;
+        final fetchedFollowers = rawData.map((item) {
+          return Map<String, dynamic>.from(item as Map);
+        }).toList();
         
-        // ✅ Cache all users in UserController
-        userController.bulkCacheUsers(fetchedFollowers);
+        // Debug first follower
+        if (fetchedFollowers.isNotEmpty) {
+          debugPrint('✅ First follower: ${fetchedFollowers[0]}');
+          debugPrint('✅ Has _id: ${fetchedFollowers[0].containsKey('_id')}');
+        }
+        
+        // Cache users
+        if (Get.isRegistered<UserController>()) {
+          Get.find<UserController>().bulkCacheUsers(fetchedFollowers);
+        }
         
         setState(() {
           followers = fetchedFollowers;
           isLoadingFollowers = false;
         });
+        
+        debugPrint('✅ Loaded ${fetchedFollowers.length} followers');
       } else {
         setState(() {
           errorFollowers = data['message'] ?? 'Failed to load followers';
           isLoadingFollowers = false;
         });
       }
-    } catch (e) {
+    } else {
       setState(() {
-        errorFollowers = 'Network error: $e';
+        errorFollowers = 'Server error: ${response.statusCode}';
         isLoadingFollowers = false;
       });
     }
-  }
-
-  Future<void> _fetchFollowing() async {
+  } catch (e) {
+    debugPrint('❌ Error fetching followers: $e');
     setState(() {
-      isLoadingFollowing = true;
-      errorFollowing = null;
+      errorFollowers = 'Network error: $e';
+      isLoadingFollowers = false;
     });
+  }
+}
 
-    try {
-      final response = await http.get(
-        Uri.parse('http://182.93.94.210:3067/api/v1/following/${widget.userId}'),
-        headers: {
-          'authorization': 'Bearer ${appData.authToken}',
-          'Content-Type': 'application/json',
-        },
-      );
+ Future<void> _fetchFollowing() async {
+  setState(() {
+    isLoadingFollowing = true;
+    errorFollowing = null;
+  });
 
+  try {
+    final response = await http.get(
+      Uri.parse('http://182.93.94.210:3067/api/v1/following/${widget.userId}?page=0'),
+      headers: {
+        'authorization': 'Bearer ${appData.authToken}',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    debugPrint('📡 Following API Status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       
-      if (data['status'] == 200) {
-        final fetchedFollowing = List<Map<String, dynamic>>.from(data['data']);
+      if (data['status'] == 200 && data['data'] != null) {
+        // ✅ Parse as List of Maps - preserving ALL fields including _id
+        final List<dynamic> rawData = data['data'] as List<dynamic>;
+        final fetchedFollowing = rawData.map((item) {
+          return Map<String, dynamic>.from(item as Map);
+        }).toList();
         
-        // ✅ Cache all users in UserController
-        userController.bulkCacheUsers(fetchedFollowing);
+        // Debug first following
+        if (fetchedFollowing.isNotEmpty) {
+          debugPrint('✅ First following: ${fetchedFollowing[0]}');
+          debugPrint('✅ Has _id: ${fetchedFollowing[0].containsKey('_id')}');
+        }
+        
+        // Cache users
+        if (Get.isRegistered<UserController>()) {
+          Get.find<UserController>().bulkCacheUsers(fetchedFollowing);
+        }
         
         setState(() {
           following = fetchedFollowing;
           isLoadingFollowing = false;
         });
+        
+        debugPrint('✅ Loaded ${fetchedFollowing.length} following');
       } else {
         setState(() {
           errorFollowing = data['message'] ?? 'Failed to load following';
           isLoadingFollowing = false;
         });
       }
-    } catch (e) {
+    } else {
       setState(() {
-        errorFollowing = 'Network error: $e';
+        errorFollowing = 'Server error: ${response.statusCode}';
         isLoadingFollowing = false;
       });
     }
+  } catch (e) {
+    debugPrint('❌ Error fetching following: $e');
+    setState(() {
+      errorFollowing = 'Network error: $e';
+      isLoadingFollowing = false;
+    });
   }
+}
 
   void _navigateToProfile(Map<String, dynamic> user) {
-    final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
-    
-    if (isCurrentUser) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This is your profile'),
-          backgroundColor: Colors.blue,
-        ),
-      );
-      return;
-    }
-    
-    String? userId;
-    
-    if (user['_id'] != null && user['_id'].toString().isNotEmpty) {
-      userId = user['_id'].toString();
-    } else if (user['id'] != null && user['id'].toString().isNotEmpty) {
-      userId = user['id'].toString();
-    } else if (user['userId'] != null && user['userId'].toString().isNotEmpty) {
-      userId = user['userId'].toString();
-    } else if (user['email'] != null && user['email'].toString().isNotEmpty) {
-      userId = user['email'].toString();
-    } else if (user['user_id'] != null && user['user_id'].toString().isNotEmpty) {
-      userId = user['user_id'].toString();
-    }
-    
-    if (userId != null && userId.isNotEmpty) {
-      try {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SpecificUserProfilePage(userId: userId!),
-          ),
-        );
-      } catch (error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening profile: $error'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot open profile: User ID not found'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  debugPrint('🔍 Navigating to profile');
+  debugPrint('🔍 User data: $user');
+  debugPrint('🔍 Available keys: ${user.keys.toList()}');
+  
+  // Check if current user
+  final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
+  
+  if (isCurrentUser) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('This is your profile'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 1),
+      ),
+    );
+    return;
   }
+  
+  // Extract user ID with multiple fallbacks
+  String? userId;
+  
+  if (user['_id'] != null && user['_id'].toString().trim().isNotEmpty) {
+    userId = user['_id'].toString().trim();
+    debugPrint('✅ Found _id: $userId');
+  } else if (user['id'] != null && user['id'].toString().trim().isNotEmpty) {
+    userId = user['id'].toString().trim();
+    debugPrint('✅ Found id: $userId');
+  } else if (user['userId'] != null && user['userId'].toString().trim().isNotEmpty) {
+    userId = user['userId'].toString().trim();
+    debugPrint('✅ Found userId: $userId');
+  }
+  
+  // Validate userId
+  if (userId == null || userId.isEmpty || userId == 'null') {
+    debugPrint('❌ No valid user ID found');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cannot open profile: User ID not found'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    return;
+  }
+  
+  // Validate ObjectId format (24 hex characters)
+  final isValidObjectId = RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(userId);
+  if (!isValidObjectId) {
+    debugPrint('⚠️ Warning: Invalid ObjectId format: $userId');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Invalid user ID format'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    return;
+  }
+  
+  debugPrint('🚀 Navigating with userId: $userId');
+  
+  try {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SpecificUserProfilePage(userId: userId!),
+      ),
+    ).then((value) {
+      debugPrint('🔙 Returned from profile page');
+    }).catchError((error) {
+      debugPrint('❌ Navigation error: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening profile'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    });
+  } catch (error) {
+    debugPrint('❌ Exception: $error');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error opening profile'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
 
   Widget _buildUserProfilePicture(Map<String, dynamic> user) {
     final userId = user['_id'] ?? user['id'] ?? user['userId'] ?? '';
@@ -261,63 +349,64 @@ class _FollowersFollowingScreenState extends State<FollowersFollowingScreen> wit
   }
 
   Widget _buildUserTile(Map<String, dynamic> user) {
-    final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.grey[800]?.withAlpha(30) 
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(5),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
+  
+  // Debug the user data structure
+  debugPrint('🔧 Building tile for user: ${user['name']}');
+  debugPrint('🔧 User has _id: ${user.containsKey('_id')}');
+  debugPrint('🔧 _id value: ${user['_id']}');
+  
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? Colors.grey[800]?.withAlpha(30) 
+          : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withAlpha(5),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: ListTile(
+      onTap: isCurrentUser ? null : () {
+        // Pass the ENTIRE user object to _navigateToProfile
+        _navigateToProfile(user);
+      },
+      leading: _buildUserProfilePicture(user),
+      title: Text(
+        user['name'] ?? 'Unknown User',
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
       ),
-      child: ListTile(
-        onTap: isCurrentUser ? null : () => _navigateToProfile(user),
-        leading: _buildUserProfilePicture(user),
-        title: Text(
-          user['name'] ?? 'Unknown User',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Text(
-          user['email'] ?? '',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
-        ),
-        trailing: isCurrentUser 
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha(1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'You', 
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              )
-            : const Icon(
-                Icons.arrow_forward_ios, 
-                size: 16, 
-                color: Colors.grey,
+      trailing: isCurrentUser 
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue.withAlpha(1),
+                borderRadius: BorderRadius.circular(8),
               ),
-      ),
-    );
-  }
+              child: const Text(
+                'You', 
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            )
+          : const Icon(
+              Icons.arrow_forward_ios, 
+              size: 16, 
+              color: Colors.grey,
+            ),
+    ),
+  );
+}
 
   Widget _buildFollowersList() {
     if (isLoadingFollowers) {
@@ -646,70 +735,101 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
   }
 
   void _navigateToProfile(Map<String, dynamic> user) {
-    final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
-    
-    if (isCurrentUser) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This is your profile'),
-          backgroundColor: Colors.blue,
-        ),
-      );
-      return;
-    }
-    
-    // Close the dialog first
-    Navigator.of(context).pop();
-    
-    // Debug: Print user data to understand the structure
-    print('User data: $user');
-    print('Available keys: ${user.keys.toList()}');
-    
-    // Try different possible ID fields based on your API response
-    String? userId;
-    
-    // Check for common ID field names
-    if (user['_id'] != null && user['_id'].toString().isNotEmpty) {
-      userId = user['_id'].toString();
-    } else if (user['id'] != null && user['id'].toString().isNotEmpty) {
-      userId = user['id'].toString();
-    } else if (user['userId'] != null && user['userId'].toString().isNotEmpty) {
-      userId = user['userId'].toString();
-    } else if (user['email'] != null && user['email'].toString().isNotEmpty) {
-      userId = user['email'].toString();
-    } else if (user['user_id'] != null && user['user_id'].toString().isNotEmpty) {
-      userId = user['user_id'].toString();
-    }
-    
-    print('Extracted userId: $userId');
-    
-    if (userId != null && userId.isNotEmpty) {
-      try {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SpecificUserProfilePage(userId: userId!),),
-        );
-      } catch (error) {
-        print('Navigation error: $error');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening profile: $error'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } else {
-      // Show error if no valid ID found
-      print('No valid user ID found in user data: $user');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot open profile: User ID not found'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  // Check if this is the current user
+  final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
+  
+  if (isCurrentUser) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('This is your profile'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+    return;
   }
+  
+  // Debug: Print user data to understand the structure
+  debugPrint('📍 Navigating to profile with user data: $user');
+  debugPrint('📍 Available keys: ${user.keys.toList()}');
+  
+  // Try different possible ID fields based on your API response
+  String? userId;
+  
+  // Priority order for finding user ID
+  if (user['_id'] != null && user['_id'].toString().trim().isNotEmpty) {
+    userId = user['_id'].toString().trim();
+    debugPrint('✅ Found userId from _id: $userId');
+  } else if (user['id'] != null && user['id'].toString().trim().isNotEmpty) {
+    userId = user['id'].toString().trim();
+    debugPrint('✅ Found userId from id: $userId');
+  } else if (user['userId'] != null && user['userId'].toString().trim().isNotEmpty) {
+    userId = user['userId'].toString().trim();
+    debugPrint('✅ Found userId from userId: $userId');
+  } else if (user['user_id'] != null && user['user_id'].toString().trim().isNotEmpty) {
+    userId = user['user_id'].toString().trim();
+    debugPrint('✅ Found userId from user_id: $userId');
+  }
+  
+  // Validate userId before navigation
+  if (userId == null || userId.isEmpty || userId == 'null') {
+    debugPrint('❌ No valid user ID found in user data');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cannot open profile: User ID not found'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    return;
+  }
+  
+  // Additional validation: Check if userId looks like a valid MongoDB ObjectId (24 hex characters)
+  final isValidObjectId = RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(userId);
+  if (!isValidObjectId) {
+    debugPrint('⚠️ Warning: userId "$userId" does not look like a valid ObjectId');
+  }
+  
+  debugPrint('🚀 Navigating to SpecificUserProfilePage with userId: $userId');
+  
+  try {
+    // Close the dialog first (if in dialog version)
+    if (Navigator.canPop(context)) {
+      Navigator.of(context).pop();
+    }
+    
+    // Navigate to profile
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SpecificUserProfilePage(
+          userId: userId!,
+        ),
+      ),
+    ).then((value) {
+      // Optional: Handle any return value or refresh data
+      debugPrint('🔙 Returned from SpecificUserProfilePage');
+    }).catchError((error) {
+      debugPrint('❌ Navigation error: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening profile: $error'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    });
+  } catch (error) {
+    debugPrint('❌ Exception during navigation: $error');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error opening profile: $error'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
 
   Widget _buildUserTile(Map<String, dynamic> user) {
     final isCurrentUser = appData.isCurrentUserByEmail(user['email'] ?? '');
@@ -750,13 +870,13 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
             fontSize: 15,
           ),
         ),
-        subtitle: Text(
-          user['email'] ?? '',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 13,
-          ),
-        ),
+        // subtitle: Text(
+        //   user['email'] ?? '',
+        //   style: TextStyle(
+        //     color: Colors.grey[600],
+        //     fontSize: 13,
+        //   ),
+        // ),
         trailing: isCurrentUser 
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),

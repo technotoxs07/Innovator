@@ -2344,7 +2344,7 @@ class _FeedItemState extends State<FeedItem>
       userController.cacheUserProfilePicture(
         widget.content.author.id,
         widget.content.author.picture.isNotEmpty
-            ? widget.content.author.picture
+            ? widget.content.author.picture 
             : null,
         widget.content.author.name,
       );
