@@ -2099,7 +2099,6 @@ class _FeedItemState extends State<FeedItem>
                         );
                         tp.layout(maxWidth: constraints.maxWidth);
                         final needsExpandCollapse = tp.didExceedMaxLines;
-
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -2108,11 +2107,10 @@ class _FeedItemState extends State<FeedItem>
                               curve: Curves.easeInOut,
                               child: _LinkifyText(
                                 text: widget.content.status,
-
                                 style: TextStyle(
-                                  fontSize: 16.0,
-                                  height: 1.5,
-                                  color: Color(0xFF2D2D2D),
+                                  fontSize: 14.5,
+                                  height: 1.2,
+                                  color:Colors.black,
                                   fontWeight: FontWeight.w500,
                                   letterSpacing: 0.5,
                                   fontStyle: FontStyle.normal,
@@ -2123,7 +2121,7 @@ class _FeedItemState extends State<FeedItem>
                                 overflow:
                                     _isExpanded ? null : TextOverflow.ellipsis,
                               ),
-                            ), // Initailize teh Partaa
+                            ), 
                             if (needsExpandCollapse)
                               Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
