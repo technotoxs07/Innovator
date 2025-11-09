@@ -39,52 +39,52 @@ import '../../models/Feed_Content_Model.dart';
 
 // VideoPlaybackManager class
 
-class LoadingConfig {
-  static const String loadingGifPath =
-      'animation/IdeaBulb.gif'; // Update this path to your GIF file
-}
+// class LoadingConfig {
+//   static const String loadingGifPath =
+//       'animation/IdeaBulb.gif'; // Update this path to your GIF file
+// }
 
 
 // Replace the RefreshIndicator in your build metho
 // Enhanced CacheManager class
-class CacheManager {
-  static const String _cacheKey = 'feed_cache';
-  static const int _maxCacheSize = 100;
-  static List<FeedContent> _memoryCache = [];
+// class CacheManager {
+//   static const String _cacheKey = 'feed_cache';
+//   static const int _maxCacheSize = 100;
+//   static List<FeedContent> _memoryCache = [];
 
-  static Future<void> cacheFeedContent(List<FeedContent> contents) async {
-    try {
-      _memoryCache.addAll(contents);
+//   static Future<void> cacheFeedContent(List<FeedContent> contents) async {
+//     try {
+//       _memoryCache.addAll(contents);
 
-      if (_memoryCache.length > _maxCacheSize) {
-        _memoryCache = _memoryCache.sublist(
-          _memoryCache.length - _maxCacheSize,
-        );
-      }
+//       if (_memoryCache.length > _maxCacheSize) {
+//         _memoryCache = _memoryCache.sublist(
+//           _memoryCache.length - _maxCacheSize,
+//         );
+//       }
 
-      debugPrint(
-        'Cached ${contents.length} feed items. Total cache size: ${_memoryCache.length}',
-      );
-    } catch (e) {
-      debugPrint('Error caching feed content: $e');
-    }
-  }
+//       debugPrint(
+//         'Cached ${contents.length} feed items. Total cache size: ${_memoryCache.length}',
+//       );
+//     } catch (e) {
+//       debugPrint('Error caching feed content: $e');
+//     }
+//   }
 
-  static Future<List<FeedContent>> getCachedFeed() async {
-    try {
-      debugPrint('Retrieved ${_memoryCache.length} cached feed items');
-      return List.from(_memoryCache);
-    } catch (e) {
-      debugPrint('Error getting cached feed: $e');
-      return [];
-    }
-  }
+//   static Future<List<FeedContent>> getCachedFeed() async {
+//     try {
+//       debugPrint('Retrieved ${_memoryCache.length} cached feed items');
+//       return List.from(_memoryCache);
+//     } catch (e) {
+//       debugPrint('Error getting cached feed: $e');
+//       return [];
+//     }
+//   }
 
-  static void clearCache() {
-    _memoryCache.clear();
-    debugPrint('Feed cache cleared');
-  }
-}
+//   static void clearCache() {
+//     _memoryCache.clear();
+//     debugPrint('Feed cache cleared');
+//   }
+// }
 
 // Enhanced Author model
 
@@ -260,9 +260,9 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
 
     // Register FireChatController if not already registered
-    if (!Get.isRegistered<FireChatController>()) {
-      Get.put(FireChatController());
-    }
+    // if (!Get.isRegistered<FireChatController>()) {
+    //   Get.put(FireChatController());
+    // }
 
     _requestNotificationPermission();
     _initializeInfiniteScroll();

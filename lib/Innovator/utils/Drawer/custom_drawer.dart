@@ -425,9 +425,9 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       child: Column(
         children: [
           _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
-                 _QuickMenuItem(icon: Icons.help_rounded, title: 'Payment', onTap: (){
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=>PaymentScreen()));
-                 }),
+                //  _QuickMenuItem(icon: Icons.help_rounded, title: 'Payment', onTap: (){
+                //   Navigator.push(context, MaterialPageRoute(builder: (context)=>PaymentScreen()));
+                //  }),
           _QuickMenuItem(icon: Icons.person_rounded, title: 'Profile', onTap: _goToProfile),
           _QuickMenuItem(icon: Icons.psychology_rounded, title: 'Eliza ChatBot', onTap: _goToEliza),
           _QuickMenuItem(icon: Icons.event_available, title: 'Events', onTap: _goToEvents),

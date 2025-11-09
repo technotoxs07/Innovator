@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:innovator/Innovator/screens/Profile/profile_page.dart';
 import 'package:innovator/innovator_home.dart';
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:convert';
@@ -432,6 +433,33 @@ class _CreatePostScreenState extends State<CreatePostScreen>
     }
   }
 
+  Future<void> _takeVideo() async {
+  try {
+    final XFile? recordedVideo = await _picker.pickVideo(
+      source: ImageSource.camera,
+      maxDuration: const Duration(minutes: 5), // Optional: limit video duration
+    );
+
+    if (recordedVideo != null) {
+      setState(() {
+        _selectedFiles.add(
+          PlatformFile(
+            name: recordedVideo.name,
+            path: recordedVideo.path,
+            size: File(recordedVideo.path).lengthSync(),
+          ),
+        );
+      });
+
+      if (_selectedFiles.isNotEmpty) {
+        _uploadFiles();
+      }
+    }
+  } catch (e) {
+    _showError('Error recording video: $e');
+  }
+}
+
   Future<void> _createPost() async {
     if (_descriptionController.text.trim().isEmpty && _uploadedFiles.isEmpty) {
       _showError('Please enter a description or upload files');
@@ -559,21 +587,26 @@ class _CreatePostScreenState extends State<CreatePostScreen>
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.grey[200],
-                            backgroundImage:
-                                picturePath != null
-                                    ? NetworkImage('$baseUrl$picturePath')
-                                    : null,
-                            child:
-                                picturePath == null
-                                    ? Icon(
-                                      Icons.person,
-                                      size: 40,
-                                      color: Colors.grey,
-                                    )
-                                    : null,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_)=> UserProfileScreen(userId: AppData().currentUserId ?? '',)));
+                            },
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.grey[200],
+                              backgroundImage:
+                                  picturePath != null
+                                      ? NetworkImage('$baseUrl$picturePath')
+                                      : null,
+                              child:
+                                  picturePath == null
+                                      ? Icon(
+                                        Icons.person,
+                                        size: 40,
+                                        color: Colors.grey,
+                                      )
+                                      : null,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -710,17 +743,23 @@ class _CreatePostScreenState extends State<CreatePostScreen>
                               onTap: _captureImage,
                             ),
                             _mediaButton(
+  icon: Icons.videocam,
+  color: Colors.red,
+  label: 'Video',
+  onTap: _takeVideo,
+),
+                            _mediaButton(
                               icon: Icons.photo_library,
                               color: Colors.green,
                               label: 'Photos',
                               onTap: _pickImages,
                             ),
-                            _mediaButton(
-                              icon: Icons.videocam,
-                              color: Colors.red,
-                              label: 'Video',
-                              onTap: _pickFiles,
-                            ),
+                            // _mediaButton(
+                            //   icon: Icons.videocam,
+                            //   color: Colors.red,
+                            //   label: 'Video',
+                            //   onTap: _pickFiles,
+                            // ),
                             _mediaButton(
                               icon: Icons.attach_file,
                               color: Colors.blue,
