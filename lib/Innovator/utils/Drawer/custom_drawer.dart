@@ -430,7 +430,8 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                     _QuickMenuItem(icon: Icons.app_blocking_sharp, title: 'KMS', onTap: (){
                       Navigator.push(context, MaterialPageRoute(builder: (context){
                         return SignupScreen();
-                      }));
+                      })
+                      );
                     }),
           _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
           _QuickMenuItem(icon: Icons.person_rounded, title: 'Profile', onTap: _goToProfile),
