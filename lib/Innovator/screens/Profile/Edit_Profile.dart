@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
@@ -5,6 +6,11 @@ import 'package:innovator/Innovator/screens/Profile/profile_page.dart';
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:http_parser/http_parser.dart';
+import 'package:get/get.dart';
+import 'package:innovator/Innovator/controllers/user_controller.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({Key? key}) : super(key: key);
@@ -34,7 +40,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   String? _selectedGender;
   DateTime? _selectedDob;
   bool _isLoading = false;
+  bool _isUploading = false;
   String? _errorMessage;
+  bool _hasProfilePicture = false;
+  final UserController _userController = Get.put(UserController());
 
   // Theme colors
   static const Color primaryColor = Color.fromRGBO(244, 135, 6, 1);
@@ -102,10 +111,165 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       _selectedDob = appData.currentUser?['dob'] != null
           ? DateTime.parse(appData.currentUser!['dob'])
           : null;
+      // Check if profile picture exists
+      _hasProfilePicture = _userController.profilePicture.value != null && 
+                          _userController.profilePicture.value != '';
     });
   }
 
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+
+      if (image == null) return;
+
+      setState(() {
+        _isUploading = true;
+        _errorMessage = null;
+      });
+
+      // Clear existing image cache before upload
+      final oldImagePath = _userController.getFullProfilePicturePath();
+      if (oldImagePath != null) {
+        imageCache.evict(NetworkImage(oldImagePath));
+        imageCache.evict(
+          NetworkImage(
+            '$oldImagePath?v=${_userController.profilePictureVersion.value}',
+          ),
+        );
+      }
+
+      final File imageFile = File(image.path);
+      final String newPicturePath =
+          await UserProfileService.uploadProfilePicture(imageFile);
+
+      // Update controller with new path and increment version
+      _userController.updateProfilePicture(newPicturePath);
+      await AppData().updateProfilePicture(newPicturePath);
+
+      // Force image cache clear for new image as well
+      imageCache.evict(NetworkImage(newPicturePath));
+
+      // Increment version to force UI rebuild
+      _userController.profilePictureVersion.value++;
+
+      setState(() {
+        _isUploading = false;
+        _hasProfilePicture = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Profile picture updated successfully'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isUploading = false;
+        _errorMessage = 'Failed to upload image: $e';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Failed to upload image: $e')),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _updateProfile() async {
+    // Validate profile picture
+    if (!_hasProfilePicture && 
+        (_userController.profilePicture.value == null || 
+         _userController.profilePicture.value == '')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Please upload a profile picture'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Validate gender
+    if (_selectedGender == null || _selectedGender!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Please select your gender'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Validate date of birth
+    if (_selectedDob == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Please select your date of birth'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -150,6 +314,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           'gender': _selectedGender,
           'dob': _selectedDob?.toIso8601String(),
         });
+
+        // Update UserController name
+        _userController.updateUserName(_nameController.text);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -233,13 +400,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     TextInputType? keyboardType,
     int maxLines = 1,
     String? hintText,
+    bool isRequired = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(
-          labelText: label,
+          labelText: isRequired ? '$label *' : label,
           hintText: hintText,
           prefixIcon: Container(
             margin: const EdgeInsets.all(8),
@@ -288,59 +456,82 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          FutureBuilder<UserProfile>(
-            future: profile,
-            builder: (context, snapshot) {
-              return Stack(
-                children: [
-                  Container(
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withAlpha(30),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Obx(
+                  () => CircleAvatar(
+                    radius: 60,
+                    backgroundColor: primaryColorLight,
+                    key: ValueKey(
+                      'edit_profile_${_userController.profilePictureVersion.value}',
+                    ),
+                    backgroundImage:
+                        _userController.getFullProfilePicturePath() != null
+                            ? NetworkImage(
+                              '${_userController.getFullProfilePicturePath()!}?v=${_userController.profilePictureVersion.value}',
+                            )
+                            : null,
+                    child:
+                        _userController.profilePicture.value == null ||
+                                _userController.profilePicture.value == ''
+                            ? const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: primaryColor,
+                            )
+                            : null,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _isUploading ? null : _pickAndUploadImage,
+                  child: Container(
                     decoration: BoxDecoration(
+                      color: primaryColor,
                       shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
                       boxShadow: [
                         BoxShadow(
-                          color: primaryColor.withAlpha(30),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                          color: primaryColor.withAlpha(50),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: primaryColorLight,
-                      backgroundImage: snapshot.hasData && 
-                          snapshot.data!.picture != null
-                          ? NetworkImage(
-                              'http://182.93.94.210:3067${snapshot.data!.picture}')
-                          : null,
-                      child: snapshot.connectionState == ConnectionState.waiting
-                          ? const CircularProgressIndicator(color: primaryColor)
-                          : snapshot.hasError || 
-                              !snapshot.hasData || 
-                              snapshot.data!.picture == null
-                              ? const Icon(Icons.person, size: 50, color: primaryColor)
-                              : null,
-                    ),
+                    padding: const EdgeInsets.all(12),
+                    child:
+                        _isUploading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: primaryColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      padding: const EdgeInsets.all(8),
-                    ),
-                  ),
-                ],
-              );
-            },
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(
@@ -360,6 +551,42 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 8),
+          Text(
+            '* Required fields',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red.shade600,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          if (_isUploading)
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: primaryColorLight,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: primaryColor,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Uploading image...',
+                    style: TextStyle(color: primaryColor, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -499,9 +726,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                     controller: _nameController,
                                     label: 'Full Name',
                                     icon: Icons.person,
+                                    isRequired: true,
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your name';
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Full name is required';
                                       }
                                       return null;
                                     },
@@ -510,10 +738,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                     controller: _emailController,
                                     label: 'Email Address',
                                     icon: Icons.email,
+                                    isRequired: true,
                                     keyboardType: TextInputType.emailAddress,
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your email';
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Email address is required';
                                       }
                                       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                                           .hasMatch(value)) {
@@ -526,10 +755,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                     controller: _phoneController,
                                     label: 'Phone Number',
                                     icon: Icons.phone,
+                                    isRequired: true,
                                     keyboardType: TextInputType.phone,
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your phone number';
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Phone number is required';
                                       }
                                       return null;
                                     },
@@ -539,7 +769,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                     child: DropdownButtonFormField<String>(
                                       value: _selectedGender,
                                       decoration: InputDecoration(
-                                        labelText: 'Gender',
+                                        labelText: 'Gender *',
                                         hintText: 'Select your gender',
                                         prefixIcon: Container(
                                           margin: const EdgeInsets.all(8),
@@ -576,6 +806,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                           _selectedGender = value;
                                         });
                                       },
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please select your gender';
+                                        }
+                                        return null;
+                                      },
                                     ),
                                   ),
                                   Container(
@@ -584,7 +820,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                       onTap: () => _selectDob(context),
                                       child: InputDecorator(
                                         decoration: InputDecoration(
-                                          labelText: 'Date of Birth',
+                                          labelText: 'Date of Birth *',
                                           hintText: 'Select your date of birth',
                                           prefixIcon: Container(
                                             margin: const EdgeInsets.all(8),
@@ -627,7 +863,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                     controller: _locationController,
                                     label: 'Location',
                                     icon: Icons.location_on,
+                                    isRequired: true,
                                     hintText: 'City, Country',
+                                    validator: (value) {
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Location is required';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                 ],
                               ),
@@ -732,4 +975,4 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       ),
     );
   }
-}
+    }

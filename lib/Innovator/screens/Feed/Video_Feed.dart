@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/Authorization/Login.dart';
 import 'package:innovator/Innovator/controllers/user_controller.dart';
+import 'package:innovator/Innovator/screens/Profile/profile_page.dart';
 import 'package:innovator/main.dart';
 import 'package:innovator/Innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
 import 'package:innovator/Innovator/screens/Likes/Content-Like-Service.dart';
@@ -539,7 +540,6 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
           'Authorization': 'Bearer ${AppData().authToken}',
         },
       ).timeout(Duration(seconds: 30));
-      
       return response;
     } catch (e) {
       rethrow;
@@ -1009,32 +1009,37 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
           // Author Info
           Row(
             children: [
-               Hero(
-                    tag:
-                        'avatar_${widget.content.author.id}_${_isAuthorCurrentUser() ? Get.find<UserController>().profilePictureVersion.value : 0}',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            Color.fromRGBO(244, 135, 6, 1), // your theme
-                            Color.fromRGBO(255, 204, 0, 1), // golden highlight
+               GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: AppData().currentUserId ?? '')));
+                },
+                 child: Hero(
+                      tag:
+                          'avatar_${widget.content.author.id}_${_isAuthorCurrentUser() ? Get.find<UserController>().profilePictureVersion.value : 0}',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              Color.fromRGBO(244, 135, 6, 1), // your theme
+                              Color.fromRGBO(255, 204, 0, 1), // golden highlight
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orangeAccent.shade100,
+                              blurRadius: 12.0,
+                              offset: const Offset(0, 4),
+                            ),
                           ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orangeAccent.shade100,
-                            blurRadius: 12.0,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: _buildAuthorAvatar(),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: _buildAuthorAvatar(),
+                        ),
                       ),
                     ),
-                  ),
+               ),
               SizedBox(width: 8),
               Expanded(
                 child: Column(
