@@ -14,19 +14,14 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  // final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  // final TextEditingController schoolNameController = TextEditingController();
-  // final TextEditingController rollNumberController = TextEditingController();
+
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
   final _formKey = GlobalKey<FormState>();
-  // bool agreeToTerms = false;
-  // String selectedRole = 'Admin';
+
   @override
   Widget build(BuildContext context) {
-    // bool isStudent = selectedRole=='Student';
-
     return SafeArea(
       child: Scaffold(
         body: Container(
@@ -41,10 +36,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Center(
             child: Padding(
               padding: EdgeInsets.only(
-                      top: context.screenHeight*0.02,
-                bottom: context.screenHeight*.05,
-                right: context.screenWidth*0.05,
-               left:   context.screenWidth*0.05,
+                top: context.screenHeight * 0.02,
+                bottom: context.screenHeight * .05,
+                right: context.screenWidth * 0.05,
+                left: context.screenWidth * 0.05,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
@@ -87,14 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            // Full Name Field
-                            // textFormField(
-                            //   formFieldTopText: 'Full Name',
 
-                            //   controller: nameController,
-
-                            //   icon: Icons.person_outline,
-                            // ),
                             const SizedBox(height: 16),
 
                             // Email / Username
@@ -104,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               icon: Icons.mail_outline,
                             ),
-                           SizedBox(height: context.screenHeight * 0.02),
+                            SizedBox(height: context.screenHeight * 0.02),
 
                             // Password
                             textFormField(
@@ -114,65 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               isPassword: true,
                               fieldId: 'password',
                             ),
-                           SizedBox(height: context.screenHeight * 0.04),
-
-                            // Role Dropdown uncomment if needed in the login part
-                            //                   Column(
-                            //                     crossAxisAlignment: CrossAxisAlignment.start,
-                            //                     children: [
-                            //                       Text('ROLE',style: TextStyle(
-                            //                                  fontSize: AppStyle.mediumText,
-                            // fontWeight: FontWeight.w600,
-                            // color: Colors.black
-                            //                       ),),
-                            //                       Container(
-                            //                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                            //                         decoration: BoxDecoration(
-                            //                           color: Colors.white ,
-                            //                           borderRadius: BorderRadius.circular(12),
-                            //                           border: Border.all(color: Colors.black),
-                            //                         ),
-                            //                         child: DropdownButtonHideUnderline(
-                            //                           child: DropdownButton<String>(
-                            //                             value: selectedRole,
-                            //                             isExpanded: true,
-                            //                             icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
-                            //                             dropdownColor: Colors.white,
-                            //                             style: const TextStyle(color: Colors.black),
-                            //                             items: ['Admin', 'School', 'Partner', 'Student']
-                            //                                 .map((role) => DropdownMenuItem(
-                            //                                       value: role,
-                            //                                       child: Text(role),
-                            //                                     ))
-                            //                                 .toList(),
-                            //                             onChanged: (value) {
-                            //                               setState(() {
-                            //                                 selectedRole = value!;
-                            //                               });
-                            //                             },
-                            //                           ),
-                            //                         ),
-                            //                       ),
-                            //                     ],
-                            //                   ),
-                            // const SizedBox(height: 16),
-                            // if(isStudent)...[
-                            //     textFormField(
-                            //     formFieldTopText: 'School Name',
-                            //   controller: schoolNameController,
-                            //     icon: Icons.lock_outline,
-                            //   isPassword: true,
-                            // ),
-                            // const SizedBox(height: 16),
-                            //   textFormField(
-                            //     formFieldTopText: 'Roll Number',
-                            //   controller: rollNumberController,
-                            //     icon: Icons.lock_outline,
-                            //   isPassword: true,
-                            // ),
-                            // const SizedBox(height: 16),
-
-                            // ],
+                            SizedBox(height: context.screenHeight * 0.04),
 
                             //Login Button
                             SizedBox(
@@ -184,7 +114,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         : () {
                                           if (_formKey.currentState!
                                               .validate()) {
-                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>AdminDashboardScreen()));
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) =>
+                                                        AdminDashboardScreen(),
+                                              ),
+                                            );
                                           }
                                         },
                                 style: ElevatedButton.styleFrom(
@@ -211,8 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ),
                               ),
                             ),
-                      SizedBox(height: context.screenHeight * 0.02),
-
+                            SizedBox(height: context.screenHeight * 0.02),
 
                             // Login Link
                             Column(
@@ -242,10 +178,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     const Text(
                                       'Donot have an account? ',
                                       style: TextStyle(
-                                 color: Colors.black,
-                                      fontSize: AppStyle.mediumText,
-                                    
-                                  ),
+                                        color: Colors.black,
+                                        fontSize: AppStyle.mediumText,
+                                      ),
                                     ),
                                     GestureDetector(
                                       onTap: () {
@@ -261,9 +196,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         'Signup',
                                         style: TextStyle(
                                           color: Colors.black,
-                                      fontSize: AppStyle.mediumText,
-                                      
-                                      decoration: TextDecoration.underline,
+                                          fontSize: AppStyle.mediumText,
+
+                                          decoration: TextDecoration.underline,
                                         ),
                                       ),
                                     ),
@@ -303,7 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: Colors.black,
           ),
         ),
-        SizedBox(height: 5,),
+        SizedBox(height: 5),
         Consumer(
           builder: (context, ref, child) {
             final obscureText =

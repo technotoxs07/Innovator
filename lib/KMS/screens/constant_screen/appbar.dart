@@ -5,10 +5,10 @@ import 'package:innovator/KMS/constants/app_style.dart';
 
 class AppbarScreen extends ConsumerWidget {
   const AppbarScreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return  AppBar(
+    return SafeArea(
+      child: AppBar(
         iconTheme: IconThemeData(color: AppStyle.primaryColor),
         elevation: 0,
         backgroundColor: AppStyle.backgroundColor,
@@ -26,7 +26,7 @@ class AppbarScreen extends ConsumerWidget {
           backgroundColor: WidgetStatePropertyAll(AppStyle.searchBarColor),
           elevation: WidgetStatePropertyAll(0),
         ),
-  
+
         actions: [
           Stack(
             clipBehavior: Clip.none,
@@ -54,6 +54,8 @@ class AppbarScreen extends ConsumerWidget {
           ),
 
           Container(
+            height: 40,
+            width: 88,
             margin: EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
               color: AppStyle.primaryColor,
@@ -92,9 +94,7 @@ class AppbarScreen extends ConsumerWidget {
             ),
           ),
         ],
-        
-      );
-     
+      ),
+    );
   }
 }
-
