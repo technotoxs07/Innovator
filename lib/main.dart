@@ -325,7 +325,6 @@ void _showImmediateFeedback(RemoteMessage message) {
         ),
       ),
     );
-
     HapticFeedback.lightImpact();
   } catch (e) {
     developer.log('❌ Immediate feedback error: $e');

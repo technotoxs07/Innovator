@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:innovator/Innovator/helper/dialogs.dart';
+import 'package:innovator/Innovator/screens/Profile/Edit_Profile.dart';
 import 'package:innovator/Innovator/services/firebase_services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -374,54 +375,51 @@ class _LoginPageState extends State<LoginPage> {
 
   // Firebase-only fallback (fastest option)
   Future<void> _handleFirebaseFallback(User user, String idToken) async {
-    try {
-      developer.log('🔥 Using Firebase-only authentication...');
+  try {
+    developer.log('🔥 Using Firebase-only authentication...');
 
-      // Create minimal user data
-      Map<String, dynamic> userData = {
-        '_id': user.uid,
-        'id': user.uid,
-        'userId': user.uid,
-        'uid': user.uid,
-        'email': user.email,
-        'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
-        'photoURL': user.photoURL,
-        'isEmailVerified': user.emailVerified,
-        'provider': 'google',
-        'firebaseUser': true,
-        'fcmTokens': [],
-      };
+    // Create minimal user data
+    Map<String, dynamic> userData = {
+      '_id': user.uid,
+      'id': user.uid,
+      'userId': user.uid,
+      'uid': user.uid,
+      'email': user.email,
+      'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
+      'photoURL': user.photoURL,
+      'isEmailVerified': user.emailVerified,
+      'provider': 'google',
+      'firebaseUser': true,
+      'fcmTokens': [],
+    };
 
-      // FAST parallel operations
-      await Future.wait([
-        AppData().setAuthToken(idToken),
-        AppData().setCurrentUser(userData),
-        FirebaseService.verifyAndCreateUser(
-          userId: user.uid,
-          name: userData['name'],
-          email: user.email ?? '',
-          photoURL: user.photoURL,
-          provider: 'google',
-        ),
-      ]);
+    // FAST parallel operations
+    await Future.wait([
+      AppData().setAuthToken(idToken),
+      AppData().setCurrentUser(userData),
+      FirebaseService.verifyAndCreateUser(
+        userId: user.uid,
+        name: userData['name'],
+        email: user.email ?? '',
+        photoURL: user.photoURL,
+        provider: 'google',
+      ),
+    ]);
 
-      // Initialize FCM in background
-      _initializeFcmInBackground();
+    // Initialize FCM in background
+    _initializeFcmInBackground();
 
-      // Navigate immediately
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => Homepage()),
-        (route) => false,
-      );
+    // Navigate based on profile completeness
+    await _navigateBasedOnProfile(userData);
 
-      Dialogs.showSnackbar(context, 'Welcome! Signed in with Google.');
-      developer.log('✅ Firebase fallback authentication completed');
-    } catch (e) {
-      developer.log('❌ Firebase fallback error: $e');
-      rethrow;
-    }
+    Dialogs.showSnackbar(context, 'Welcome! Signed in with Google.');
+    developer.log('✅ Firebase fallback authentication completed');
+  } catch (e) {
+    developer.log('❌ Firebase fallback error: $e');
+    rethrow;
   }
+}
+
 
   Future<bool> _attemptOptimizedGoogleLogin(
     User user,
@@ -522,68 +520,64 @@ class _LoginPageState extends State<LoginPage> {
 
   // Streamlined success handler
   Future<void> _handleOptimizedSuccessfulAuth(
-    String responseBody,
-    User user, {
-    required bool isNewUser,
-  }) async {
-    try {
-      developer.log('🎯 Processing successful authentication...');
+  String responseBody,
+  User user, {
+  required bool isNewUser,
+}) async {
+  try {
+    developer.log('🎯 Processing successful authentication...');
 
-      // Parse response once
-      final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
+    // Parse response once
+    final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
 
-      // Extract data
-      final token = _extractToken(responseData);
-      final userData = _extractUserData(responseData) ?? {};
+    // Extract data
+    final token = _extractToken(responseData);
+    final userData = _extractUserData(responseData) ?? {};
 
-      // Ensure proper ID consistency
-      final userId =
-          userData['_id']?.toString() ?? userData['id']?.toString() ?? user.uid;
+    // Ensure proper ID consistency
+    final userId =
+        userData['_id']?.toString() ?? userData['id']?.toString() ?? user.uid;
 
-      userData['_id'] = userId;
-      userData['id'] = userId;
-      userData['userId'] = userId;
-      userData['uid'] = userId;
-      userData['fcmTokens'] = userData['fcmTokens'] ?? [];
+    userData['_id'] = userId;
+    userData['id'] = userId;
+    userData['userId'] = userId;
+    userData['uid'] = userId;
+    userData['fcmTokens'] = userData['fcmTokens'] ?? [];
 
-      // BATCH OPERATIONS for speed
-      await Future.wait([
-        // Save token and user data in parallel
-        if (token != null) AppData().setAuthToken(token),
-        AppData().setCurrentUser(userData),
+    // BATCH OPERATIONS for speed
+    await Future.wait([
+      // Save token and user data in parallel
+      if (token != null) AppData().setAuthToken(token),
+      AppData().setCurrentUser(userData),
 
-        // Create/verify user in Firestore (in background)
-        FirebaseService.verifyAndCreateUser(
-          userId: userId,
-          name: user.displayName ?? userData['name'] ?? 'User',
-          email: user.email ?? '',
-          photoURL: user.photoURL,
-          provider: 'google',
-        ),
-      ]);
+      // Create/verify user in Firestore (in background)
+      FirebaseService.verifyAndCreateUser(
+        userId: userId,
+        name: user.displayName ?? userData['name'] ?? 'User',
+        email: user.email ?? '',
+        photoURL: user.photoURL,
+        provider: 'google',
+      ),
+    ]);
 
-      // Initialize FCM in background (don't wait)
-      _initializeFcmInBackground();
+    // Initialize FCM in background (don't wait)
+    _initializeFcmInBackground();
 
-      // Navigate immediately
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => Homepage()),
-        (route) => false,
-      );
+    // Navigate based on profile completeness
+    await _navigateBasedOnProfile(userData);
 
-      final message =
-          isNewUser
-              ? 'Account created successfully with Google!'
-              : 'Welcome back! Signed in with Google.';
-      Dialogs.showSnackbar(context, message);
+    final message =
+        isNewUser
+            ? 'Account created successfully with Google!'
+            : 'Welcome back! Signed in with Google.';
+    Dialogs.showSnackbar(context, message);
 
-      developer.log('✅ Optimized auth completed successfully');
-    } catch (e) {
-      developer.log('❌ Error in optimized success handler: $e');
-      rethrow;
-    }
+    developer.log('✅ Optimized auth completed successfully');
+  } catch (e) {
+    developer.log('❌ Error in optimized success handler: $e');
+    rethrow;
   }
+}
 
   void _initializeFcmInBackground() {
     Future.delayed(const Duration(milliseconds: 100), () async {
@@ -855,66 +849,57 @@ class _LoginPageState extends State<LoginPage> {
   // }
 
   Future<void> _handleSuccessfulLogin(String responseBody) async {
-    try {
-      developer.log('🚀 Processing successful login...');
+  try {
+    developer.log('🚀 Processing successful login...');
 
-      final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
+    final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
 
-      // Extract tokens
-      final authToken = _extractToken(responseData);
-      final apiToken = _extractApiToken(
-        responseData,
-      ); // Extract API token if present
-      final userData = _extractUserData(responseData);
+    // Extract tokens
+    final authToken = _extractToken(responseData);
+    final apiToken = _extractApiToken(responseData);
+    final userData = _extractUserData(responseData);
 
-      if (userData != null) {
-        // Ensure proper ID consistency
-        String? userId =
-            userData['_id']?.toString() ??
-            userData['id']?.toString() ??
-            userData['userId']?.toString();
+    if (userData != null) {
+      // Ensure proper ID consistency
+      String? userId =
+          userData['_id']?.toString() ??
+          userData['id']?.toString() ??
+          userData['userId']?.toString();
 
-        if (userId != null) {
-          userData['_id'] = userId;
-          userData['id'] = userId;
-          userData['userId'] = userId;
-          userData['uid'] = userId;
-        }
-
-        userData['fcmTokens'] ??= [];
+      if (userId != null) {
+        userData['_id'] = userId;
+        userData['id'] = userId;
+        userData['userId'] = userId;
+        userData['uid'] = userId;
       }
 
-      // Save all data
-      await Future.wait([
-        if (authToken != null) AppData().setAuthToken(authToken),
-        if (apiToken != null) AppData().setApiToken(apiToken),
-        if (userData != null) AppData().setCurrentUser(userData),
-      ]);
-
-      // Initialize FCM after login data is saved
-      await AppData().initializeFcmAfterLogin();
-
-      // Additional FCM token refresh to ensure it's saved
-      await _ensureFcmTokenIsSaved();
-
-      // Firebase Auth session
-      await _createFirebaseAuthSession(userData);
-
-      // Initialize other services
-
-     // await _initializeFollowStatusManager();
-      //await _initializeChatControllerWithFollowStatus();
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => Homepage()),
-        (route) => false,
-      );
-    } catch (e) {
-      developer.log('❌ Error in login handler: $e');
-      Dialogs.showSnackbar(context, 'Login processing failed');
+      userData['fcmTokens'] ??= [];
     }
+
+    // Save all data
+    await Future.wait([
+      if (authToken != null) AppData().setAuthToken(authToken),
+      if (apiToken != null) AppData().setApiToken(apiToken),
+      if (userData != null) AppData().setCurrentUser(userData),
+    ]);
+
+    // Initialize FCM after login data is saved
+    await AppData().initializeFcmAfterLogin();
+
+    // Additional FCM token refresh to ensure it's saved
+    await _ensureFcmTokenIsSaved();
+
+    // Firebase Auth session
+    await _createFirebaseAuthSession(userData);
+
+    // Navigate based on profile completeness
+    await _navigateBasedOnProfile(userData);
+    
+  } catch (e) {
+    developer.log('❌ Error in login handler: $e');
+    Dialogs.showSnackbar(context, 'Login processing failed');
   }
+}
 
   String? _extractApiToken(Map<String, dynamic> responseData) {
     return responseData['apiToken'] ??
@@ -1084,6 +1069,95 @@ class _LoginPageState extends State<LoginPage> {
       }
     }
   }
+
+  Future<bool> _isProfileComplete(Map<String, dynamic>? userData) async {
+  if (userData == null) return false;
+
+  // Check profile picture - both photoURL and picture fields
+  final hasProfilePicture = (userData['photoURL'] != null && 
+                           userData['photoURL'].toString().isNotEmpty) ||
+                          (userData['picture'] != null && 
+                           userData['picture'].toString().isNotEmpty);
+  
+  final hasName = userData['name'] != null && 
+                 userData['name'].toString().trim().isNotEmpty;
+  final hasEmail = userData['email'] != null && 
+                  userData['email'].toString().trim().isNotEmpty;
+  final hasPhone = userData['phone'] != null && 
+                  userData['phone'].toString().trim().isNotEmpty;
+  final hasGender = userData['gender'] != null && 
+                   userData['gender'].toString().trim().isNotEmpty;
+  final hasDob = userData['dob'] != null && 
+                userData['dob'].toString().trim().isNotEmpty;
+  final hasLocation = userData['location'] != null && 
+                     userData['location'].toString().trim().isNotEmpty;
+
+  developer.log('════════════ PROFILE COMPLETENESS CHECK ════════════');
+  developer.log('  Photo: $hasProfilePicture (photoURL: ${userData['photoURL']}, picture: ${userData['picture']})');
+  developer.log('  Name: $hasName (${userData['name']})');
+  developer.log('  Email: $hasEmail (${userData['email']})');
+  developer.log('  Phone: $hasPhone (${userData['phone']})');
+  developer.log('  Gender: $hasGender (${userData['gender']})');
+  developer.log('  DOB: $hasDob (${userData['dob']})');
+  developer.log('  Location: $hasLocation (${userData['location']})');
+  developer.log('  IS COMPLETE: ${hasProfilePicture && hasName && hasEmail && hasPhone && hasGender && hasDob && hasLocation}');
+  developer.log('════════════════════════════════════════════════════');
+
+  return hasProfilePicture && 
+         hasName && 
+         hasEmail && 
+         hasPhone && 
+         hasGender &&  
+         hasDob && 
+         hasLocation;
+}
+
+
+Future<void> _navigateBasedOnProfile(Map<String, dynamic>? userData) async {
+  final isComplete = await _isProfileComplete(userData);
+  
+  if (isComplete) {
+    developer.log('✅ Profile is complete, navigating to Homepage');
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => Homepage()),
+      (route) => false,
+    );
+  } else {
+    developer.log('⚠️ Profile is incomplete, navigating to EditProfileScreen');
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+      (route) => false,
+    );
+    
+    // Show a message to complete profile
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Please complete your profile to continue'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    });
+  }
+}
+
 
   Future<void> _tryEmailPasswordAuth(Map<String, dynamic> userData) async {
     try {
