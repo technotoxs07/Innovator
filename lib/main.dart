@@ -9,6 +9,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/KMS/screens/auth/login_screen.dart';
+import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
@@ -349,7 +351,10 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       title: 'Innovator',
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+
+      //USE  SPLASHSCREEN FOR RUNNING TH
+      // home: const SplashScreen(),
+   home: LoginScreen(),
       onInit: () {
         try {
           Get.lazyPut<FireChatController>(

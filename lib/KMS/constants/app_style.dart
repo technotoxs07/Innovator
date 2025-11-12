@@ -16,10 +16,13 @@ class AppStyle {
   static const double smallText = 12.0;
   static const double bodyTextSize = 14.0;
     static const Color textColor = Colors.black;
+    static const Color bodyTextColor = Color(0xffFEFCE8);
   static const Color errorColor = Color(0xFFE53935);
 
 //Icon Sizes
 static const Size bigIcon = Size(50, 50);
+//Searchbar color
+static const Color searchBarColor = Color(0xffE8E6D3);
   
   // Text Styles
   static const TextStyle heading1 = TextStyle(
@@ -35,11 +38,19 @@ static const Size bigIcon = Size(50, 50);
     fontWeight: FontWeight.w600,
     color: textColor,
   );
+  static const TextStyle errorText = TextStyle(
+    fontSize: bodyTextSize,
+    color: Colors.red
+  );
+  static const TextStyle allText = TextStyle(
+    fontSize: bodyTextSize,
+    color: Colors.black
+  );
 
   static const TextStyle bodyText = TextStyle(
     fontFamily: fontFamilySecondary,
     fontSize: bodyTextSize,
-    color: textColor,
+    color: bodyTextColor,
   );
 
   static const TextStyle small = TextStyle(
@@ -53,4 +64,5 @@ static const Size bigIcon = Size(50, 50);
   
     color: Colors.grey,
   );
+  static const Color alertDialogColor = Colors.white;
 }
