@@ -73,11 +73,21 @@ class AppDrawer extends ConsumerWidget {
                 'Salary + Commission Partner',
                 Icons.attach_money_rounded,
               ),
-              _drawer(context, 7, 'Components Delivery', Icons.dashboard_outlined),
+              _drawer(
+                context,
+                7,
+                'Components Delivery',
+                Icons.dashboard_outlined,
+              ),
               _drawer(context, 8, 'Complain Box', Icons.help_outline_sharp),
               _drawer(context, 9, 'Teacher Learning Material', Icons.menu_book),
-              _drawer(context, 10, 'Progress Tracking', Icons.watch_later_rounded),
-              SizedBox(height: context.screenHeight * 0.3),
+              _drawer(
+                context,
+                10,
+                'Progress Tracking',
+                Icons.watch_later_rounded,
+              ),
+              SizedBox(height: context.screenHeight * 0.1),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 50),
@@ -87,7 +97,6 @@ class AppDrawer extends ConsumerWidget {
                   backgroundColor: Colors.white,
                 ),
                 onPressed: () {
-                
                   showAdaptiveDialog(
                     context: context,
                     builder: (context) {
@@ -97,7 +106,7 @@ class AppDrawer extends ConsumerWidget {
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(height: 10,),
+                            SizedBox(height: 10),
                             Text('Comeback Soon!', style: AppStyle.heading2),
                             SizedBox(height: 20),
                             Text(
@@ -134,17 +143,19 @@ class AppDrawer extends ConsumerWidget {
                                     backgroundColor: AppStyle.buttonColor,
                                   ),
                                   onPressed: () {
-                                    // Navigaton for the logout 
+                                    // Navigaton for the logout
 
                                     // this auth service is the one for saving the accesstoken clear that one
-                                          //  AuthService().logout();
-                            Navigator.of(context).pop();
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const LoginScreen()),
-                              (Route<dynamic> route) => false,
-                            );
+                                    //  AuthService().logout();
+                                    Navigator.of(context).pop();
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => const LoginScreen(),
+                                      ),
+                                      (Route<dynamic> route) => false,
+                                    );
                                   },
                                   child: Text(
                                     'Yes Logout',
@@ -198,9 +209,7 @@ class AppDrawer extends ConsumerWidget {
             ),
           ),
         ),
-        Divider(
-          color: Colors.grey.shade200,
-        )
+        Divider(color: Colors.grey.shade200),
       ],
     );
   }

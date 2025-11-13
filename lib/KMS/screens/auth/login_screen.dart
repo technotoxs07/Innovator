@@ -5,6 +5,8 @@ import 'package:innovator/KMS/constants/mediaquery.dart';
 import 'package:innovator/KMS/screens/auth/forgot_password_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -114,12 +116,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         : () {
                                           if (_formKey.currentState!
                                               .validate()) {
+                                            // Manage the navigation according to the role of the user
+                                            // Navigator.pushReplacement(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             AdminDashboardScreen(),
+                                            //   ),
+                                            // );
+                                            // Navigator.pushReplacement(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             PartnerDashboardScreen(),
+                                            //   ),
+                                            // );
                                             Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
                                                     (context) =>
-                                                        AdminDashboardScreen(),
+                                                        SchoolDashboardScreen(),
                                               ),
                                             );
                                           }

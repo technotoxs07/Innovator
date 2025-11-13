@@ -341,7 +341,6 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
       _initializeDeferredServices();
     });
   }
-
   @override
   Widget build(BuildContext context) {
     mq = MediaQuery.of(context).size;

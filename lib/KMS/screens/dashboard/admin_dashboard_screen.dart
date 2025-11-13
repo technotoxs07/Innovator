@@ -80,7 +80,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: 17),
+                
                   Text(
                     'Distribution (Pie Chart)',
                     style: TextStyle(
@@ -102,7 +102,10 @@ class AdminDashboardScreen extends ConsumerWidget {
                       children: [
                         CustomPaint(
                           painter: PieChartPainter(),
-                          size: Size(context.screenWidth*0.6, context.screenHeight*0.4),
+                          size: Size(
+                            context.screenWidth * 0.6,
+                            context.screenHeight * 0.4,
+                          ),
                         ),
                         Padding(
                           padding: EdgeInsets.only(bottom: 10),
@@ -121,6 +124,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 25),
+                  
                   Container(
                     width: double.infinity,
                     height: 250,
@@ -129,68 +133,27 @@ class AdminDashboardScreen extends ConsumerWidget {
                       border: Border.all(color: Colors.black),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.only(bottom: 8),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(right: 8, left: 8),
-                              child: Column(
-                                children: [
-                                  onGoingClass(
-                                    'Today Ongoing Classes',
-                                    '2025/11/05',
-                                    onPressed: () {},
-                                  ),
-                                  SizedBox(height: 5),
-                                  tableNameHeading(
-                                    'School Name',
-                                    'Partners Name',
-                                    'Chapters',
-                                    'School Contact',
-                                    'Partner Contact',
-                                  ),
-                                ],
-                              ),
+                      padding: EdgeInsets.only(
+                        right: 8,
+                        left: 8,
+                        top: 10,
+                        bottom: 8,
+                      ),
+                      child: Column(
+                        children: [
+                          onGoingClass(
+                            'Today Ongoing Classes',
+                            '2025/11/05',
+                            onPressed: () {},
+                          ),
+                          SizedBox(height: 10),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: _todayOngoingClassesTable(),
                             ),
-                            Divider(color: Colors.grey),
-                            tableName(
-                              'Patan Multiple Campus',
-                              'John Newar',
-                              'Robotics',
-                              '+9779818945678',
-                              '+9779868997834',
-                            ),
-                            tableName(
-                              'Vidya Sadan',
-                              'John Bahun',
-                              'Flutter',
-                              '+9779810045678',
-                              '+9779869027834',
-                            ),
-                            tableName(
-                              'Nepatronix Institute of Science and Technology',
-                              'John Magar',
-                              'Node.js',
-                              '+9779807234528',
-                              '+9779828597034',
-                            ),
-                            tableName(
-                              'National InfoTech',
-                              'John Damai',
-                              'IOT',
-                              '+9779818645678',
-                              '+9779846587838',
-                            ),
-                            tableName(
-                              'Madan Bhandari Memorial School',
-                              'John Damai',
-                              'IOT',
-                              '+9779818645678',
-                              '+9779846587838',
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -219,12 +182,14 @@ class AdminDashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              mainText,
-              style: AppStyle.heading2.copyWith(
-                fontWeight: FontWeight.bold,
-                fontFamily: AppStyle.fontFamilySecondary,
-                fontSize: 15,
+            FittedBox(
+              child: Text(
+                mainText,
+                style: AppStyle.heading2.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppStyle.fontFamilySecondary,
+                  fontSize: 15,
+                ),
               ),
             ),
             SizedBox(height: 20),
@@ -313,101 +278,126 @@ Widget onGoingClass(
   );
 }
 
-Widget tableNameHeading(
-  String schoolNameHeading,
-  String partnerNameHeading,
-  String chaptersNameHeading,
-  String schoolContactHeading,
-  String partnerContactHeading,
-) {
-  return Table(
-    children: [
-      TableRow(
-        children: [
-          Text(
-            schoolNameHeading,
+Widget _todayOngoingClassesTable() {
+  return SingleChildScrollView(
+    child: DataTable(
+      columnSpacing: 25,
+      headingRowHeight: 40,
+      dataRowMaxHeight: 50,
+
+      columns: const [
+        DataColumn(
+          label: Text(
+            'School Name',
             style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
             ),
           ),
-          Text(
-            partnerNameHeading,
+        ),
+        DataColumn(
+          label: Text(
+            'Partners Name',
             style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
             ),
           ),
-          Text(
-            chaptersNameHeading,
+        ),
+        DataColumn(
+          label: Text(
+            'Chapters',
             style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
             ),
           ),
-          Text(
-            schoolContactHeading,
+        ),
+        DataColumn(
+          label: Text(
+            'School Contact',
             style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
             ),
           ),
-          Text(
-            partnerContactHeading,
+        ),
+        DataColumn(
+          label: Text(
+            'Partner Contact',
             style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
             ),
           ),
-        ],
-      ),
-    ],
+        ),
+      ],
+      rows: [
+        _todayOngoingClassesDataRow(
+          'Patan Multiple Campus',
+          'John Newar',
+          'Robotics',
+          '+9779818945678',
+          '+9779868997834',
+        ),
+        _todayOngoingClassesDataRow(
+          'Vidya Sadan',
+          'John Bahun',
+          'Flutter',
+          '+9779810045678',
+          '+9779869027834',
+        ),
+        _todayOngoingClassesDataRow(
+          'Nepatronix Institute of Science and Technology',
+          'John Magar',
+          'Node.js',
+          '+9779807234528',
+          '+9779828597034',
+        ),
+        _todayOngoingClassesDataRow(
+          'National InfoTech',
+          'John Damai',
+          'IOT',
+          '+9779818645678',
+          '+9779846587838',
+        ),
+        _todayOngoingClassesDataRow(
+          'Madan Bhandari Memorial School',
+          'John Damai',
+          'IOT',
+          '+9779818645678',
+          '+9779846587838',
+        ),
+      ],
+    ),
   );
 }
 
-Widget tableName(
+DataRow _todayOngoingClassesDataRow(
   String schoolName,
   String partnerName,
-  String chaptersName,
+  String chapters,
   String schoolContact,
   String partnerContact,
 ) {
-  return Padding(
-    padding: EdgeInsets.only(right: 8, left: 8),
-    child: Column(
-      children: [
-        Table(
-          children: [
-            TableRow(
-              children: [
-                Text(
-                  schoolName,
-                  textAlign: TextAlign.left,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-                Text(
-                  partnerName,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-                Text(
-                  chaptersName,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-                Text(
-                  schoolContact,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-                Text(
-                  partnerContact,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-              ],
-            ),
-          ],
+  return DataRow(
+    cells: [
+      DataCell(
+        Container(
+          width: 200,
+          child: Text(schoolName, style: TextStyle(fontSize: 11)),
         ),
-        Divider(color: Colors.grey),
-      ],
-    ),
+      ),
+      DataCell(Text(partnerName, style: TextStyle(fontSize: 11))),
+      DataCell(Text(chapters, style: TextStyle(fontSize: 11))),
+      DataCell(Text(schoolContact, style: TextStyle(fontSize: 11))),
+      DataCell(Text(partnerContact, style: TextStyle(fontSize: 11))),
+    ],
   );
 }
 

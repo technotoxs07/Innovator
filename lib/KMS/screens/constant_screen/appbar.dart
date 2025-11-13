@@ -7,94 +7,91 @@ class AppbarScreen extends ConsumerWidget {
   const AppbarScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      child: AppBar(
-        iconTheme: IconThemeData(color: AppStyle.primaryColor),
-        elevation: 0,
-        backgroundColor: AppStyle.backgroundColor,
-        title: SearchBar(
-          padding: WidgetStatePropertyAll(EdgeInsets.only(left: 15)),
-          leading: Icon(Icons.search, color: Colors.grey),
-          hintStyle: WidgetStatePropertyAll(
-            TextStyle(
-              fontSize: AppStyle.bodyTextSize,
-              color: Colors.grey,
-              fontFamily: 'InterThin',
-            ),
+    return AppBar(
+      iconTheme: IconThemeData(color: AppStyle.primaryColor),
+      elevation: 0,
+      backgroundColor: AppStyle.backgroundColor,
+      title: SearchBar(
+        padding: WidgetStatePropertyAll(EdgeInsets.only(left: 15)),
+        leading: Icon(Icons.search, color: Colors.grey),
+        hintStyle: WidgetStatePropertyAll(
+          TextStyle(
+            fontSize: AppStyle.bodyTextSize,
+            color: Colors.grey,
+            fontFamily: 'InterThin',
           ),
-          hintText: 'Search',
-          backgroundColor: WidgetStatePropertyAll(AppStyle.searchBarColor),
-          elevation: WidgetStatePropertyAll(0),
         ),
-
-        actions: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: Icon(
-                  CupertinoIcons.bell_fill,
-                  color: AppStyle.primaryColor,
+        hintText: 'Search',
+        backgroundColor: WidgetStatePropertyAll(AppStyle.searchBarColor),
+        elevation: WidgetStatePropertyAll(0),
+      ),
+      actions: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () {},
+              icon: Icon(
+                CupertinoIcons.bell_fill,
+                color: AppStyle.primaryColor,
+              ),
+            ),
+            Positioned(
+              right: 12,
+              top: 10,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
                 ),
               ),
-              Positioned(
-                right: 12,
-                top: 10,
+            ),
+          ],
+        ),
+    
+        Container(
+          height: 40,
+          width: 88,
+          margin: EdgeInsets.only(right: 10),
+          decoration: BoxDecoration(
+            color: AppStyle.primaryColor,
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+    
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: 10),
                 child: Container(
-                  width: 10,
-                  height: 10,
+                  width: 30,
+                  height: 30,
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: Colors.white,
                     shape: BoxShape.circle,
                   ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.person,
+                      size: 20,
+                      color: AppStyle.primaryColor,
+                    ),
+                  ),
                 ),
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.keyboard_arrow_down, color: Colors.white),
               ),
             ],
           ),
-
-          Container(
-            height: 40,
-            width: 88,
-            margin: EdgeInsets.only(right: 10),
-            decoration: BoxDecoration(
-              color: AppStyle.primaryColor,
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(left: 10),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.person,
-                        size: 20,
-                        color: AppStyle.primaryColor,
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

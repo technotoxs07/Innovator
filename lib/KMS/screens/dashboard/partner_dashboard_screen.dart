@@ -13,249 +13,442 @@ class PartnerDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppStyle.backgroundColor,
-
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(kToolbarHeight),
         child: AppbarScreen(),
       ),
       drawer: AppDrawer(),
-
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(
-                top: context.screenHeight * 0.018,
-                bottom: context.screenHeight * 0.02,
-                right: context.screenWidth * 0.04,
-                left: context.screenWidth * 0.04,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: context.screenHeight * 0.018,
+            bottom: context.screenHeight * 0.02,
+            right: context.screenWidth * 0.04,
+            left: context.screenWidth * 0.04,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+
+              // Grid Content
+              GridView(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.4,
+                  crossAxisSpacing: 10,
+
+                  mainAxisSpacing: 10,
+                ),
+
                 children: [
-                  Text(
-                    'Overview',
+                  //Profile Status
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    color: Colors.white,
+                    elevation: 5,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            child: Text(
+                              'Profile Status',
+                              style: AppStyle.heading2.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppStyle.fontFamilySecondary,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
 
-                    style: AppStyle.bodyText.copyWith(
-                      fontFamily: AppStyle.fontFamilySecondary,
-
-                      letterSpacing: 1,
-                      color: Colors.black
+                          CustomPaint(
+                            painter: ProfileStatusCircularPercentage(
+                              percentage:
+                                  75, //pass the backend value later when it comes from the backends
+                            ),
+                            size: Size(
+                              context.screenWidth * 0.2,
+                              context.screenHeight * 0.1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 5),
-                  GridView(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 1.4,
-                      crossAxisSpacing: 10,
-
-                      mainAxisSpacing: 10,
+                  //Assigned Schools
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
                     ),
+                    color: Colors.white,
+                    elevation: 5,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: 17,
+                        left: 17,
+                        top: 10,
+                        bottom: 10,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            child: Text(
+                              'Assigned Schools',
+                              style: AppStyle.heading2.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppStyle.fontFamilySecondary,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: context.screenHeight * 0.009),
+                          Center(
+                            child: Text(
+                              '3',
+                              style: AppStyle.bodyText.copyWith(
+                                color: Colors.black,
+                                fontSize: 15,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: context.screenHeight * 0.009),
+                          Padding(
+                            padding: EdgeInsets.only(left: 10),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppStyle.backgroundColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: FittedBox(
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    right: 10,
+                                    left: 10,
+                                    bottom: 5,
+                                    top: 5,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Image.asset(
+                                        'assets/kms/school.png',
+                                        height: 15,
+                                        width: 15,
+                                        color: AppStyle.primaryColor,
+                                      ),
+                                      SizedBox(width: 5,),
+                                      Text('12 Classes'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    color: Colors.white,
+                    elevation: 5,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            child: Text(
+                              'Task Overview',
+                              style: AppStyle.heading2.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppStyle.fontFamilySecondary,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
 
+                          Padding(
+                            padding: EdgeInsets.only(top: 5, right: 5, left: 5),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      '3', // Completed value later from the backend
+
+                                      style: TextStyle(fontFamily: 'Inter'),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text('Completed'),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '3', //Pending value later from the backend
+                                      style: TextStyle(fontFamily: 'Inter'),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text('Pending'),
+                                  ],
+                                ),
+                                SizedBox(height: context.screenHeight * 0.01),
+                                Center(
+                                  child: Builder(
+                                    builder: (context) {
+                                      const completed =
+                                          3; // Completed value later from the backend
+                                      const pending =
+                                          3; //Pending value later from the backend
+                                      final total = completed + pending;
+                                      final double completedRatio =
+                                          total == 0 ? 0.0 : completed / total;
+                                      final int completedFlex =
+                                          (completedRatio * 1000).round();
+                                      final int pendingFlex =
+                                          (1000 - completedFlex).round();
+                                      return ClipRRect(
+                                        borderRadius:
+                                            BorderRadiusGeometry.circular(10),
+                                        child: Container(
+                                          width: 100,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            color: AppStyle.primaryColor,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                flex: completedFlex,
+                                                child: Container(
+                                                  color: AppStyle.primaryColor,
+                                                ),
+                                              ),
+
+                                              Expanded(
+                                                flex: pendingFlex,
+                                                child: Container(
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    color: Colors.white,
+                    elevation: 5,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            child: Text(
+                              'Payment',
+                              style: AppStyle.heading2.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppStyle.fontFamilySecondary,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+
+                          FittedBox(
+                            child: Row(
+                              children: [
+                                CustomPaint(
+                                  painter: PaymentPieChart(),
+                                  size: Size(
+                                    context.screenWidth * 0.2,
+                                    context.screenHeight * 0.1,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    distributionChart(
+                                      Color(0xffF8BD00),
+                                      'Pending',
+                                    ),
+                                    distributionChart(
+                                      AppStyle.primaryColor,
+                                      'Completed',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // This week classes container
+              SizedBox(height: 17),
+              Container(
+                width: double.infinity,
+                height: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.black),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: 8,
+                    left: 8,
+                    top: 10,
+                    bottom: 8,
+                  ),
+                  child: Column(
                     children: [
-                      overViewCard(
-                        'Total Students',
-                        numberText: '500',
-                        image: 'assets/kms/student.png',
-                        color: AppStyle.primaryColor,
+                      Center(
+                        child: Text(
+                          'This Week Classes',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                          ),
+                        ),
                       ),
-                      overViewCard(
-                        'Total Partners',
-                        numberText: '45',
-                        image: 'assets/kms/handshake.png',
-                        color: AppStyle.primaryColor,
-                      ),
-                      overViewCard(
-                        'Total Students',
-                        numberText: '12',
-                        image: 'assets/kms/school.png',
-                      ),
-                      overViewCard(
-                        'Total Students',
-                        description: 'No upcoming exams. Good job!',
+                      SizedBox(height: 15),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: _thisWeekClassesTable(),
+                        ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 17),
-                  Text(
-                    'Distribution (Pie Chart)',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontFamily: AppStyle.fontFamilySecondary,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Container(
-                    width: double.infinity,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black),
-                    ),
-                    child: Row(
+                ),
+              ),
+
+              SizedBox(height: 30),
+              // LeaderBoard Container
+              Container(
+                width: double.infinity,
+                height: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.black),
+                ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 8, left: 8, top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CustomPaint(
-                          painter: PieChartPainter(),
-                          size: Size(250, 250),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 10),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              distributionChart(Colors.blue, 'Attendance'),
-                              distributionChart(Colors.yellow, 'Exams'),
-                              distributionChart(Colors.green, 'Payments'),
-                              distributionChart(Colors.red, 'Complaints'),
-                            ],
+                        const Center(
+                          child: Text(
+                            'Leaderboard',
+                            style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        Text('You are ranked #4 this week'),
+                        const SizedBox(height: 16),
+                        leaderboardWidget(),
                       ],
                     ),
                   ),
-                  SizedBox(height: 25),
-                  Container(
-                    width: double.infinity,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: 8),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(right: 8, left: 8),
-                              child: Column(
-                                children: [
-                                  onGoingClass(
-                                    'Today Ongoing Classes',
-                                    '2025/11/05',
-                                    onPressed: () {},
-                                  ),
-                                  SizedBox(height: 5),
-                                  tableNameHeading(
-                                    'School Name',
-                                    'Partners Name',
-                                    'Chapters',
-                                    'School Contact',
-                                    'Partner Contact',
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Divider(color: Colors.grey),
-                            tableName(
-                              'Patan Multiple Campus',
-                              'John Newar',
-                              'Robotics',
-                              '+9779818945678',
-                              '+9779868997834',
-                            ),
-                            tableName(
-                              'Vidya Sadan',
-                              'John Bahun',
-                              'Flutter',
-                              '+9779810045678',
-                              '+9779869027834',
-                            ),
-                            tableName(
-                              'Nepatronix Institute of Science and Technology',
-                              'John Magar',
-                              'Node.js',
-                              '+9779807234528',
-                              '+9779828597034',
-                            ),
-                            tableName(
-                              'National InfoTech',
-                              'John Damai',
-                              'IOT',
-                              '+9779818645678',
-                              '+9779846587838',
-                            ),
-                            tableName(
-                              'Madan Bhandari Memorial School',
-                              'John Damai',
-                              'IOT',
-                              '+9779818645678',
-                              '+9779846587838',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                ),
+              ),
+              SizedBox(height: 30),
+              //  Student Monitoring Container
+              Container(
+                width: double.infinity,
+                height: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.black),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: 8,
+                    left: 8,
+                    top: 10,
+                    bottom: 5,
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget overViewCard(
-    String mainText, {
-    String? description,
-    String? image,
-    Color? color,
-    String? numberText,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-      color: Colors.white,
-      elevation: 5,
-      child: Padding(
-        padding: EdgeInsets.only(right: 15, left: 15, top: 15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              mainText,
-              style: AppStyle.heading2.copyWith(
-                fontWeight: FontWeight.bold,
-                fontFamily: AppStyle.fontFamilySecondary,
-                fontSize: 15,
-              ),
-            ),
-            SizedBox(height: 20),
-            Padding(
-              padding: EdgeInsets.only(left: 10, right: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  if (numberText != null && numberText.isNotEmpty)
-                    Flexible(
-                      child: Text(
-                        numberText,
-                        style: TextStyle(
-                          fontFamily: AppStyle.fontFamilySecondary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Student Monitoring',
+                        style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: Colors.black),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 0,
+                              ),
+                              child: Text('Class 1- Attendance'),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(
+                              Icons.filter_alt,
+                              color: AppStyle.primaryColor,
+                              size: 30,
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: _studentMonitoringTable(),
                         ),
                       ),
-                    ),
-                  SizedBox(width: 5),
-
-                  //Replace Later With the image later
-                  if (image != null && image.isNotEmpty)
-                    Image.asset(image, height: 30, color: color, width: 30),
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-
-            if (description != null && description.isNotEmpty)
-              Flexible(child: Text(description, textAlign: TextAlign.start)),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -266,142 +459,96 @@ class PartnerDashboardScreen extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Container(
-          width: 20,
-          height: 10,
+          width: 10,
+          height: 5,
           decoration: BoxDecoration(shape: BoxShape.rectangle, color: color),
         ),
         SizedBox(width: 10),
-        Text(text, style: TextStyle(color: Colors.black)),
+        Text(text, style: TextStyle(color: Colors.black, fontSize: 14)),
       ],
     );
   }
 }
 
-Widget onGoingClass(
-  String headingText,
-  String timeDate, {
-  VoidCallback? onPressed,
-}) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+// Leaderboard widget
+Widget leaderboardWidget() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(
-        headingText,
-        style: TextStyle(
-          fontSize: 12,
-          fontFamily: AppStyle.fontFamilySecondary,
-        ),
-      ),
-      TextButton.icon(
-        onPressed: onPressed,
-        icon: Icon(
-          Icons.calendar_month_outlined,
-          color: AppStyle.primaryColor,
-          size: 25,
-        ),
-        label: Text(
-          timeDate,
-          style: TextStyle(
-            fontFamily: AppStyle.fontFamilySecondary,
-            fontSize: 12,
-            color: Colors.black,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-Widget tableNameHeading(
-  String schoolNameHeading,
-  String partnerNameHeading,
-  String chaptersNameHeading,
-  String schoolContactHeading,
-  String partnerContactHeading,
-) {
-  return Table(
-    children: [
-      TableRow(
-        children: [
-          Text(
-            schoolNameHeading,
-            style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+      // Table Header
+      Row(
+        children: const [
+          Expanded(
+            flex: 1,
+            child: Text(
+              'S.N.',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Inter',
+              ),
             ),
           ),
-          Text(
-            partnerNameHeading,
-            style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: Text(
+                'Name',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Inter',
+                ),
+              ),
             ),
           ),
-          Text(
-            chaptersNameHeading,
-            style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
-            ),
-          ),
-          Text(
-            schoolContactHeading,
-            style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
-            ),
-          ),
-          Text(
-            partnerContactHeading,
-            style: TextStyle(
-              fontFamily: AppStyle.fontFamilySecondary,
-              fontSize: 11,
+          Expanded(
+            flex: 1,
+            child: Text(
+              'Score',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Inter',
+              ),
+              textAlign: TextAlign.right,
             ),
           ),
         ],
       ),
+      const Divider(thickness: 1, color: Colors.black),
+      // Table Rows
+      _buildLeaderBoardRow('1.', 'John Doe', '9'),
+      _buildLeaderBoardRow('2.', 'John Doe', '8'),
+      _buildLeaderBoardRow('3.', 'John Doe', '7'),
+      _buildLeaderBoardRow('4.', 'John Doe', '6.5'),
+      _buildLeaderBoardRow('5.', 'John Doe', '6'),
     ],
   );
 }
 
-Widget tableName(
-  String schoolName,
-  String partnerName,
-  String chaptersName,
-  String schoolContact,
-  String partnerContact,
-) {
+// LeaderBoard Data Row
+Widget _buildLeaderBoardRow(String sn, String name, String score) {
   return Padding(
-    padding: EdgeInsets.only(right: 8, left: 8),
+    padding: const EdgeInsets.symmetric(vertical: 4),
     child: Column(
       children: [
-        Table(
+        Row(
           children: [
-            TableRow(
-              children: [
-                Text(
-                  schoolName,
-                  textAlign: TextAlign.left,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
+            Expanded(flex: 1, child: Text(sn)),
+            Expanded(
+              flex: 3,
+              child: Center(
+                child: Text(
+                  name,
+                  style: TextStyle(fontWeight: FontWeight.normal),
                 ),
-                Text(
-                  partnerName,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-                Text(
-                  chaptersName,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-                Text(
-                  schoolContact,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-                Text(
-                  partnerContact,
-                  style: TextStyle(fontFamily: 'InterThin', fontSize: 9),
-                ),
-              ],
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Text(
+                score,
+                textAlign: TextAlign.right,
+                style: TextStyle(fontWeight: FontWeight.normal),
+              ),
             ),
           ],
         ),
@@ -411,29 +558,323 @@ Widget tableName(
   );
 }
 
-//Custom Painter for the pie chart
-class PieChartPainter extends CustomPainter {
+// This Week Classes Table
+Widget _thisWeekClassesTable() {
+  return SingleChildScrollView(
+    child: DataTable(
+      columnSpacing: 30,
+      headingRowHeight: 40,
+      dataRowMaxHeight: 50,
+
+      columns: const [
+        DataColumn(
+          label: Text(
+            'School Name',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Chapter',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Weeks',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Weeks Completed',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+       
+      ],
+      rows: [
+        _thisWeekClassesDataRow('Patan Multiple Campus', '2', '6', '5'),
+        _thisWeekClassesDataRow('Vidya Sadan', '1', '5', '5'),
+        _thisWeekClassesDataRow(
+          'Nepatronix Institute of Science and Technology',
+          '1',
+          '7',
+          '6',
+        ),
+        _thisWeekClassesDataRow('National Info Tech', '2', '6', '4'),
+        _thisWeekClassesDataRow(
+          'Madan Bhandari Memorial School',
+          '2',
+          '6',
+          '5',
+        ),
+      ],
+    ),
+  );
+}
+
+DataRow _thisWeekClassesDataRow(
+  String schoolName,
+  String chapter,
+  String weeks,
+  String weeksCompleted,
+) {
+  return DataRow(
+    cells: [
+      DataCell(
+        Container(
+          width: 190,
+          child: Text(schoolName, style: TextStyle(fontSize: 11)),
+        ),
+      ),
+      DataCell(Text(chapter, style: TextStyle(fontSize: 11))),
+      DataCell(Text(weeks, style: TextStyle(fontSize: 11))),
+      DataCell(Text(weeksCompleted, style: TextStyle(fontSize: 11))),
+    ],
+  );
+}
+
+// Student Monitoring Table
+Widget _studentMonitoringTable() {
+  return SingleChildScrollView(
+    child: DataTable(
+      columnSpacing: 25,
+      headingRowHeight: 40,
+      dataRowMaxHeight: 50,
+
+      columns: const [
+        DataColumn(
+          label: Text(
+            'Name',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Total Classes',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Present',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Absent',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Assignment',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        DataColumn(
+          label: Text(
+            'Marks',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+      rows: [
+        _studentMonitoringDataRow('John Doe', '20', '22', '1', '3/5', '90'),
+        _studentMonitoringDataRow(
+          'Alice Johnson',
+          '45',
+          '24',
+          '0',
+          '3/6',
+          '46',
+        ),
+        _studentMonitoringDataRow(
+          'Raju Shrestha',
+          '56',
+          '21',
+          '7',
+          '9/1',
+          '65',
+        ),
+        _studentMonitoringDataRow(
+          'Ronit Srivastav',
+          '53',
+          '10',
+          '4',
+          '1/8',
+          '78',
+        ),
+      ],
+    ),
+  );
+}
+
+DataRow _studentMonitoringDataRow(
+  String name,
+  String totalClasses,
+  String present,
+  String absent,
+  String assignment,
+  String marks,
+) {
+  return DataRow(
+    cells: [
+      DataCell(Text(name, style: TextStyle(fontSize: 11))),
+      DataCell(Text(totalClasses, style: TextStyle(fontSize: 11))),
+      DataCell(Text(present, style: TextStyle(fontSize: 11))),
+      DataCell(Text(absent, style: TextStyle(fontSize: 11))),
+      DataCell(Text(assignment, style: TextStyle(fontSize: 11))),
+      DataCell(Text(marks, style: TextStyle(fontSize: 11))),
+    ],
+  );
+}
+
+// PieChart for the profile status
+class ProfileStatusCircularPercentage extends CustomPainter {
+  final double percentage;
+  final Color segmentColor;
+
+  const ProfileStatusCircularPercentage({
+    required this.percentage,
+    this.segmentColor = AppStyle.primaryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 1.4, size.height / 2.5);
+    final radius = min(size.width, size.height) * 0.4;
+    final innerRadius = radius * 0.74;
+
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    final double clamped = percentage.clamp(0.0, 100.0);
+    final double filled = clamped;
+    final double empty = 100.0 - clamped;
+
+    final List<_PieSegment> segments = [
+      if (filled > 0) _PieSegment(filled, segmentColor),
+      if (empty > 0) _PieSegment(empty, Color(0xffDDFFE7)),
+    ];
+
+    final double total = segments.fold(0.0, (sum, s) => sum + s.value);
+    double startAngle = -pi / -4.8;
+
+    for (final segment in segments) {
+      final double sweep = (segment.value / total) * 2 * pi;
+
+      paint.color = segment.color;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweep,
+        true,
+        paint,
+      );
+
+      startAngle += sweep;
+    }
+
+    canvas.drawCircle(center, innerRadius, Paint()..color = Color(0xffDDFFE7));
+
+    final String text = '${clamped.toInt()}%';
+    final TextPainter textPainter = TextPainter(
+      textDirection: TextDirection.rtl,
+    );
+    textPainter.text = TextSpan(
+      text: text,
+      style: const TextStyle(
+        color: Colors.black,
+        fontSize: 15,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Inter',
+      ),
+    );
+    textPainter.layout();
+
+    final Offset textOffset = Offset(
+      center.dx - textPainter.width / 2.3,
+      center.dy - textPainter.height / 2,
+    );
+
+    textPainter.paint(canvas, textOffset);
+  }
+
+  @override
+  bool shouldRepaint(ProfileStatusCircularPercentage old) {
+    return old.percentage != percentage || old.segmentColor != segmentColor;
+  }
+}
+
+class _PieSegment {
+  final double value;
+  final Color color;
+  const _PieSegment(this.value, this.color);
+}
+
+//Custom Painter for the payement pie chart
+class PaymentPieChart extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = min(size.width, size.height) * 0.48;
-    final innerRadius = radius * 0.8;
+    final innerRadius = radius * 0;
 
     final paint = Paint()..style = PaintingStyle.fill;
 
     //Pass the value that comes later from the backend
     final segments = [
-      _PieSegment(25, const Color(0xFF2196F3)),
-      _PieSegment(30, const Color(0xFFF44336)),
-      _PieSegment(20, const Color(0xFF4CAF50)),
-      _PieSegment(25, const Color(0xFFFFEB3B)),
+      _PaymentPieSegment(85, AppStyle.primaryColor),
+      _PaymentPieSegment(15, Color(0xffF8BD00)),
     ];
 
     final total = segments.fold(0.0, (sum, s) => sum + s.value);
     double startAngle = -pi / 2;
 
     for (final segment in segments) {
-      final sweepAngle = (segment.value / total) * 2 * pi;
+      final sweepAngle = (segment.value / total) * 2.5 * pi;
 
       // Draw filled arc
       paint.color = segment.color;
@@ -445,8 +886,8 @@ class PieChartPainter extends CustomPainter {
         paint,
       );
 
-      final textAngle = startAngle + sweepAngle / 2;
-      final textRadius = radius * 0.9;
+      final textAngle = startAngle + sweepAngle / 2.5;
+      final textRadius = radius * 0.66;
       final textX = center.dx + textRadius * cos(textAngle);
       final textY = center.dy + textRadius * sin(textAngle);
 
@@ -454,12 +895,9 @@ class PieChartPainter extends CustomPainter {
       textPainter.text = TextSpan(
         text: '${segment.value.toInt()}%',
         style: const TextStyle(
-          color: Colors.white,
-          fontSize: 13,
+          color: Colors.black,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
-          shadows: [
-            Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2),
-          ],
         ),
       );
       textPainter.layout();
@@ -478,8 +916,8 @@ class PieChartPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _PieSegment {
+class _PaymentPieSegment {
   final double value;
   final Color color;
-  _PieSegment(this.value, this.color);
+  _PaymentPieSegment(this.value, this.color);
 }

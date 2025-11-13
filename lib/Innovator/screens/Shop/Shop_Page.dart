@@ -144,28 +144,27 @@ bool ascending = true;
 
       if (newQuery != _searchQuery) {
         setState(() {
-          // _products.clear();
-          // _currentPage = 0;
-          // _hasMore = true;
-          // _searchQuery = newSearchQuery;
+ 
           _searchQuery = newQuery;
         });
-        // _loadProducts();
+        _resetAndLoadProducts();
       }
     }
   }
+Future<void> _resetAndLoadProducts() async {
+  if (!_isMounted) return;
 
-  // void _onCategorySelected(String? categoryId, String categoryName) {
-  //   setState(() {
-  //     _selectedCategoryId = categoryId;
-  //     _selectedCategoryName = categoryName;
-  //     _products.clear();
-  //     _currentPage = 0;
-  //     _hasMore = true;
-  //   });
-  //   _loadProducts();
-  // }
+  setState(() {
+    _products.clear();
+    _currentPage = 0;
+    _hasMore = true;
+    _isError = false;
+    _errorMessage = null;
+  });
 
+  await _loadProducts();
+}
+   
 List<dynamic> _getFilteredAndSortedProducts() {
   var filtered = _products;
 
@@ -597,23 +596,13 @@ Future<void> _addToCart(
     );
   }
 
+
   Future<void> _refreshProducts() async {
-    if (!_isMounted) return;
-
-    setState(() {
-      _products.clear();
-      _currentPage = 0;
-      _hasMore = true;
-      _searchQuery = '';
-      _searchController.clear();
-      _selectedCategoryId = null;
-      // _selectedCategoryName = 'All Categories';
-    });
-    await _loadProducts();
-    
-
-    cartManager.refreshCartCount();
-  }
+  _searchController.clear();
+  _selectedCategoryId = null;
+  await _resetAndLoadProducts();
+  cartManager.refreshCartCount();
+}
   @override
   void dispose() {
     _isMounted = false;
