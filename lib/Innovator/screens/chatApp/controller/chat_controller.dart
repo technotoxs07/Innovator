@@ -10,10 +10,7 @@ import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/screens/chatApp/FollowStatusManager.dart'
     show FollowStatusManager;
 import 'package:innovator/Innovator/services/Firebase_Messaging.dart';
-import 'package:innovator/Innovator/services/call_permission_service.dart';
 import 'package:innovator/Innovator/services/firebase_services.dart';
-import 'package:innovator/Innovator/services/webrtc_call_service.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 class FireChatController extends GetxController {
   // Reactive variables

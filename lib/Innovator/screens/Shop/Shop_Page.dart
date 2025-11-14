@@ -14,6 +14,7 @@ import 'package:innovator/Innovator/screens/Shop/Product_detail_Page.dart';
 import 'dart:convert';
 
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
+import 'package:lottie/lottie.dart';
 
 class ShopPage extends StatefulWidget {
   const ShopPage({Key? key}) : super(key: key);
@@ -54,16 +55,16 @@ class _ShopPageState extends State<ShopPage>
   @override
   void initState() {
     super.initState();
-    
+
     if (!Get.isRegistered<CartStateManager>()) {
       Get.put(CartStateManager(), permanent: true);
     }
     cartManager = Get.find<CartStateManager>();
-    
+
     _initializeData();
     _scrollController.addListener(_scrollListener);
     _searchController.addListener(_onSearchChanged);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       cartManager.loadCartCount();
     });
@@ -153,18 +154,18 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Future<void> _resetAndLoadProducts() async {
-  if (!_isMounted) return;
+    if (!_isMounted) return;
 
-  setState(() {
-    _products.clear();
-    _currentPage = 0;
-    _hasMore = true;
-    _isError = false;
-    _errorMessage = null;
-  });
+    setState(() {
+      _products.clear();
+      _currentPage = 0;
+      _hasMore = true;
+      _isError = false;
+      _errorMessage = null;
+    });
 
-  await _loadProducts();
-}
+    await _loadProducts();
+  }
 
   List<dynamic> _getFilteredAndSortedProducts() {
     // Check if we can use cached results
@@ -180,13 +181,14 @@ class _ShopPageState extends State<ShopPage>
 
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      filtered = filtered.where((product) {
-        final name = (product['name'] ?? '').toString().toLowerCase();
-        return name.contains(query);
-      }).toList();
+      filtered =
+          filtered.where((product) {
+            final name = (product['name'] ?? '').toString().toLowerCase();
+            return name.contains(query);
+          }).toList();
     }
 
-    filtered = List.from(filtered); 
+    filtered = List.from(filtered);
     filtered.sort((a, b) {
       int comparison = 0;
 
@@ -325,82 +327,83 @@ class _ShopPageState extends State<ShopPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder:
+          (context) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Sort Products',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text(
+                    'Sort Products',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                _buildSortTile(
+                  title: 'Name (A → Z)',
+                  isSelected: sortBy == 'name' && ascending,
+                  onTap: () {
+                    setState(() {
+                      sortBy = 'name';
+                      ascending = true;
+                      _clearFilterCache();
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSortTile(
+                  title: 'Name (Z → A)',
+                  isSelected: sortBy == 'name' && !ascending,
+                  onTap: () {
+                    setState(() {
+                      sortBy = 'name';
+                      ascending = false;
+                      _clearFilterCache();
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSortTile(
+                  title: 'Price (Low → High)',
+                  isSelected: sortBy == 'price' && ascending,
+                  onTap: () {
+                    setState(() {
+                      sortBy = 'price';
+                      ascending = true;
+                      _clearFilterCache();
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSortTile(
+                  title: 'Price (High → Low)',
+                  isSelected: sortBy == 'price' && !ascending,
+                  onTap: () {
+                    setState(() {
+                      sortBy = 'price';
+                      ascending = false;
+                      _clearFilterCache();
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
-            _buildSortTile(
-              title: 'Name (A → Z)',
-              isSelected: sortBy == 'name' && ascending,
-              onTap: () {
-                setState(() {
-                  sortBy = 'name';
-                  ascending = true;
-                  _clearFilterCache();
-                });
-                Navigator.pop(context);
-              },
-            ),
-            _buildSortTile(
-              title: 'Name (Z → A)',
-              isSelected: sortBy == 'name' && !ascending,
-              onTap: () {
-                setState(() {
-                  sortBy = 'name';
-                  ascending = false;
-                  _clearFilterCache();
-                });
-                Navigator.pop(context);
-              },
-            ),
-            _buildSortTile(
-              title: 'Price (Low → High)',
-              isSelected: sortBy == 'price' && ascending,
-              onTap: () {
-                setState(() {
-                  sortBy = 'price';
-                  ascending = true;
-                  _clearFilterCache();
-                });
-                Navigator.pop(context);
-              },
-            ),
-            _buildSortTile(
-              title: 'Price (High → Low)',
-              isSelected: sortBy == 'price' && !ascending,
-              onTap: () {
-                setState(() {
-                  sortBy = 'price';
-                  ascending = false;
-                  _clearFilterCache();
-                });
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -493,8 +496,8 @@ class _ShopPageState extends State<ShopPage>
           message = data['message'] ?? '$productName added to cart';
         } else if (data['message'] != null) {
           final messageText = data['message'].toString().toLowerCase();
-          if (messageText.contains('added') || 
-              messageText.contains('success') || 
+          if (messageText.contains('added') ||
+              messageText.contains('success') ||
               messageText.contains('cart')) {
             isSuccess = true;
             message = data['message'];
@@ -517,36 +520,43 @@ class _ShopPageState extends State<ShopPage>
                   children: [
                     const Icon(Icons.check_circle, color: Colors.white),
                     const SizedBox(width: 12),
-                    Expanded(child: Row(
-                      children: [
-                        Text(message),
-                        TextButton(
-                          onPressed: (){
-                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                            Navigator.push(
-                              context,                          
-                              MaterialPageRoute(builder: (_) => CartScreen()),
-                            ).then((_) {                   
-                              if (_isMounted) {
-                                cartManager.refreshCartCount();
-                              }
-                            });
-                          }, 
-                          child: Text(
-                            'View Cart',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Text(message),
+                          TextButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).hideCurrentSnackBar();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => CartScreen()),
+                              ).then((_) {
+                                if (_isMounted) {
+                                  cartManager.refreshCartCount();
+                                }
+                              });
+                            },
+                            child: Text(
+                              'View Cart',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          )
-                        ),
-                      ],
-                    )),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
                 backgroundColor: Colors.green,
                 duration: const Duration(seconds: 5),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 0,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -621,11 +631,11 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Future<void> _refreshProducts() async {
-_searchController.clear();
-  _selectedCategoryId = null;
-  await _resetAndLoadProducts();
-  cartManager.refreshCartCount();
-_clearFilterCache();
+    _searchController.clear();
+    _selectedCategoryId = null;
+    await _resetAndLoadProducts();
+    cartManager.refreshCartCount();
+    _clearFilterCache();
     //if (!_isMounted) return;
 
     // setState(() {
@@ -654,7 +664,7 @@ _clearFilterCache();
   Widget build(BuildContext context) {
     // ✅ KEY FIX: Calculate filtered products once per build
     final filteredProducts = _getFilteredAndSortedProducts();
-    
+
     return Scaffold(
       floatingActionButton: Container(
         decoration: BoxDecoration(
@@ -688,8 +698,8 @@ _clearFilterCache();
       body: Stack(
         children: [
           _buildBody(filteredProducts), // ✅ Pass the pre-calculated list
-          FloatingMenuWidget(), 
-          _buildTopBar()
+          FloatingMenuWidget(),
+          _buildTopBar(),
         ],
       ),
     );
@@ -716,15 +726,16 @@ _clearFilterCache();
                     decoration: InputDecoration(
                       hintText: 'Search products...',
                       hintStyle: TextStyle(color: Colors.grey[600]),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(Icons.clear, size: 20),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : Icon(Icons.search, color: Colors.grey[600]),
+                      suffixIcon:
+                          _searchQuery.isNotEmpty
+                              ? IconButton(
+                                icon: Icon(Icons.clear, size: 20),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                              : Icon(Icons.search, color: Colors.grey[600]),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -746,9 +757,9 @@ _clearFilterCache();
                       ),
                       child: const Icon(
                         Icons.settings_input_component,
-                        size: 18, 
-                        color: Colors.black
-                      )
+                        size: 18,
+                        color: Colors.black,
+                      ),
                     ),
                     if (sortBy != 'name' || !ascending)
                       Positioned(
@@ -761,9 +772,9 @@ _clearFilterCache();
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.check, 
-                            size: 8, 
-                            color: Colors.white
+                            Icons.check,
+                            size: 8,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -771,7 +782,7 @@ _clearFilterCache();
                 ),
               ),
               IconButton(
-                onPressed: (){
+                onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -787,9 +798,9 @@ _clearFilterCache();
                   ),
                   child: const Icon(
                     Icons.history_rounded,
-                    size: 22, 
-                    color: Colors.black
-                  )
+                    size: 22,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ],
@@ -806,15 +817,16 @@ _clearFilterCache();
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: Colors.red, size: 64),
+            Lottie.asset('animation/No_Internet.json', fit: BoxFit.fill),
+            //Icon(Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
-            Text(
-              _errorMessage ?? 'Something went wrong',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
+            // Text(
+            //   _errorMessage ?? 'Something went wrong',
+            //   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            //   textAlign: TextAlign.center,
+            // ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: _loadProducts,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
@@ -827,7 +839,8 @@ _clearFilterCache();
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text('Retry'),
+              label: const Text('Retry'),
+              icon: Icon(Icons.refresh),
             ),
           ],
         ),
@@ -877,7 +890,7 @@ _clearFilterCache();
       color: Colors.blue,
       child: Column(
         children: [
-          const SizedBox(height: 130), 
+          const SizedBox(height: 130),
           Expanded(
             child: GridView.builder(
               controller: _scrollController,
@@ -889,7 +902,8 @@ _clearFilterCache();
                 childAspectRatio: 0.66,
               ),
               // ✅ KEY FIX: Use passed parameter instead of calling function
-              itemCount: filteredProducts.length + (_isLoading && _hasMore ? 1 : 0),
+              itemCount:
+                  filteredProducts.length + (_isLoading && _hasMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index >= filteredProducts.length) {
                   return _buildLoader();
@@ -930,11 +944,12 @@ _clearFilterCache();
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(
-              productId: id,
-              baseUrl: _baseUrl,
-              authToken: _appData.authToken,
-            ),
+            builder:
+                (context) => ProductDetailPage(
+                  productId: id,
+                  baseUrl: _baseUrl,
+                  authToken: _appData.authToken,
+                ),
           ),
         );
       },
@@ -951,28 +966,37 @@ _clearFilterCache();
                 height: 140,
                 width: double.infinity,
                 color: Colors.grey[200],
-                child: imageUrl.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        errorWidget: (context, url, error) => const Icon(
+                child:
+                    imageUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                          errorWidget:
+                              (context, url, error) => const Icon(
+                                Icons.image_not_supported,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                        )
+                        : const Icon(
                           Icons.image_not_supported,
                           size: 40,
                           color: Colors.grey,
                         ),
-                      )
-                    : const Icon(
-                        Icons.image_not_supported,
-                        size: 40,
-                        color: Colors.grey,
-                      ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 10, left: 10, bottom: 10),
+                  padding: const EdgeInsets.only(
+                    right: 10,
+                    left: 10,
+                    bottom: 10,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -988,7 +1012,10 @@ _clearFilterCache();
                         overflow: TextOverflow.ellipsis,
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.blue.withAlpha(50),
                           borderRadius: BorderRadius.circular(8),
@@ -1012,33 +1039,44 @@ _clearFilterCache();
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87
+                              color: Colors.black87,
                             ),
                           ),
                           SizedBox(
                             width: 36,
                             height: 36,
                             child: ElevatedButton(
-                              onPressed: (stock > 0 && !isAddingToCart)
-                                  ? () => _addToCart(id, price)
-                                  : null,
+                              onPressed:
+                                  (stock > 0 && !isAddingToCart)
+                                      ? () => _addToCart(id, price)
+                                      : null,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+                                backgroundColor: const Color.fromRGBO(
+                                  244,
+                                  135,
+                                  6,
+                                  1,
+                                ),
                                 padding: EdgeInsets.zero,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-                              child: isAddingToCart
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
+                              child:
+                                  isAddingToCart
+                                      ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : const Icon(
+                                        Icons.add,
+                                        size: 18,
                                         color: Colors.white,
-                                        strokeWidth: 2,
                                       ),
-                                    )
-                                  : const Icon(Icons.add, size: 18, color: Colors.white),
                             ),
                           ),
                         ],
@@ -1052,5 +1090,5 @@ _clearFilterCache();
         ),
       ),
     );
-  }  
+  }
 }

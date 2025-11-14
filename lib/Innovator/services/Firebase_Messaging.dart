@@ -12,6 +12,7 @@ import 'package:get/get.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'dart:developer' as developer;
 import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
+import 'package:innovator/Innovator/services/InAppNotificationService.dart';
 import 'package:innovator/Innovator/services/firebase_services.dart';
 
 class FirebaseNotificationService {
@@ -495,6 +496,9 @@ class FirebaseNotificationService {
       String body = notification?.body ?? data['message'] ?? 'You have a new message';
       String chatId = data['chatId']?.toString() ?? '';
       String senderId = data['senderId']?.toString() ?? '';
+      String senderPicture = data['senderPicture']?.toString() ?? '';
+    String type = data['type']?.toString().toLowerCase() ?? 'notification';
+
       
       developer.log('📱 Processed - Title: $title, Body: $body, ChatId: $chatId');
 
@@ -552,6 +556,31 @@ class FirebaseNotificationService {
             badgeCount: 1,
           );
         }
+
+        // ✅ SHOW CUSTOM IN-APP NOTIFICATION FOR ALL TYPES
+    InAppNotificationService().showNotification(
+      title: title,
+      body: body,
+      imageUrl: senderPicture.isNotEmpty ? senderPicture : null,
+      icon: type.notificationIcon,
+      backgroundColor: type.notificationColor,
+      onTap: () {
+        // Navigate based on notification type
+        if (type == 'chat' || type == 'message') {
+          _navigateToChatWithBadge(data);
+        } else {
+          _handleNotificationTapWithBadge(data);
+        }
+      },
+      duration: const Duration(seconds: 4),
+    );
+    
+    // Haptic feedback
+    HapticFeedback.mediumImpact();
+
+    developer.log('📱 ✅ Custom in-app notification shown');
+    developer.log('📱 ========= FOREGROUND MESSAGE COMPLETE =========');
+
         
         developer.log('📱 ✅ Badge and notification updated');
       } catch (e) {

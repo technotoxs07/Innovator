@@ -1,8 +1,10 @@
 import 'dart:developer';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
 import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart';
+import 'package:innovator/Innovator/services/InAppNotificationService.dart';
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 
 class Homepage extends StatefulWidget {
@@ -14,14 +16,33 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage>
     with SingleTickerProviderStateMixin {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     // Check for app updates when the widget initializes
     _checkForUpdate();
+    
+    // ✅ WAIT for GetX to be ready before showing test notification
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 3), () {
+Future.delayed(const Duration(seconds: 3), () {
+      developer.log('🧪 Showing test notification...');
+      InAppNotificationService().showNotification(
+        title: '✅ Notification System Ready',
+        body: 'In-app notifications are working correctly!',
+        icon: Icons.check_circle,
+        backgroundColor: Colors.green,
+        onTap: () {
+          developer.log('✅ Test notification tapped');
+        },
+      );
+    });      });
+    });
   }
+
+  // ✅ ADD: Test notification method
+  
 
   Future<void> _checkForUpdate() async {
     try {
@@ -116,7 +137,7 @@ class _HomepageState extends State<Homepage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
+      // key: InAppNotificationService().navigatorKey,
       body: GestureDetector(
         onHorizontalDragEnd: (DragEndDetails details) {
           // Detect swipe from right to left
@@ -129,7 +150,6 @@ class _HomepageState extends State<Homepage>
             Inner_HomePage(),
             // Add the floating menu widget
             FloatingMenuWidget(),
-            // Remove FeedToggleButton from Homepage
           ],
         ),
       ),

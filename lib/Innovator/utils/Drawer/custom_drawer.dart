@@ -27,6 +27,7 @@ import 'package:innovator/Innovator/utils/Drawer/drawer_cache_manager.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // Synchronous-only cache for instant access
 class InstantCache {

@@ -10,6 +10,7 @@ class FCMHandler {
   static ServiceAccountCredentials? _credentials;
   static AuthClient? _authClient;
   static DateTime? _tokenExpiry;
+  
 
   // Service account key - make sure this matches your Firebase project
   static const Map<String, dynamic> _serviceAccountKey = {

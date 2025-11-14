@@ -16,6 +16,8 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handlePageVisible();
     });
+
+    
     return Scaffold(
     backgroundColor: Get.theme.scaffoldBackgroundColor,
     //appBar: _buildAppBar(),
