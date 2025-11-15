@@ -23,6 +23,10 @@ class SoundPlayer {
     await _player.play(AssetSource('icon/zapsplat_multimedia_ui_refresh_load_new_content_rattle_91307.mp3'));
   }
 
+  Future<void> notificationsound()async{
+    await _player.play(AssetSource('icon/notification_sound.mp3'));
+  }
+
   
 }
 

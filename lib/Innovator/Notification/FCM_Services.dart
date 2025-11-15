@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
 import 'package:innovator/innovator_home.dart';
 import 'package:innovator/Innovator/screens/show_Specific_Profile/Show_Specific_Profile.dart';
 import 'package:intl/intl.dart';
@@ -37,6 +38,8 @@ class _NotificationListScreenState extends State<NotificationListScreen>
     super.initState();
     fetchNotifications();
     _scrollController.addListener(_scrollListener);
+
+    NotificationPollingService().forceCheck();
     
     // Initialize animations
     _fabAnimationController = AnimationController(
@@ -467,6 +470,12 @@ class _NotificationListScreenState extends State<NotificationListScreen>
         title: Text('Notification', style: TextStyle(color: Colors.white),),
         actions: [
           if (notifications.isNotEmpty) ...[
+                          _buildHeaderAction(Icons.sync, 'Sync', () async{
+                            HapticFeedback.mediumImpact();
+                            await NotificationPollingService().forceCheck();
+                            await fetchMoreNotifications();
+                            _showSuccessSnackbar('Synced with Lates notification');
+                          }),
                           _buildHeaderAction(
                             Icons.mark_email_read,
                             'Mark all read',

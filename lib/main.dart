@@ -9,6 +9,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
+import 'package:innovator/Innovator/services/in_app_notifcation.dart';
+import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
@@ -28,6 +30,12 @@ import 'dart:developer' as developer;
 // ============================================================================
 late Size mq;
 late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+<<<<<<< HEAD
+=======
+  GlobalKey<NavigatorState> get navigatorKey => Get.key;
+
+// ✅ CRITICAL: Track Firebase initialization state
+>>>>>>> 9d4c90f (foreground notification)
 bool _isFirebaseInitialized = false;
 
 // ============================================================================
@@ -216,7 +224,19 @@ Future<void> _initializeDailyNotifications() async {
 Future<void> _initializeDeferredServices() async {
   try {
     developer.log('⏰ Starting deferred services...');
+<<<<<<< HEAD
     await Future.delayed(const Duration(milliseconds: 500));
+=======
+    
+    // ✅ FIX: Wait longer for UI to be fully ready
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // ✅ Verify navigator is ready
+    if (navigatorKey.currentContext == null) {
+      developer.log('⚠️ Navigator not ready, waiting...');
+      await Future.delayed(const Duration(seconds: 1));
+    }
+>>>>>>> 9d4c90f (foreground notification)
     
     if (!_isFirebaseInitialized) {
       developer.log('⚠️ Firebase not ready, initializing now...');
@@ -477,17 +497,21 @@ class InnovatorHomePage extends ConsumerStatefulWidget {
   ConsumerState<InnovatorHomePage> createState() => _InnovatorHomePageState();
 }
 
-class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
+class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with WidgetsBindingObserver{
+
+  final NotificationPollingService _pollingService = NotificationPollingService();
+  
   @override
   void initState() {
     super.initState();
-    
+    WidgetsBinding.instance.addObserver(this);
     developer.log('🏠 InnovatorHomePage initialized');
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       developer.log('🎬 First frame rendered, starting deferred services...');
       _initializeDeferredServices();
       
+<<<<<<< HEAD
       // ✅ Show test notification after 3 seconds
       Future.delayed(const Duration(seconds: 3), () {
         developer.log('🧪 Showing test notification...');
@@ -500,8 +524,53 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
             developer.log('✅ Test notification tapped');
           },
         );
+=======
+      // ✅ FIX: Wait longer before starting polling to ensure overlay is ready
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && InAppNotificationService().isReady) {
+          _pollingService.startPolling();
+          developer.log('✅ Notification polling started from main');
+        } else {
+          // Retry after another delay if not ready
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              // Force start even if not "ready" - the service will handle it
+              _pollingService.startPolling();
+              developer.log('✅ Notification polling started (forced retry)');
+            }
+          });
+        }
+>>>>>>> 9d4c90f (foreground notification)
       });
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pollingService.stopPolling();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        developer.log('📱 App resumed - restarting notification polling');
+        _pollingService.startPolling();
+        _pollingService.forceCheck(); // Immediate check
+        break;
+      case AppLifecycleState.paused:
+        developer.log('⏸️ App paused - pausing notification polling');
+        _pollingService.stopPolling();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 
   @override
@@ -509,7 +578,12 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
     mq = MediaQuery.of(context).size;
 
     return GetMaterialApp(
+<<<<<<< HEAD
       navigatorKey: InAppNotificationService().navigatorKey,
+=======
+      // ✅ FIX: Use the global navigator key for InAppNotificationService
+      navigatorKey: navigatorKey,
+>>>>>>> 9d4c90f (foreground notification)
       title: 'Innovator',
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,

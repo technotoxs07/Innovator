@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
 import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart';
+<<<<<<< HEAD
 import 'package:innovator/Innovator/services/InAppNotificationService.dart';
+=======
+import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
+ 
+>>>>>>> 9d4c90f (foreground notification)
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 
 class Homepage extends StatefulWidget {
@@ -15,14 +20,23 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage>
+<<<<<<< HEAD
     with SingleTickerProviderStateMixin {
+=======
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final NotificationPollingService _pollingService = NotificationPollingService();
+>>>>>>> 9d4c90f (foreground notification)
 
   @override
   void initState() {
     super.initState();
-    // Check for app updates when the widget initializes
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Check for app updates
     _checkForUpdate();
     
+<<<<<<< HEAD
     // ✅ WAIT for GetX to be ready before showing test notification
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () {
@@ -38,6 +52,50 @@ Future.delayed(const Duration(seconds: 3), () {
         },
       );
     });      });
+=======
+    // Start notification polling
+    _startNotificationPolling();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Note: We don't stop polling here as it should continue app-wide
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // Handle app lifecycle changes
+    switch (state) {
+      case AppLifecycleState.resumed:
+        log('📱 App resumed - starting notification polling');
+        _pollingService.startPolling();
+        // Force check immediately when app resumes
+        _pollingService.forceCheck();
+        break;
+      case AppLifecycleState.paused:
+        log('⏸️ App paused - stopping notification polling');
+        _pollingService.stopPolling();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  void _startNotificationPolling() {
+    // Start polling service
+    _pollingService.startPolling();
+    log('✅ Notification polling started');
+    
+    // Also do an immediate check
+    Future.delayed(const Duration(seconds: 2), () {
+      _pollingService.forceCheck();
+>>>>>>> 9d4c90f (foreground notification)
     });
   }
 
