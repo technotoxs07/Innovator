@@ -7,6 +7,8 @@ import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/student/student_complain_box_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -133,12 +135,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             //             PartnerDashboardScreen(),
                                             //   ),
                                             // );
+                                            // Navigator.pushReplacement(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             SchoolDashboardScreen(),
+                                            //   ),
+                                            // );
+
+                                            // Navigator.pushReplacement(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             StudentDashboardScreen(),
+                                            //   ),
+                                            // );
                                             Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
                                                     (context) =>
-                                                        SchoolDashboardScreen(),
+                                                        StudentComplainBoxScreen(),
                                               ),
                                             );
                                           }

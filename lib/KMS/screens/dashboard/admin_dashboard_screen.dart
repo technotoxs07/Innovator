@@ -5,164 +5,143 @@ import 'package:innovator/KMS/screens/constant_screen/app_drawer.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/constants/mediaquery.dart';
 import 'package:innovator/KMS/screens/constant_screen/appbar.dart';
+import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppStyle.backgroundColor,
-
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight),
-        child: AppbarScreen(),
-      ),
-      drawer: AppDrawer(),
-
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(
-                top: context.screenHeight * 0.018,
-                bottom: context.screenHeight * 0.02,
-                right: context.screenWidth * 0.04,
-                left: context.screenWidth * 0.04,
+    return   CustomScrolling(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Overview',
+            
+            style: AppStyle.bodyText.copyWith(
+              fontFamily: AppStyle.fontFamilySecondary,
+              color: Colors.black,
+            
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 5),
+          GridView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.4,
+              crossAxisSpacing: 10,
+            
+              mainAxisSpacing: 10,
+            ),
+            
+            children: [
+              overViewCard(
+                'Total Students',
+                numberText: '500',
+                image: 'assets/kms/student.png',
+                color: AppStyle.primaryColor,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Overview',
-
-                    style: AppStyle.bodyText.copyWith(
-                      fontFamily: AppStyle.fontFamilySecondary,
-                      color: Colors.black,
-
-                      letterSpacing: 1,
-                    ),
+              overViewCard(
+                'Total Partners',
+                numberText: '45',
+                image: 'assets/kms/handshake.png',
+                color: AppStyle.primaryColor,
+              ),
+              overViewCard(
+                'Total Students',
+                numberText: '12',
+                image: 'assets/kms/school.png',
+              ),
+              overViewCard(
+                'Total Students',
+                description: 'No upcoming exams. Good job!',
+              ),
+            ],
+          ),
+        
+        SizedBox(height: 20,),
+          Text(
+            'Distribution (Pie Chart)',
+            style: TextStyle(
+              fontSize: 15,
+              fontFamily: AppStyle.fontFamilySecondary,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            height: 250,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: Row(
+              children: [
+                CustomPaint(
+                  painter: PieChartPainter(),
+                  size: Size(
+                    context.screenWidth * 0.6,
+                    context.screenHeight * 0.4,
                   ),
-                  const SizedBox(height: 5),
-                  GridView(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 1.4,
-                      crossAxisSpacing: 10,
-
-                      mainAxisSpacing: 10,
-                    ),
-
+                ),
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      overViewCard(
-                        'Total Students',
-                        numberText: '500',
-                        image: 'assets/kms/student.png',
-                        color: AppStyle.primaryColor,
-                      ),
-                      overViewCard(
-                        'Total Partners',
-                        numberText: '45',
-                        image: 'assets/kms/handshake.png',
-                        color: AppStyle.primaryColor,
-                      ),
-                      overViewCard(
-                        'Total Students',
-                        numberText: '12',
-                        image: 'assets/kms/school.png',
-                      ),
-                      overViewCard(
-                        'Total Students',
-                        description: 'No upcoming exams. Good job!',
-                      ),
+                      distributionChart(Colors.blue, 'Attendance'),
+                      distributionChart(Colors.yellow, 'Exams'),
+                      distributionChart(Colors.green, 'Payments'),
+                      distributionChart(Colors.red, 'Complaints'),
                     ],
                   ),
-                
-                  Text(
-                    'Distribution (Pie Chart)',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontFamily: AppStyle.fontFamilySecondary,
-                      fontWeight: FontWeight.w400,
-                    ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 25),
+          
+          Container(
+            width: double.infinity,
+            height: 250,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: 8,
+                left: 8,
+                top: 10,
+                bottom: 8,
+              ),
+              child: Column(
+                children: [
+                  onGoingClass(
+                    'Today Ongoing Classes',
+                    '2025/11/05',
+                    onPressed: () {},
                   ),
                   SizedBox(height: 10),
-                  Container(
-                    width: double.infinity,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black),
-                    ),
-                    child: Row(
-                      children: [
-                        CustomPaint(
-                          painter: PieChartPainter(),
-                          size: Size(
-                            context.screenWidth * 0.6,
-                            context.screenHeight * 0.4,
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 10),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              distributionChart(Colors.blue, 'Attendance'),
-                              distributionChart(Colors.yellow, 'Exams'),
-                              distributionChart(Colors.green, 'Payments'),
-                              distributionChart(Colors.red, 'Complaints'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 25),
-                  
-                  Container(
-                    width: double.infinity,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: 8,
-                        left: 8,
-                        top: 10,
-                        bottom: 8,
-                      ),
-                      child: Column(
-                        children: [
-                          onGoingClass(
-                            'Today Ongoing Classes',
-                            '2025/11/05',
-                            onPressed: () {},
-                          ),
-                          SizedBox(height: 10),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: _todayOngoingClassesTable(),
-                            ),
-                          ),
-                        ],
-                      ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _todayOngoingClassesTable(),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        ],
+      )
     );
   }
 

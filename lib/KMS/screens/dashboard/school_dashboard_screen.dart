@@ -2,480 +2,90 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:innovator/KMS/screens/constant_screen/app_drawer.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/constants/mediaquery.dart';
-import 'package:innovator/KMS/screens/constant_screen/appbar.dart';
+import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 
 class SchoolDashboardScreen extends ConsumerWidget {
   const SchoolDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppStyle.backgroundColor,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight),
-        child: AppbarScreen(),
-      ),
-      drawer: AppDrawer(),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: context.screenHeight * 0.018,
-            bottom: context.screenHeight * 0.02,
-            right: context.screenWidth * 0.04,
-            left: context.screenWidth * 0.04,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-         
-
-              // Grid Content
-              GridView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.4,
-                  crossAxisSpacing: 10,
-
-                  mainAxisSpacing: 10,
-                ),
-
-                children: [
-                  //Attendance Rate
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 10, left: 10, top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Attendance Rate',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomPaint(
-                                painter: AttendanceRate(
-                                  percentage:
-                                      95, //pass the backend value later when it comes from the backends
-                                ),
-                                size: Size(
-                                  context.screenWidth * 0.2,
-                                  context.screenHeight * 0.1,
-                                ),
-                              ),
-
-                              Padding(
-                                padding: EdgeInsets.only(top: 20),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '95%',
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                                    Text(
-                                      'This week',
-                                      style: TextStyle(fontSize: 10),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  //Tutor Performance
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: 17,
-                        left: 17,
-                        top: 10,
-                        bottom: 10,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Tutor Performance',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: context.screenHeight * 0.009),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: Colors.amber,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  CupertinoIcons.star_fill,
-                                  size: 20,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        '4.6/',
-                                        style: TextStyle(fontFamily: 'Inter'),
-                                      ),
-
-                                      Text(
-                                        '5'.padLeft(2),
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Text(
-                                    'Avg Rating',
-                                    style: TextStyle(fontSize: 10),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  //Course Progress
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Course Progress',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 13),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Container(
-                                height: 43,
-                                width: 7,
-                                decoration: BoxDecoration(
-                                  color: AppStyle.primaryColor,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Container(
-                                height: 24,
-                                width: 7,
-                                decoration: BoxDecoration(
-                                  color: AppStyle.primaryColor,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Container(
-                                height: 15,
-                                width: 7,
-                                decoration: BoxDecoration(
-                                  color: AppStyle.primaryColor,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Container(
-                                height: 7,
-                                width: 7,
-                                decoration: BoxDecoration(
-                                  color: AppStyle.primaryColor,
-                                ),
-                              ),
-                              Spacer(),
-                              Column(
-                                children: [
-                                  Text(
-                                    '8',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppStyle.fontFamilySecondary,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Active Courses',
-                                    style: TextStyle(fontSize: 10),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Complaints Pending
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                      child: Column(
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Complaints Pending',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-
-                          SizedBox(height: 22),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                '8',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 15,
-                                ),
-                              ),
-                              Text(
-                                'Unresolved',
-                                style: TextStyle(fontSize: 10),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+    return   CustomScrolling(
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
              
-              // Attendance & Exams Container
-              Container(
-                width: double.infinity,
-                height: 270,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: 8,
-                    left: 8,
-                    top: 10,
-                    bottom: 5,
+            
+          // Grid Content
+          GridView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.4,
+              crossAxisSpacing: 10,
+            
+              mainAxisSpacing: 10,
+            ),
+            
+            children: [
+              //Attendance Rate
+              FittedBox(
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Text(
-                          'Attendance & Exams',
-                          style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(color: Colors.black),
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 0,
-                              ),
-                              child: Text('Class 1- Attendance'),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: Icon(
-                              Icons.filter_alt,
-                              color: AppStyle.primaryColor,
-                              size: 30,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: _attendanceExamsTable(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 30),
-              // Bills & Accounting Container
-              Container(
-                width: double.infinity,
-                height: 270,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black),
-                ),
-                child: SingleChildScrollView(
+                  color: Colors.white,
+                  elevation: 5,
                   child: Padding(
-                    padding: EdgeInsets.only(
-                      right: 8,
-                      left: 8,
-                      top: 4,
-                      bottom: 5,
-                    ),
+                    padding: EdgeInsets.only(right: 10, left: 10, top: 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Center(
-                          child: Text(
-                            'Bills & Accounting',
-                            style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                        Text(
+                          'Attendance Rate',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
                           ),
                         ),
-                        SizedBox(height: 15),
-                        GridView(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 1.9,
-                                crossAxisSpacing: 10,
-
-                                mainAxisSpacing: 10,
-                              ),
-                          children: [
-                            _billCard(
-                              '35000',
-                              'assets/kms/money_bag.png',
-                              'Paid This Month',
-                            ),
-                            _billCard(
-                              '12000',
-                              'assets/kms/money_bag.png',
-                              'Pending Dues',
-                            ),
-                          ],
-                        ),
+                            
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
+                            CustomPaint(
+                              painter: AttendanceRate(
+                                percentage:
+                                    95, //pass the backend value later when it comes from the backends
                               ),
-                              color: Colors.white,
-                              elevation: 5,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 30,
-                                  vertical: 13,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '2 days Ago',
-                                      style: TextStyle(
-                                        fontFamily:
-                                            AppStyle.fontFamilySecondary,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-
-                                    SizedBox(height: 15),
-                                    Text('Paid This Month'),
-                                  ],
-                                ),
+                              size: Size(
+                                context.screenWidth * 0.2,
+                                context.screenHeight * 0.1,
                               ),
                             ),
-
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppStyle.buttonColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 25,
-                                ),
-                              ),
-                              onPressed: () {},
-                              // Use the navigation to show the all invoices
-                              child: const Text(
-                                'View All Invoices',
-                                style: TextStyle(color: AppStyle.bodyTextColor),
+                            
+                            Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '95%',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Inter',
+                                    ),
+                                  ),
+                                  Text(
+                                    'This week',
+                                    style: TextStyle(fontSize: 10),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -485,36 +95,201 @@ class SchoolDashboardScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-
-              SizedBox(height: 30),
-              // Tutor Monitoring Container
-              Container(
-                width: double.infinity,
-                height: 270,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black),
+              //Tutor Performance
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
                 ),
+                color: Colors.white,
+                elevation: 5,
                 child: Padding(
                   padding: EdgeInsets.only(
-                    right: 8,
-                    left: 8,
+                    right: 17,
+                    left: 17,
                     top: 10,
-                    bottom: 5,
+                    bottom: 10,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Tutor Monitoring',
-                        style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-                      ),
-                      SizedBox(height: 15),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: _tutorMonitoringTable(),
+                      FittedBox(
+                        child: Text(
+                          'Tutor Performance',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
+                          ),
                         ),
+                      ),
+                      SizedBox(height: context.screenHeight * 0.009),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: Colors.amber,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              CupertinoIcons.star_fill,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    '4.6/',
+                                    style: TextStyle(fontFamily: 'Inter'),
+                                  ),
+            
+                                  Text(
+                                    '5'.padLeft(2),
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                'Avg Rating',
+                                style: TextStyle(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              //Course Progress
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                color: Colors.white,
+                elevation: 5,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedBox(
+                        child: Text(
+                          'Course Progress',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 13),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            height: 43,
+                            width: 7,
+                            decoration: BoxDecoration(
+                              color: AppStyle.primaryColor,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Container(
+                            height: 24,
+                            width: 7,
+                            decoration: BoxDecoration(
+                              color: AppStyle.primaryColor,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Container(
+                            height: 15,
+                            width: 7,
+                            decoration: BoxDecoration(
+                              color: AppStyle.primaryColor,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Container(
+                            height: 7,
+                            width: 7,
+                            decoration: BoxDecoration(
+                              color: AppStyle.primaryColor,
+                            ),
+                          ),
+                          Spacer(),
+                          Column(
+                            children: [
+                              Text(
+                                '8',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppStyle.fontFamilySecondary,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Active Courses',
+                                style: TextStyle(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Complaints Pending
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                color: Colors.white,
+                elevation: 5,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                  child: Column(
+                    children: [
+                      FittedBox(
+                        child: Text(
+                          'Complaints Pending',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+            
+                      SizedBox(height: 22),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '8',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                            ),
+                          ),
+                          Text(
+                            'Unresolved',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -522,9 +297,222 @@ class SchoolDashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+          SizedBox(height: 20,),
+         
+          // Attendance & Exams Container
+          Container(
+            width: double.infinity,
+            height: 270,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: 8,
+                left: 8,
+                top: 10,
+                bottom: 5,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text(
+                      'Attendance & Exams',
+                      style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(color: Colors.black),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 0,
+                          ),
+                          child: Text('Class 1- Attendance'),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: Icon(
+                          Icons.filter_alt,
+                          color: AppStyle.primaryColor,
+                          size: 30,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _attendanceExamsTable(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+            
+          SizedBox(height: 30),
+          // Bills & Accounting Container
+          Container(
+            width: double.infinity,
+            height: 270,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: 8,
+                  left: 8,
+                  top: 4,
+                  bottom: 5,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Center(
+                      child: Text(
+                        'Bills & Accounting',
+                        style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                      ),
+                    ),
+                    SizedBox(height: 15),
+                    GridView(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+            
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 1.9,
+                            crossAxisSpacing: 10,
+            
+                            mainAxisSpacing: 10,
+                          ),
+                      children: [
+                        _billCard(
+                          '35000',
+                          'assets/kms/money_bag.png',
+                          'Paid This Month',
+                        ),
+                        _billCard(
+                          '12000',
+                          'assets/kms/money_bag.png',
+                          'Pending Dues',
+                        ),
+                      ],
+                    ),
+                    FittedBox(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            color: Colors.white,
+                            elevation: 5,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 30,
+                                vertical: 13,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '2 days Ago',
+                                    style: TextStyle(
+                                      fontFamily:
+                                          AppStyle.fontFamilySecondary,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  
+                                  SizedBox(height: 15),
+                                  Text('Paid This Month'),
+                                ],
+                              ),
+                            ),
+                          ),
+                                  
+                        SizedBox(width: 30,),
+                          GestureDetector(
+                            onTap: (){
+                              //  // Use the navigation to show the all invoices
+                            },
+                            child: Container(
+                              height: 50,
+                              padding: EdgeInsets.only(right: 10,left: 10),
+                              decoration: BoxDecoration(
+                                color: AppStyle.primaryColor,
+                                borderRadius: BorderRadius.circular(10)
+                              ),
+                               child: Center(
+                                 child: const Text(
+                                  'View All Invoices',
+                                  style: TextStyle(color: AppStyle.bodyTextColor),
+                                                           ),
+                               ),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+            
+          SizedBox(height: 30),
+          // Tutor Monitoring Container
+          Container(
+            width: double.infinity,
+            height: 270,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: 8,
+                left: 8,
+                top: 10,
+                bottom: 5,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tutor Monitoring',
+                    style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                  ),
+                  SizedBox(height: 15),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _tutorMonitoringTable(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ));
   }
 
   //bill Card
@@ -806,7 +794,7 @@ class SchoolDashboardScreen extends ConsumerWidget {
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppStyle.primaryColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
                   status1,
@@ -903,71 +891,4 @@ class _PieSegment {
   final Color color;
   const _PieSegment(this.value, this.color);
 }
-
-//Custom Painter for the payement pie chart
-class PaymentPieChart extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) * 0.48;
-    final innerRadius = radius * 0;
-
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    //Pass the value that comes later from the backend
-    final segments = [
-      _PaymentPieSegment(85, AppStyle.primaryColor),
-      _PaymentPieSegment(15, Color(0xffF8BD00)),
-    ];
-
-    final total = segments.fold(0.0, (sum, s) => sum + s.value);
-    double startAngle = -pi / 2;
-
-    for (final segment in segments) {
-      final sweepAngle = (segment.value / total) * 2.5 * pi;
-
-      // Draw filled arc
-      paint.color = segment.color;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        paint,
-      );
-
-      final textAngle = startAngle + sweepAngle / 2.5;
-      final textRadius = radius * 0.66;
-      final textX = center.dx + textRadius * cos(textAngle);
-      final textY = center.dy + textRadius * sin(textAngle);
-
-      final textPainter = TextPainter(textDirection: TextDirection.ltr);
-      textPainter.text = TextSpan(
-        text: '${segment.value.toInt()}%',
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(textX - textPainter.width / 2, textY - textPainter.height / 2),
-      );
-
-      startAngle += sweepAngle;
-    }
-
-    canvas.drawCircle(center, innerRadius, Paint()..color = Colors.white);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _PaymentPieSegment {
-  final double value;
-  final Color color;
-  _PaymentPieSegment(this.value, this.color);
-}
+ 

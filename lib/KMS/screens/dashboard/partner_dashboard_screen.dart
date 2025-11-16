@@ -1,446 +1,300 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:innovator/KMS/screens/constant_screen/app_drawer.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/constants/mediaquery.dart';
-import 'package:innovator/KMS/screens/constant_screen/appbar.dart';
+import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 
 class PartnerDashboardScreen extends ConsumerWidget {
   const PartnerDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppStyle.backgroundColor,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight),
-        child: AppbarScreen(),
-      ),
-      drawer: AppDrawer(),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: context.screenHeight * 0.018,
-            bottom: context.screenHeight * 0.02,
-            right: context.screenWidth * 0.04,
-            left: context.screenWidth * 0.04,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return  
+       CustomScrolling(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+            
+          // Grid Content
+          GridView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.4,
+              crossAxisSpacing: 10,
+            
+              mainAxisSpacing: 10,
+            ),
+            
             children: [
-              const SizedBox(height: 10),
-
-              // Grid Content
-              GridView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.4,
-                  crossAxisSpacing: 10,
-
-                  mainAxisSpacing: 10,
+              //Profile Status
+              FittedBox(
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  color: Colors.white,
+                  elevation: 5,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          child: Text(
+                            'Profile Status',
+                            style: AppStyle.heading2.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppStyle.fontFamilySecondary,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                            
+                        CustomPaint(
+                          painter: ProfileStatusCircularPercentage(
+                            percentage:
+                                75, //pass the backend value later when it comes from the backends
+                          ),
+                          size: Size(
+                            context.screenWidth * 0.2,
+                            context.screenHeight * 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-
-                children: [
-                  //Profile Status
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Profile Status',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-
-                          CustomPaint(
-                            painter: ProfileStatusCircularPercentage(
-                              percentage:
-                                  75, //pass the backend value later when it comes from the backends
-                            ),
-                            size: Size(
-                              context.screenWidth * 0.2,
-                              context.screenHeight * 0.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  //Assigned Schools
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: 17,
-                        left: 17,
-                        top: 10,
-                        bottom: 10,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Assigned Schools',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: context.screenHeight * 0.009),
-                          Center(
-                            child: Text(
-                              '3',
-                              style: AppStyle.bodyText.copyWith(
-                                color: Colors.black,
-                                fontSize: 15,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: context.screenHeight * 0.009),
-                          Padding(
-                            padding: EdgeInsets.only(left: 10),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppStyle.backgroundColor,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: FittedBox(
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    right: 10,
-                                    left: 10,
-                                    bottom: 5,
-                                    top: 5,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Image.asset(
-                                        'assets/kms/school.png',
-                                        height: 15,
-                                        width: 15,
-                                        color: AppStyle.primaryColor,
-                                      ),
-                                      SizedBox(width: 5,),
-                                      Text('12 Classes'),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Task Overview',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-
-                          Padding(
-                            padding: EdgeInsets.only(top: 5, right: 5, left: 5),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      '3', // Completed value later from the backend
-
-                                      style: TextStyle(fontFamily: 'Inter'),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text('Completed'),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '3', //Pending value later from the backend
-                                      style: TextStyle(fontFamily: 'Inter'),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text('Pending'),
-                                  ],
-                                ),
-                                SizedBox(height: context.screenHeight * 0.01),
-                                Center(
-                                  child: Builder(
-                                    builder: (context) {
-                                      const completed =
-                                          3; // Completed value later from the backend
-                                      const pending =
-                                          3; //Pending value later from the backend
-                                      final total = completed + pending;
-                                      final double completedRatio =
-                                          total == 0 ? 0.0 : completed / total;
-                                      final int completedFlex =
-                                          (completedRatio * 1000).round();
-                                      final int pendingFlex =
-                                          (1000 - completedFlex).round();
-                                      return ClipRRect(
-                                        borderRadius:
-                                            BorderRadiusGeometry.circular(10),
-                                        child: Container(
-                                          width: 100,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            color: AppStyle.primaryColor,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                flex: completedFlex,
-                                                child: Container(
-                                                  color: AppStyle.primaryColor,
-                                                ),
-                                              ),
-
-                                              Expanded(
-                                                flex: pendingFlex,
-                                                child: Container(
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Payment',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-
-                          FittedBox(
-                            child: Row(
-                              children: [
-                                CustomPaint(
-                                  painter: PaymentPieChart(),
-                                  size: Size(
-                                    context.screenWidth * 0.2,
-                                    context.screenHeight * 0.1,
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    distributionChart(
-                                      Color(0xffF8BD00),
-                                      'Pending',
-                                    ),
-                                    distributionChart(
-                                      AppStyle.primaryColor,
-                                      'Completed',
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ),
-
-              // This week classes container
-              SizedBox(height: 17),
-              Container(
-                width: double.infinity,
-                height: 250,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black),
+              //Assigned Schools
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
                 ),
+                color: Colors.white,
+                elevation: 5,
                 child: Padding(
                   padding: EdgeInsets.only(
-                    right: 8,
-                    left: 8,
+                    right: 17,
+                    left: 17,
                     top: 10,
-                    bottom: 8,
+                    bottom: 10,
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
+                      FittedBox(
                         child: Text(
-                          'This Week Classes',
-                          style: TextStyle(
-                            fontSize: 20,
+                          'Assigned Schools',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
                             fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
                           ),
                         ),
                       ),
-                      SizedBox(height: 15),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: _thisWeekClassesTable(),
+                      SizedBox(height: context.screenHeight * 0.009),
+                      Center(
+                        child: Text(
+                          '3',
+                          style: AppStyle.bodyText.copyWith(
+                            color: Colors.black,
+                            fontSize: 15,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: context.screenHeight * 0.009),
+                      Padding(
+                        padding: EdgeInsets.only(left: 10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppStyle.backgroundColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: FittedBox(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                right: 10,
+                                left: 10,
+                                bottom: 5,
+                                top: 5,
+                              ),
+                              child: Row(
+                                children: [
+                                  Image.asset(
+                                    'assets/kms/school.png',
+                                    height: 15,
+                                    width: 15,
+                                    color: AppStyle.primaryColor,
+                                  ),
+                                  SizedBox(width: 5,),
+                                  Text('12 Classes'),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-
-              SizedBox(height: 30),
-              // LeaderBoard Container
-              Container(
-                width: double.infinity,
-                height: 250,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
                 ),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 8, left: 8, top: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Center(
-                          child: Text(
-                            'Leaderboard',
-                            style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text('You are ranked #4 this week'),
-                        const SizedBox(height: 16),
-                        leaderboardWidget(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 30),
-              //  Student Monitoring Container
-              Container(
-                width: double.infinity,
-                height: 250,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black),
-                ),
+                color: Colors.white,
+                elevation: 5,
                 child: Padding(
-                  padding: EdgeInsets.only(
-                    right: 8,
-                    left: 8,
-                    top: 10,
-                    bottom: 5,
-                  ),
+                  padding: EdgeInsets.only(right: 15, left: 15, top: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Student Monitoring',
-                        style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                      FittedBox(
+                        child: Text(
+                          'Task Overview',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(color: Colors.black),
+            
+                      Padding(
+                        padding: EdgeInsets.only(top: 5, right: 5, left: 5),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '3', // Completed value later from the backend
+            
+                                  style: TextStyle(fontFamily: 'Inter'),
+                                ),
+                                SizedBox(width: 10),
+                                Text('Completed'),
+                              ],
                             ),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 0,
+                            Row(
+                              children: [
+                                Text(
+                                  '3', //Pending value later from the backend
+                                  style: TextStyle(fontFamily: 'Inter'),
+                                ),
+                                SizedBox(width: 10),
+                                Text('Pending'),
+                              ],
+                            ),
+                            SizedBox(height: context.screenHeight * 0.01),
+                            Center(
+                              child: Builder(
+                                builder: (context) {
+                                  const completed =
+                                      3; // Completed value later from the backend
+                                  const pending =
+                                      3; //Pending value later from the backend
+                                  final total = completed + pending;
+                                  final double completedRatio =
+                                      total == 0 ? 0.0 : completed / total;
+                                  final int completedFlex =
+                                      (completedRatio * 1000).round();
+                                  final int pendingFlex =
+                                      (1000 - completedFlex).round();
+                                  return ClipRRect(
+                                    borderRadius:
+                                        BorderRadiusGeometry.circular(10),
+                                    child: Container(
+                                      width: 100,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          10,
+                                        ),
+                                        color: AppStyle.primaryColor,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            flex: completedFlex,
+                                            child: Container(
+                                              color: AppStyle.primaryColor,
+                                            ),
+                                          ),
+            
+                                          Expanded(
+                                            flex: pendingFlex,
+                                            child: Container(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              child: Text('Class 1- Attendance'),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: Icon(
-                              Icons.filter_alt,
-                              color: AppStyle.primaryColor,
-                              size: 30,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: _studentMonitoringTable(),
+                    ],
+                  ),
+                ),
+              ),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                color: Colors.white,
+                elevation: 5,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedBox(
+                        child: Text(
+                          'Payment',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+            
+                      FittedBox(
+                        child: Row(
+                          children: [
+                            CustomPaint(
+                              painter: PaymentPieChart(),
+                              size: Size(
+                                context.screenWidth * 0.2,
+                                context.screenHeight * 0.1,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                distributionChart(
+                                  Color(0xffF8BD00),
+                                  'Pending',
+                                ),
+                                distributionChart(
+                                  AppStyle.primaryColor,
+                                  'Completed',
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -449,8 +303,139 @@ class PartnerDashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
+            
+          // This week classes container
+          SizedBox(height: 17),
+          Container(
+            width: double.infinity,
+            height: 250,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: 8,
+                left: 8,
+                top: 10,
+                bottom: 8,
+              ),
+              child: Column(
+                children: [
+                  Center(
+                    child: Text(
+                      'This Week Classes',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontFamily: AppStyle.fontFamilySecondary,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 15),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _thisWeekClassesTable(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+            
+          SizedBox(height: 30),
+          // LeaderBoard Container
+          Container(
+            width: double.infinity,
+            height: 250,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(right: 8, left: 8, top: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Center(
+                      child: Text(
+                        'Leaderboard',
+                        style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('You are ranked #4 this week'),
+                    const SizedBox(height: 16),
+                    leaderboardWidget(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 30),
+          //  Student Monitoring Container
+          Container(
+            width: double.infinity,
+            height: 250,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.black),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: 8,
+                left: 8,
+                top: 10,
+                bottom: 5,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Student Monitoring',
+                    style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(color: Colors.black),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 0,
+                          ),
+                          child: Text('Class 1- Attendance'),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: Icon(
+                          Icons.filter_alt,
+                          color: AppStyle.primaryColor,
+                          size: 30,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _studentMonitoringTable(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      )
     );
   }
 
