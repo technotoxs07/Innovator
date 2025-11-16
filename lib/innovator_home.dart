@@ -4,12 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
 import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart';
-<<<<<<< HEAD
 import 'package:innovator/Innovator/services/InAppNotificationService.dart';
-=======
-import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
- 
->>>>>>> 9d4c90f (foreground notification)
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 
 class Homepage extends StatefulWidget {
