@@ -486,7 +486,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Innovator App v:1.0.39', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
+              Text('Innovator App v:1.0.40', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
               Text('Pvt Ltd', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
             ],
           ),
