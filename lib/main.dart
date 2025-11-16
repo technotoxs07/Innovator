@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -22,7 +24,6 @@ import 'package:innovator/Innovator/screens/chatApp/chatscreen.dart';
 import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/Innovator/services/Daily_Notifcation.dart';
 import 'package:innovator/Innovator/services/Firebase_Messaging.dart';
-import 'package:innovator/Innovator/services/InAppNotificationService.dart';
 import 'dart:developer' as developer;
 
 // ============================================================================
@@ -30,12 +31,9 @@ import 'dart:developer' as developer;
 // ============================================================================
 late Size mq;
 late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
-<<<<<<< HEAD
-=======
   GlobalKey<NavigatorState> get navigatorKey => Get.key;
 
 // ✅ CRITICAL: Track Firebase initialization state
->>>>>>> 9d4c90f (foreground notification)
 bool _isFirebaseInitialized = false;
 
 // ============================================================================
@@ -44,10 +42,7 @@ bool _isFirebaseInitialized = false;
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    developer.log('🌙 ========= BACKGROUND MESSAGE RECEIVED =========');
-    developer.log('🌙 Message ID: ${message.messageId}');
-    developer.log('🌙 Data: ${message.data}');
-    
+    // ✅ FIX: Check if Firebase is already initialized
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -78,8 +73,6 @@ Future<void> _showBackgroundNotification(RemoteMessage message) async {
       const NotificationDetails(android: androidDetails),
       payload: jsonEncode(message.data),
     );
-    
-    developer.log('✅ Background notification shown');
   } catch (e) {
     developer.log('❌ Background notification error: $e');
   }
@@ -88,10 +81,13 @@ Future<void> _showBackgroundNotification(RemoteMessage message) async {
 // ============================================================================
 // INITIALIZATION FUNCTIONS
 // ============================================================================
+
+// ✅ STEP 1: Initialize ONLY what's needed for first screen
 Future<void> _initializeCriticalOnly() async {
   try {
     developer.log('🚀 Starting critical initialization...');
     
+    // Initialize local notifications
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -115,6 +111,7 @@ Future<void> _initializeCriticalOnly() async {
       },
     );
 
+    // Create notification channel
     final androidPlugin = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
@@ -137,6 +134,7 @@ Future<void> _initializeCriticalOnly() async {
   }
 }
 
+// ✅ STEP 2: Initialize non-critical services in parallel
 Future<void> _initializeNonCriticalServices() async {
   try {
     developer.log('🔧 Starting non-critical services...');
@@ -155,6 +153,7 @@ Future<void> _initializeNonCriticalServices() async {
 
 Future<void> _initializeFirebase() async {
   try {
+    // ✅ FIX: Only initialize if not already initialized
     if (_isFirebaseInitialized) {
       developer.log('ℹ️ Firebase already initialized, skipping...');
       return;
@@ -166,11 +165,11 @@ Future<void> _initializeFirebase() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       _isFirebaseInitialized = true;
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-      developer.log('✅ Firebase initialized successfully');
       
-      // ✅ LOG FCM TOKENUsing cached follow status
-      await _logFCMToken();
+      // Set background message handler AFTER initialization
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      
+      developer.log('✅ Firebase initialized successfully');
     } else {
       developer.log('ℹ️ Firebase already initialized (apps exist)');
       _isFirebaseInitialized = true;
@@ -178,20 +177,6 @@ Future<void> _initializeFirebase() async {
   } catch (e) {
     developer.log('❌ Firebase init failed: $e');
     _isFirebaseInitialized = false;
-  }
-}
-
-// ✅ NEW: Log FCM Token for testing
-Future<void> _logFCMToken() async {
-  try {
-    final token = await FirebaseMessaging.instance.getToken();
-    developer.log('📱 ============================================');
-    developer.log('📱 FCM TOKEN: $token');
-    developer.log('📱 ============================================');
-    developer.log('📱 Copy this token to test notifications!');
-    developer.log('📱 ============================================');
-  } catch (e) {
-    developer.log('❌ Failed to get FCM token: $e');
   }
 }
 
@@ -221,12 +206,10 @@ Future<void> _initializeDailyNotifications() async {
   }
 }
 
+// ✅ STEP 3: Initialize deferred services after UI is shown
 Future<void> _initializeDeferredServices() async {
   try {
     developer.log('⏰ Starting deferred services...');
-<<<<<<< HEAD
-    await Future.delayed(const Duration(milliseconds: 500));
-=======
     
     // ✅ FIX: Wait longer for UI to be fully ready
     await Future.delayed(const Duration(seconds: 1));
@@ -236,8 +219,8 @@ Future<void> _initializeDeferredServices() async {
       developer.log('⚠️ Navigator not ready, waiting...');
       await Future.delayed(const Duration(seconds: 1));
     }
->>>>>>> 9d4c90f (foreground notification)
     
+    // ✅ Make sure Firebase is initialized before these services
     if (!_isFirebaseInitialized) {
       developer.log('⚠️ Firebase not ready, initializing now...');
       await _initializeFirebase();
@@ -256,6 +239,7 @@ Future<void> _initializeDeferredServices() async {
 
 Future<void> _initializeNotificationServices() async {
   try {
+    // ✅ Check Firebase is ready
     if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
       developer.log('⚠️ Cannot initialize notification service - Firebase not ready');
       return;
@@ -273,6 +257,7 @@ Future<void> _initializeNotificationServices() async {
 
 Future<void> _setupNotificationListeners() async {
   try {
+    // ✅ Check dependencies
     if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
       developer.log('⚠️ Cannot setup listeners - Firebase not ready');
       return;
@@ -286,30 +271,20 @@ Future<void> _setupNotificationListeners() async {
     developer.log('👂 Setting up notification listeners...');
     final notificationService = Get.find<FirebaseNotificationService>();
 
-    // ✅ CRITICAL: Foreground message listener with detailed logging
+    // Foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      developer.log('📨 ========================================');
-      developer.log('📨 FOREGROUND MESSAGE RECEIVED');
-      developer.log('📨 ========================================');
-      developer.log('📨 Message ID: ${message.messageId}');
-      developer.log('📨 Sent Time: ${message.sentTime}');
-      developer.log('📨 From: ${message.from}');
-      developer.log('📨 Notification Title: ${message.notification?.title}');
-      developer.log('📨 Notification Body: ${message.notification?.body}');
-      developer.log('📨 Data Keys: ${message.data.keys.toList()}');
-      developer.log('📨 Full Data: ${message.data}');
-      developer.log('📨 ========================================');
-      
-      // Handle the message
+      developer.log('📨 Foreground message received');
       notificationService.handleForegroundMessage(message);
-      //_showImmediateFeedback(message);
+      _showImmediateFeedback(message);
     });
 
+    // App opened from notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       developer.log('📱 App opened from notification');
       _handleNotificationTapFromMessage(message);
     });
 
+    // Initial message (app launched from terminated state)
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
       developer.log('🚀 App launched from notification');
@@ -325,66 +300,42 @@ Future<void> _setupNotificationListeners() async {
 }
 
 // ============================================================================
-// NOTIFICATION HANDLERS WITH DETAILED LOGGING
+// NOTIFICATION HANDLERS
 // ============================================================================
 
 void _showImmediateFeedback(RemoteMessage message) {
   try {
-    developer.log('🎯 ============ IMMEDIATE FEEDBACK START ============');
-    developer.log('🎯 Raw message data: ${message.data}');
-    developer.log('🎯 Notification object: ${message.notification?.toMap()}');
-    
     final title = message.notification?.title ?? 
                   message.data['senderName'] ?? 
-                  'New Notification';
+                  'New Message';
     final body = message.notification?.body ?? 
                  message.data['message'] ?? 
-                 'New notification';
-    final type = message.data['type']?.toString().toLowerCase() ?? 'default';
-    final senderPicture = message.data['senderPicture']?.toString();
-    
-    developer.log('🎯 Processed - Title: $title');
-    developer.log('🎯 Processed - Body: $body');
-    developer.log('🎯 Processed - Type: $type');
-    developer.log('🎯 Processed - Picture: ${senderPicture ?? "none"}');
-    
-    // Check context availability
-    final context = InAppNotificationService().navigatorKey.currentContext;
-    developer.log('🎯 Navigator context available: ${context != null}');
-    
-    if (context != null) {
-      final overlay = Overlay.of(context);
-      developer.log('🎯 Overlay available: ${overlay != null}');
-    } else {
-      developer.log('⚠️ WARNING: Context is null! Notification may not show.');
-      developer.log('⚠️ Possible causes:');
-      developer.log('⚠️ 1. GetMaterialApp not using InAppNotificationService().navigatorKey');
-      developer.log('⚠️ 2. App UI not fully built yet');
-      developer.log('⚠️ 3. Scaffold incorrectly using navigatorKey as key');
-    }
-    
-    // Try to show notification
-    InAppNotificationService().showNotification(
-      title: title,
-      body: body,
-      imageUrl: senderPicture,
-      icon: type.notificationIcon,
-      backgroundColor: type.notificationColor,
-      onTap: () {
-        developer.log('🎯 Notification tapped!');
-        _handleNotificationTapFromMessage(message);
-      },
-      duration: const Duration(seconds: 4),
+                 'New message';
+
+    Get.snackbar(
+      title,
+      body,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color.fromRGBO(244, 135, 6, 0.95),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      isDismissible: true,
+      mainButton: TextButton(
+        onPressed: () {
+          Get.back();
+          _handleNotificationTapFromMessage(message);
+        },
+        child: const Text(
+          'View',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
     );
-    
     HapticFeedback.lightImpact();
-    developer.log('🎯 ✅ showNotification() called successfully');
-    developer.log('🎯 ============ IMMEDIATE FEEDBACK END ============');
-  } catch (e, stackTrace) {
-    developer.log('❌ ============ IMMEDIATE FEEDBACK ERROR ============');
-    developer.log('❌ Error: $e');
-    developer.log('❌ Stack trace: $stackTrace');
-    developer.log('❌ ================================================');
+  } catch (e) {
+    developer.log('❌ Immediate feedback error: $e');
   }
 }
 
@@ -393,15 +344,12 @@ void _handleNotificationTapFromMessage(RemoteMessage message) {
     final data = message.data;
     final type = data['type']?.toString() ?? '';
 
-    developer.log('👆 Notification tapped - Type: $type');
-
     switch (type) {
       case 'chat':
       case 'message':
         _navigateToChatFromNotification(data);
         break;
       default:
-        developer.log('👆 Navigating to home');
         Get.offAllNamed('/home');
         break;
     }
@@ -443,14 +391,15 @@ void _navigateToChatFromNotification(Map<String, dynamic> data) {
 // ============================================================================
 
 void main() async {
+  // Wrap in error handling zone
   runZonedGuarded(() async {
     try {
-      developer.log('🚀 ============================================');
-      developer.log('🚀 APP STARTING');
-      developer.log('🚀 ============================================');
+      developer.log('🚀 App starting...');
       
+      // Ensure Flutter is initialized
       WidgetsFlutterBinding.ensureInitialized();
       
+      // Set system UI
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
@@ -458,7 +407,8 @@ void main() async {
         ),
       );
       
-      developer.log('🔥 Pre-initializing Firebase...');
+      // ✅ CRITICAL: Initialize Firebase FIRST before anything else
+      developer.log('🔥 Pre-initializing Firebase in main()...');
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
@@ -467,18 +417,24 @@ void main() async {
         developer.log('✅ Firebase pre-initialized');
       }
       
+      // Set background message handler (must be after Firebase init)
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      
+      // Initialize critical UI components
       await _initializeCriticalOnly();
       
+      // Start the app
       developer.log('🎨 Starting UI...');
       runApp(const ProviderScope(child: InnovatorHomePage()));
       
+      // Initialize non-critical services in background
       developer.log('🔧 Starting background initialization...');
       _initializeNonCriticalServices();
       
       developer.log('✅ App started successfully');
     } catch (e, stackTrace) {
       developer.log('❌ Critical error in main: $e\n$stackTrace');
+      // Still try to run the app
       runApp(const ProviderScope(child: InnovatorHomePage()));
     }
   }, (error, stackTrace) {
@@ -507,24 +463,11 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with Widg
     WidgetsBinding.instance.addObserver(this);
     developer.log('🏠 InnovatorHomePage initialized');
     
+    // Initialize deferred services after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       developer.log('🎬 First frame rendered, starting deferred services...');
       _initializeDeferredServices();
       
-<<<<<<< HEAD
-      // ✅ Show test notification after 3 seconds
-      Future.delayed(const Duration(seconds: 3), () {
-        developer.log('🧪 Showing test notification...');
-        InAppNotificationService().showNotification(
-          title: '✅ Notification System Ready',
-          body: 'In-app notifications are working correctly!',
-          icon: Icons.check_circle,
-          backgroundColor: Colors.green,
-          onTap: () {
-            developer.log('✅ Test notification tapped');
-          },
-        );
-=======
       // ✅ FIX: Wait longer before starting polling to ensure overlay is ready
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted && InAppNotificationService().isReady) {
@@ -540,7 +483,6 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with Widg
             }
           });
         }
->>>>>>> 9d4c90f (foreground notification)
       });
     });
   }
@@ -578,18 +520,15 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with Widg
     mq = MediaQuery.of(context).size;
 
     return GetMaterialApp(
-<<<<<<< HEAD
-      navigatorKey: InAppNotificationService().navigatorKey,
-=======
       // ✅ FIX: Use the global navigator key for InAppNotificationService
       navigatorKey: navigatorKey,
->>>>>>> 9d4c90f (foreground notification)
       title: 'Innovator',
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
       onInit: () {
         developer.log('🎮 GetX onInit called');
+        // Lazy initialization of controllers
         try {
           Get.lazyPut<FireChatController>(
             () => FireChatController(), 
@@ -680,5 +619,3 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with Widg
     );
   }
 }
-
-
