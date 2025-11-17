@@ -2,22 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
- 
 
-enum ComplaintStatus { complaint, resolved }
+enum ComplaintStatus { fromStudent, toAdmin }
 
-class StudentComplainBoxScreen extends ConsumerStatefulWidget {
-  const StudentComplainBoxScreen({super.key});
+class SchoolComplaintBoxStudentScreen extends ConsumerStatefulWidget {
+  const SchoolComplaintBoxStudentScreen({super.key});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
-      _StudentComplainBoxScreenState();
+      _SchoolComplaintBoxStudentScreenState();
 }
 
-class _StudentComplainBoxScreenState
-    extends ConsumerState<StudentComplainBoxScreen> {
-  ComplaintStatus _selected = ComplaintStatus.complaint;
+class _SchoolComplaintBoxStudentScreenState
+    extends ConsumerState<SchoolComplaintBoxStudentScreen> {
+  ComplaintStatus _selected = ComplaintStatus.fromStudent;
   TextEditingController complaintController = TextEditingController();
+  String? _selectedStatus = "All Status";
+  bool selectedIcon = false;
   @override
   Widget build(BuildContext context) {
     return CustomScrolling(
@@ -25,38 +26,77 @@ class _StudentComplainBoxScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Submit a complaint',
+            'Complaint Management',
             style: AppStyle.bodyText.copyWith(color: Colors.black),
           ),
           SizedBox(height: 5),
           Text(
-            'Please provide details about your issue below. We will review your submission and get back to you shortly',
+            'View, file and track all complaints within your school',
             style: TextStyle(fontSize: 10, color: Colors.black),
           ),
           SizedBox(height: 20),
           Row(
             children: [
               _statusElevatedButton(
-                label: 'Complaint',
-                thisStatus: ComplaintStatus.complaint,
+                label:
+                    'From Student (3)', //Give the actual length of the complaint from the school instead of 3
+                thisStatus: ComplaintStatus.fromStudent,
               ),
               SizedBox(width: 40),
               _statusElevatedButton(
-                label: 'Resolved',
+                label: 'To Admin',
 
-                thisStatus: ComplaintStatus.resolved,
+                thisStatus: ComplaintStatus.toAdmin,
               ),
             ],
           ),
+
           SizedBox(height: 10),
-          if (_selected == ComplaintStatus.complaint)
-            _complaintBox(
-              'Describe your Complaint in Details',
-              'Please Provide as much detail as possible',
-              () {},
-            )
-          else
-            _resolvedBox(
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.only(right: 4,left: 4),
+                decoration: BoxDecoration(
+                   border: Border.all(
+                  color: Colors.black
+                  
+                 ),
+                  borderRadius: BorderRadius.circular(15),
+                 
+                ),
+                child: DropdownButton(
+                       underline: Container(
+                 decoration: BoxDecoration(
+                  
+                  borderRadius: BorderRadius.circular(15),
+                 border: Border.all(
+                  color: Colors.transparent
+                 )
+                ),
+                       ),
+                
+                  value: _selectedStatus,
+                  items:
+                      ["All Status", "Pending", "Solved"]
+                          .map(
+                            (status) =>
+                                DropdownMenuItem(value: status, child: Text(status)),
+                          )
+                          .toList(),
+                  onChanged: (value) => setState(() => _selectedStatus = value),
+                ),
+              ),
+              IconButton(onPressed: (){
+             setState(() {
+                  selectedIcon = !selectedIcon;
+             });
+              }, icon: Icon(Icons.history,color: !selectedIcon? AppStyle.primaryColor :Colors.black,))
+            ],
+          ),
+
+          SizedBox(height: 10),
+          if (_selected == ComplaintStatus.fromStudent)
+            _complaintFromStudent(
               'assets/kms/tick.png',
               '2025-01-08 14:30', //Time later from the backend
               'Technical Issue with Robotics Module', //title of the complaint later from the backend
@@ -65,52 +105,58 @@ class _StudentComplainBoxScreenState
               'Admin', // message given by position later from the backend
               'Thank you for reporting this issue. Our IT team is looking into the robotics simulation problem.',
               //actual message  given by will come from the backend
+            )
+          else
+            _complaintToAdmin(
+              'Describe your Complaint in Details',
+              'Please Provide as much detail as possible',
+              () {},
             ),
         ],
       ),
     );
   }
 
-Widget _statusElevatedButton({
-  required String label,
-  required ComplaintStatus thisStatus,
-}) {
-  final bool isSelected = _selected == thisStatus;
+  Widget _statusElevatedButton({
+    required String label,
+    required ComplaintStatus thisStatus,
+  }) {
+    final bool isSelected = _selected == thisStatus;
 
-  return ElevatedButton(
-    style: ElevatedButton.styleFrom(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-        side: BorderSide(
-          color: isSelected ? Colors.black : Colors.transparent,
-          width: 1.5,
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(
+            color: isSelected ? Colors.black : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        backgroundColor: isSelected ? Colors.white : AppStyle.primaryColor,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        elevation: isSelected ? 10 : 0,
+      ),
+      onPressed: () => setState(() => _selected = thisStatus),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Colors.black : AppStyle.bodyTextColor,
+          fontWeight: FontWeight.w600,
         ),
       ),
-      backgroundColor: isSelected ? Colors.white : AppStyle.primaryColor,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      elevation: isSelected ? 10 : 0, 
-    ),
-    onPressed: () => setState(() => _selected = thisStatus),
-    child: Text(
-      label,
-      style: TextStyle(
-        color: isSelected ? Colors.black : AppStyle.bodyTextColor,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-  );
-}
+    );
+  }
 
-  Widget _complaintBox(
+  Widget _complaintToAdmin(
     String heading,
     String hintText,
     VoidCallback onPressed,
   ) {
     return Card(
       elevation: 5,
-       shape: RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadiusGeometry.circular(10),
-        side: BorderSide(color: Colors.grey.shade200)
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       color: AppStyle.backgroundColor,
       child: Padding(
@@ -198,7 +244,7 @@ Widget _statusElevatedButton({
     );
   }
 
-  Widget _resolvedBox(
+  Widget _complaintFromStudent(
     String image,
     String time,
     String title,
@@ -208,13 +254,13 @@ Widget _statusElevatedButton({
   ) {
     return Card(
       elevation: 5,
-       shape: RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadiusGeometry.circular(10),
-        side: BorderSide(color: Colors.grey.shade200)
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       color: AppStyle.backgroundColor,
       child: Padding(
-        padding: EdgeInsets.only(top: 20, right: 20, left: 20,),
+        padding: EdgeInsets.only(top: 20, right: 20, left: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -302,14 +348,14 @@ Widget _statusElevatedButton({
                             children: [
                               Align(
                                 alignment: Alignment.bottomRight,
-                                child:        Text(
-                          time,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 8,
-                          ),
-                        ),
+                                child: Text(
+                                  time,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 8,
+                                  ),
+                                ),
                               ),
                               Text(
                                 messageBy,

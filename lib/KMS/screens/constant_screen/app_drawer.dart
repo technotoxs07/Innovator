@@ -4,6 +4,8 @@ import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/constants/mediaquery.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
 
+
+ enum ComplaintStatus { complaint, resolved}
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 

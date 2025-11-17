@@ -8,6 +8,7 @@ import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/school/school_complaint_box_student.dart';
 import 'package:innovator/KMS/screens/student/student_complain_box_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -152,14 +153,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             //             StudentDashboardScreen(),
                                             //   ),
                                             // );
-                                            Navigator.pushReplacement(
+                                            // Navigator.pushReplacement(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             StudentComplainBoxScreen(),
+                                            //   ),
+                                            // );
+                                               Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
                                                     (context) =>
-                                                        StudentComplainBoxScreen(),
+                                                        SchoolComplaintBoxStudentScreen(),
                                               ),
                                             );
+                                            
                                           }
                                         },
                                 style: ElevatedButton.styleFrom(
