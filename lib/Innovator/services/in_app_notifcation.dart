@@ -5,11 +5,6 @@ import 'package:get/get.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:developer' as developer;
 
-<<<<<<< HEAD
-=======
-import 'package:innovator/Innovator/screens/chatrrom/sound/soundplayer.dart';
-
->>>>>>> 9d4c90f (foreground notification)
 class InAppNotificationService {
   static final InAppNotificationService _instance = InAppNotificationService._internal();
   factory InAppNotificationService() => _instance;
@@ -49,13 +44,7 @@ class InAppNotificationService {
 
       // ✅ Play notification sound
       if (playSound) {
-<<<<<<< HEAD
         _playNotificationSound();
-=======
-        SoundPlayer _player = SoundPlayer();
-        _player.notificationsound();
-        //_playNotificationSound();
->>>>>>> 9d4c90f (foreground notification)
       }
 
       // ✅ FIX: Use Get.context which is more reliable than navigatorKey.currentContext
@@ -124,7 +113,6 @@ class InAppNotificationService {
   }
 
   /// Play notification sound
-<<<<<<< HEAD
   Future<void> _playNotificationSound() async {
     try {
       // Try to play the sound from assets
@@ -140,23 +128,6 @@ class InAppNotificationService {
       }
     }
   }
-=======
-  // Future<void> _playNotificationSound() async {
-  //   try {
-  //     // Try to play the sound from assets
-  //     await ;
-  //     developer.log('🔊 Notification sound played');
-  //   } catch (e) {
-  //     developer.log('⚠️ Could not play notification sound: $e');
-  //     // Fallback to system sound if custom sound fails
-  //     try {
-  //       await SystemSound.play(SystemSoundType.alert);
-  //     } catch (e2) {
-  //       developer.log('⚠️ System sound also failed: $e2');
-  //     }
-  //   }
-  // }
->>>>>>> 9d4c90f (foreground notification)
 
   void _removeCurrentNotification() {
     try {

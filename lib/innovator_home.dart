@@ -1,10 +1,9 @@
 import 'dart:developer';
-import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
 import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart';
-import 'package:innovator/Innovator/services/InAppNotificationService.dart';
+import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 
 class Homepage extends StatefulWidget {
@@ -15,13 +14,9 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage>
-<<<<<<< HEAD
-    with SingleTickerProviderStateMixin {
-=======
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final NotificationPollingService _pollingService = NotificationPollingService();
->>>>>>> 9d4c90f (foreground notification)
 
   @override
   void initState() {
@@ -31,23 +26,6 @@ class _HomepageState extends State<Homepage>
     // Check for app updates
     _checkForUpdate();
     
-<<<<<<< HEAD
-    // ✅ WAIT for GetX to be ready before showing test notification
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 3), () {
-Future.delayed(const Duration(seconds: 3), () {
-      developer.log('🧪 Showing test notification...');
-      InAppNotificationService().showNotification(
-        title: '✅ Notification System Ready',
-        body: 'In-app notifications are working correctly!',
-        icon: Icons.check_circle,
-        backgroundColor: Colors.green,
-        onTap: () {
-          developer.log('✅ Test notification tapped');
-        },
-      );
-    });      });
-=======
     // Start notification polling
     _startNotificationPolling();
   }
@@ -90,12 +68,8 @@ Future.delayed(const Duration(seconds: 3), () {
     // Also do an immediate check
     Future.delayed(const Duration(seconds: 2), () {
       _pollingService.forceCheck();
->>>>>>> 9d4c90f (foreground notification)
     });
   }
-
-  // ✅ ADD: Test notification method
-  
 
   Future<void> _checkForUpdate() async {
     try {
@@ -105,7 +79,7 @@ Future.delayed(const Duration(seconds: 3), () {
 
       if (info.updateAvailability == UpdateAvailability.updateAvailable) {
         log('Update available!');
-
+ 
         // Check if immediate update is required (for critical updates)
         if (info.immediateUpdateAllowed) {
           _performImmediateUpdate();
@@ -190,7 +164,7 @@ Future.delayed(const Duration(seconds: 3), () {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // key: InAppNotificationService().navigatorKey,
+      key: _scaffoldKey,
       body: GestureDetector(
         onHorizontalDragEnd: (DragEndDetails details) {
           // Detect swipe from right to left

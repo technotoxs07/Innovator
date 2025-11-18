@@ -23,7 +23,10 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     //appBar: _buildAppBar(),
     body: CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(child: _buildUserStatus()),
+        // SizedBox(
+        //   height: 10,
+        // ),
+       SliverToBoxAdapter(child: SizedBox(height: 20,)),
         // SliverToBoxAdapter(child: _buildCurrentUserCard()), // Uncomment if needed
         SliverToBoxAdapter(child: _buildIntegratedSearchBar()),
         SliverFillRemaining(
@@ -941,60 +944,60 @@ Widget _buildFollowStatusLoadingState() {
                                 return const SizedBox.shrink();
                               }),
                               // Mutual follow indicator
-                              if (isMutualFollow) ...[
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color.fromRGBO(244, 135, 6, 1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.verified,
-                                        color: Colors.white,
-                                        size: 12,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        'Mutual',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              // Recent user indicator
-                              if (isRecentUser) ...[
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Text(
-                                    'Recent',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              // if (isMutualFollow) ...[
+                              //   const SizedBox(width: 4),
+                              //   Container(
+                              //     padding: const EdgeInsets.symmetric(
+                              //       horizontal: 6,
+                              //       vertical: 2,
+                              //     ),
+                              //     decoration: BoxDecoration(
+                              //       color: const Color.fromRGBO(244, 135, 6, 1),
+                              //       borderRadius: BorderRadius.circular(8),
+                              //     ),
+                              //     child: Row(
+                              //       mainAxisSize: MainAxisSize.min,
+                              //       children: [
+                              //         Icon(
+                              //           Icons.verified,
+                              //           color: Colors.white,
+                              //           size: 12,
+                              //         ),
+                              //         const SizedBox(width: 2),
+                              //         // Text(
+                              //         //   'Mutual',
+                              //         //   style: TextStyle(
+                              //         //     color: Colors.white,
+                              //         //     fontSize: 10,
+                              //         //     fontWeight: FontWeight.bold,
+                              //         //   ),
+                              //         // ),
+                              //       ],
+                              //     ),
+                              //   ),
+                              // ],
+                              // // Recent user indicator
+                              // if (isRecentUser) ...[
+                              //   const SizedBox(width: 4),
+                              //   Container(
+                              //     padding: const EdgeInsets.symmetric(
+                              //       horizontal: 6,
+                              //       vertical: 2,
+                              //     ),
+                              //     decoration: BoxDecoration(
+                              //       color: Colors.blue,
+                              //       borderRadius: BorderRadius.circular(8),
+                              //     ),
+                              //     child: const Text(
+                              //       'Recent',
+                              //       style: TextStyle(
+                              //         color: Colors.white,
+                              //         fontSize: 10,
+                              //         fontWeight: FontWeight.bold,
+                              //       ),
+                              //     ),
+                              //   ),
+                              //],
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -1011,22 +1014,22 @@ Widget _buildFollowStatusLoadingState() {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isMutualFollow
-                            ? const Color.fromRGBO(244, 135, 6, 1)
-                            : const Color.fromRGBO(244, 135, 6, 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        isMutualFollow ? Icons.chat : Icons.chat_bubble_outline,
-                        color: isMutualFollow
-                            ? Colors.white
-                            : const Color.fromRGBO(244, 135, 6, 1),
-                        size: 20,
-                      ),
-                    ),
+                    // Container(
+                    //   padding: const EdgeInsets.all(8),
+                    //   decoration: BoxDecoration(
+                    //     color: isMutualFollow
+                    //         ? const Color.fromRGBO(244, 135, 6, 1)
+                    //         : const Color.fromRGBO(244, 135, 6, 0.1),
+                    //     borderRadius: BorderRadius.circular(12),
+                    //   ),
+                    //   child: Icon(
+                    //     isMutualFollow ? Icons.chat : Icons.chat_bubble_outline,
+                    //     color: isMutualFollow
+                    //         ? Colors.white
+                    //         : const Color.fromRGBO(244, 135, 6, 1),
+                    //     size: 20,
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
