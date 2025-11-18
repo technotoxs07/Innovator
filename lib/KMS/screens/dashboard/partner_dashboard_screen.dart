@@ -14,8 +14,7 @@ class PartnerDashboardScreen extends ConsumerWidget {
        CustomScrolling(child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 10),
-            
+          const SizedBox(height: 10),    
           // Grid Content
           GridView(
             shrinkWrap: true,

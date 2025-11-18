@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/constants/mediaquery.dart';
+import 'package:innovator/KMS/screens/admin/admin_complaint.dart';
 import 'package:innovator/KMS/screens/auth/forgot_password_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/school/school_overall_attendance.dart';
 import 'package:innovator/KMS/screens/school/school_complaint_box_student.dart';
 import 'package:innovator/KMS/screens/student/student_complain_box_screen.dart';
 
@@ -161,15 +163,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             //             StudentComplainBoxScreen(),
                                             //   ),
                                             // );
-                                               Navigator.pushReplacement(
+                                            //    Navigator.pushReplacement(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             SchoolComplaintBoxStudentScreen(),
+                                            //   ),
+                                            // );
+                                            // Navigator.pushReplacement(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             SchoolAttendanceScreen(),
+                                            //   ),
+                                            // );
+                                            Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
                                                     (context) =>
-                                                        SchoolComplaintBoxStudentScreen(),
+                                                        AdminComplaintScreen(),
                                               ),
                                             );
-                                            
                                           }
                                         },
                                 style: ElevatedButton.styleFrom(
