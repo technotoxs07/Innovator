@@ -4239,8 +4239,8 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (!mounted || _disposed) return;
 
-    // CHANGED: Lower threshold to 0.3 and initialize earlier
-    if (visibleFraction > 0.3) {
+    // STRICTER VISIBILITY CHECK
+    if (visibleFraction > 0.7) {  // Increased from 0.3 to 0.7 (70% visible)
       // Initialize if not already done
       if (!_initialized && !_disposed && _controller == null) {
         try {
@@ -4252,18 +4252,24 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
 
       _activeVideos[videoId] = this;
       _muteOtherVideos();
+      
+      // Only play if video is well within view
       if (_initialized && _controller != null && !_controller!.value.isPlaying && _isPlaying) {
         _controller!.play();
       }
-    } else if (visibleFraction < 0.1) {
-      // Pause when mostly out of view
+    } else if (visibleFraction < 0.5) {  // Pause earlier when scrolling away
+      // Remove from active videos and pause
       _activeVideos.remove(videoId);
-      if (_initialized && _controller != null && _controller!.value.isPlaying) {
-        _controller!.pause();
+      if (_initialized && _controller != null) {
+        if (_controller!.value.isPlaying) {
+          _controller!.pause();
+          debugPrint('🎬 Video paused (visibility: ${visibleFraction.toStringAsFixed(2)})');
+        }
       }
     }
   });
-  }
+}
+
 
   void _muteOtherVideos() {
     WidgetsBinding.instance.addPostFrameCallback((_) {

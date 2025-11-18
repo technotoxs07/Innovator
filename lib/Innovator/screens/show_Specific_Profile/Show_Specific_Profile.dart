@@ -149,15 +149,6 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
         _loadVideoContent();
       }
     }
-    
-    // Force update to ensure videos initialize
-    if (_videoContents.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-    }
   }
 
   // Fetch regular content (non-video) from getUserContent API
@@ -521,20 +512,22 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
 
   Widget _buildEmptyFeedView() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.inbox, size: 48, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text('No posts available'),
-          const SizedBox(height: 8),
-          Text(
-            'Regular: ${_regularContents.length} | Videos: ${_videoContents.length}',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(onPressed: _refreshFeed, child: const Text('Refresh')),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.inbox, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text('No posts available'),
+            const SizedBox(height: 8),
+            Text(
+              'Regular: ${_regularContents.length} | Videos: ${_videoContents.length}',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _refreshFeed, child: const Text('Refresh')),
+          ],
+        ),
       ),
     );
   }
@@ -654,7 +647,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                                       child: Row(
                                         children: [
                                           Text(
-                                            'Posts & Videos',
+                                            'Posts',
                                             style: TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_preview/device_preview.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -425,7 +426,7 @@ void main() async {
       
       // Start the app
       developer.log('🎨 Starting UI...');
-      runApp(const ProviderScope(child: InnovatorHomePage()));
+      runApp(DevicePreview(builder: (context) => ProviderScope(child: InnovatorHomePage())));
       
       // Initialize non-critical services in background
       developer.log('🔧 Starting background initialization...');

@@ -61,30 +61,30 @@ class EnhancedUserAvatar extends StatelessWidget {
             child: _buildAvatarContent(profilePictureUrl, userName),
           ),
         ),
-        if (showOnlineIndicator)
-          Positioned(
-            bottom: 2,
-            right: 2,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: radius * 0.4,
-              height: radius * 0.4,
-              decoration: BoxDecoration(
-                color: isOnline ? Colors.green : Colors.grey,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: isOnline
-                    ? [
-                        BoxShadow(
-                          color: Colors.green.withAlpha(60),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-            ),
-          ),
+        // if (showOnlineIndicator)
+        //   Positioned(
+        //     bottom: 2,
+        //     right: 2,
+        //     child: AnimatedContainer(
+        //       duration: const Duration(milliseconds: 300),
+        //       width: radius * 0.4,
+        //       height: radius * 0.4,
+        //       decoration: BoxDecoration(
+        //         color: isOnline ? Colors.green : Colors.grey,
+        //         shape: BoxShape.circle,
+        //         border: Border.all(color: Colors.white, width: 2),
+        //         boxShadow: isOnline
+        //             ? [
+        //                 BoxShadow(
+        //                   color: Colors.green.withAlpha(60),
+        //                   blurRadius: 4,
+        //                   spreadRadius: 1,
+        //                 ),
+        //               ]
+        //             : null,
+        //       ),
+        //     ),
+        //   ),
       ],
     );
 
