@@ -40,15 +40,12 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
-    
-    // We'll move the media loading to didChangeDependencies
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     
-    // Now it's safe to call methods that might use MediaQuery
     // Load current media
     _loadMedia(_currentIndex);
     
@@ -93,32 +90,76 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
     
     try {
       // Clean up previous controllers
-      _videoController?.dispose();
-      _chewieController?.dispose();
+      await _disposeVideoControllers();
+      
+      debugPrint('🎥 Initializing video: $url');
       
       _videoController = VideoPlayerController.networkUrl(Uri.parse(url));
+      
       await _videoController!.initialize();
       
-      _chewieController = ChewieController(
-        videoPlayerController: _videoController!,
-        autoPlay: true, // Always auto-play when a video is loaded
-        looping: true,
-        allowFullScreen: false,
-      );
+      debugPrint('✅ Video initialized successfully');
+      
+      if (mounted) {
+        setState(() {
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController!,
+            autoPlay: true, // Auto-play when initialized
+            looping: true,
+            allowFullScreen: true,
+            aspectRatio: _videoController!.value.aspectRatio,
+            autoInitialize: true,
+            errorBuilder: (context, errorMessage) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      errorMessage,
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+          _isLoadingVideo = false;
+        });
+        
+        // Ensure video starts playing
+        if (_videoController != null && _videoController!.value.isInitialized) {
+          _videoController!.play();
+          debugPrint('▶️ Video started playing');
+        }
+      }
     } catch (e) {
-      debugPrint('Video initialization error: $e');
-    } finally {
+      debugPrint('❌ Video initialization error: $e');
       if (mounted) {
         setState(() => _isLoadingVideo = false);
       }
     }
   }
 
+  Future<void> _disposeVideoControllers() async {
+    if (_videoController != null) {
+      await _videoController!.pause();
+      await _videoController!.dispose();
+      _videoController = null;
+    }
+    
+    if (_chewieController != null) {
+      _chewieController!.dispose();
+      _chewieController = null;
+    }
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
-    _chewieController?.dispose();
-    _videoController?.dispose();
+    _disposeVideoControllers();
     super.dispose();
   }
 
@@ -151,6 +192,13 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
         controller: _pageController,
         itemCount: widget.mediaUrls.length,
         onPageChanged: (index) async {
+          debugPrint('📄 Page changed to index: $index');
+          
+          // Pause current video if it's playing
+          if (_videoController != null && _videoController!.value.isPlaying) {
+            await _videoController!.pause();
+          }
+          
           setState(() {
             _currentIndex = index;
             _pdfLoadFailed = false;
@@ -174,11 +222,24 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
           
           if (index != _currentIndex) {
             // Just show a placeholder for non-visible pages
-            return Container(color: Colors.black);
+            return Container(
+              color: Colors.black,
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(color: Colors.white.withOpacity(0.3)),
+                ),
+              ),
+            );
           }
 
           return GestureDetector(
-            onTap: _toggleFullScreen,
+            onTap: () {
+              // Don't toggle fullscreen on tap, let Chewie handle video controls
+              if (!FileTypeHelper.isVideo(url)) {
+                _toggleFullScreen();
+              }
+            },
             child: _buildMediaViewer(url),
           );
         },
@@ -220,10 +281,22 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
 
   Widget _buildVideoViewer() {
     if (_isLoadingVideo) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 16),
+            const Text(
+              'Loading video...',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      );
     }
     
-    if (_videoController == null || _chewieController == null) {
+    if (_chewieController == null || _videoController == null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -235,10 +308,63 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
               style: TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 16),
-            TextButton(
-              style: TextButton.styleFrom(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
+              ),
+              onPressed: () {
+                final url = widget.mediaUrls[_currentIndex];
+                _initializeVideo(url); // Retry initialization
+              },
+              child: const Text('Retry'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                final url = widget.mediaUrls[_currentIndex];
+                _downloadAndOpenFile(url, 'video.mp4');
+              },
+              child: const Text('Download and Open'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    if (_videoController!.value.hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Video error: ${_videoController!.value.errorDescription ?? "Unknown error"}',
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () {
+                final url = widget.mediaUrls[_currentIndex];
+                _initializeVideo(url); // Retry initialization
+              },
+              child: const Text('Retry'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
               ),
               onPressed: () {
                 final url = widget.mediaUrls[_currentIndex];
@@ -252,37 +378,10 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
     }
     
     return Center(
-      child: _videoController!.value.hasError
-        ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  'Video error: ${_videoController!.value.errorDescription ?? "Unknown error"}',
-                  style: const TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                  onPressed: () {
-                    final url = widget.mediaUrls[_currentIndex];
-                    _downloadAndOpenFile(url, 'video.mp4');
-                  },
-                  child: const Text('Download and Open'),
-                ),
-              ],
-            ),
-          )
-        : AspectRatio(
-            aspectRatio: _videoController!.value.aspectRatio,
-            child: Chewie(controller: _chewieController!),
-          ),
+      child: AspectRatio(
+        aspectRatio: _videoController!.value.aspectRatio,
+        child: Chewie(controller: _chewieController!),
+      ),
     );
   }
 
@@ -367,6 +466,7 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
           Text(
             fileName,
             style: const TextStyle(color: Colors.white70, fontSize: 14),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           ElevatedButton(
@@ -407,7 +507,7 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
       await file.writeAsBytes(response.bodyBytes);
       
       // Close loading dialog
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
       
       // Open file
       final result = await OpenFile.open(filePath);
@@ -417,14 +517,16 @@ class _OptimizedMediaGalleryScreenState extends State<OptimizedMediaGalleryScree
       }
     } catch (e) {
       // Close loading dialog if it's still open
-      if (Navigator.canPop(context)) {
+      if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
       }
       
       // Show error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 

@@ -4232,37 +4232,37 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   }
 
   void _handleVisibilityChanged(VisibilityInfo info) {
-    if (!mounted || _disposed || _controller == null) return;
+  if (!mounted || _disposed) return;
 
-    final visibleFraction = info.visibleFraction;
+  final visibleFraction = info.visibleFraction;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _disposed) return;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted || _disposed) return;
 
-      if (visibleFraction > 0.5) {
-        // Only initialize the video player when the widget is actually
-        // visible. This avoids creating many VideoPlayerControllers for
-        // offscreen list items which can cause jank and memory pressure.
-        if (!_initialized && !_disposed && _controller == null) {
-          try {
-            _initializeVideoPlayer();
-          } catch (e) {
-            developer.log('Error initializing video on visibility: $e');
-          }
-        }
-
-        _activeVideos[videoId] = this;
-        _muteOtherVideos();
-        if (_initialized && _controller != null && !_controller!.value.isPlaying && _isPlaying) {
-          _controller!.play();
-        }
-      } else {
-        _activeVideos.remove(videoId);
-        if (_initialized && _controller != null && _controller!.value.isPlaying) {
-          _controller!.pause();
+    // CHANGED: Lower threshold to 0.3 and initialize earlier
+    if (visibleFraction > 0.3) {
+      // Initialize if not already done
+      if (!_initialized && !_disposed && _controller == null) {
+        try {
+          _initializeVideoPlayer();
+        } catch (e) {
+          developer.log('Error initializing video on visibility: $e');
         }
       }
-    });
+
+      _activeVideos[videoId] = this;
+      _muteOtherVideos();
+      if (_initialized && _controller != null && !_controller!.value.isPlaying && _isPlaying) {
+        _controller!.play();
+      }
+    } else if (visibleFraction < 0.1) {
+      // Pause when mostly out of view
+      _activeVideos.remove(videoId);
+      if (_initialized && _controller != null && _controller!.value.isPlaying) {
+        _controller!.pause();
+      }
+    }
+  });
   }
 
   void _muteOtherVideos() {
