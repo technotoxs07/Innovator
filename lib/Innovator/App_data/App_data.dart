@@ -7,7 +7,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/Innovator/models/Blocked_Model.dart';
 import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/Innovator/screens/comment/JWT_Helper.dart';
 import 'package:innovator/Innovator/services/firebase_services.dart';
