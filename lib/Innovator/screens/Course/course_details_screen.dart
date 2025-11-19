@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -962,6 +964,7 @@ Widget _buildCourseInfo(Map<String, dynamic> course) {
             onTap: () {
               setState(() {
                 _selectedLessonIndex = isSelected ? null : index;
+                log(2);
               });
               
               // Play first video of the lesson if available

@@ -152,6 +152,8 @@ class _ShopPageState extends State<ShopPage>
       }
     }
   }
+Future<void> _resetAndLoadProducts() async {
+  if (!_isMounted) return;
 
   Future<void> _resetAndLoadProducts() async {
     if (!_isMounted) return;

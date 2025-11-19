@@ -10,8 +10,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/Authorization/Login.dart';
-import 'package:innovator/Innovator/Payment/payment_screen.dart';
 import 'package:innovator/Innovator/controllers/user_controller.dart';
+import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/main.dart';
 import 'package:innovator/Innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
 import 'package:innovator/Innovator/screens/Events/Events.dart';
@@ -382,6 +382,9 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                   ),
                 ),
               ],
+              
+
+            
             ],
           ),
         ),
@@ -425,6 +428,12 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         children: [
+                    _QuickMenuItem(icon: Icons.app_blocking_sharp, title: 'KMS', onTap: (){
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                        return SignupScreen();
+                      })
+                      );
+                    }),
           _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
                 //  _QuickMenuItem(icon: Icons.help_rounded, title: 'Payment', onTap: (){
                 //   Navigator.push(context, MaterialPageRoute(builder: (context)=>PaymentScreen()));
@@ -435,20 +444,15 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
           _QuickMenuItem(icon: Icons.report_rounded, title: 'Reports', onTap: _goToReports),
           _QuickMenuItem(icon: Icons.privacy_tip_rounded, title: 'Privacy & Policy', onTap: _goToPrivacy),
           _QuickMenuItem(icon: Icons.settings, title: 'Settings', onTap: _goToSettings),
-          _QuickMenuItem(icon: Icons.help_rounded, title: 'FAQ', onTap: _goToFAQ),
-             
-
-          
+          _QuickMenuItem(icon: Icons.help_rounded, title: 'FAQ', onTap: _goToFAQ),       
           const SizedBox(height: 20),
-          _buildDivider(),
-          
+          _buildDivider(),         
           _QuickMenuItem(
             icon: Icons.logout_rounded, 
             title: 'Logout', 
             onTap: _showLogout,
             isLogout: true,
-          ),
-          
+          ),        
           const SizedBox(height: 20),
           _buildFooter(),
         ],

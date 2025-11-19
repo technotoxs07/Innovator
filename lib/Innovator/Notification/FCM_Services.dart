@@ -503,95 +503,6 @@ class _NotificationListScreenState extends State<NotificationListScreen>
     );
   }
 
-  // Widget _buildSliverAppBar() {
-  //   final unreadCount = notifications.where((n) => !n.read).length;
-    
-  //   return SliverAppBar(
-  //     //expandedHeight: 140,
-  //     //floating: false,
-  //     //pinned: true,
-  //     elevation: 0,
-  //     backgroundColor: Colors.transparent,
-  //     flexibleSpace: FlexibleSpaceBar(
-  //       background: SlideTransition(
-  //         position: _headerSlideAnimation,
-  //         child: Container(
-  //           decoration: BoxDecoration(
-  //             gradient: LinearGradient(
-  //               begin: Alignment.topLeft,
-  //               end: Alignment.bottomRight,
-  //               colors: [
-  //                 const Color(0xFFF48706),
-  //                 const Color(0xFFF48706).withAlpha(80),
-  //               ],
-  //             ),
-  //           ),
-            
-
-  //               child: Column(
-  //                 //crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Row(
-  //                     children: [
-  //                       GestureDetector(
-  //                         onTap: () => Navigator.pushReplacement(
-  //                           context,
-  //                           MaterialPageRoute(builder: (_) => Homepage()),
-  //                         ),
-  //                         child: Container(
-  //                           padding: const EdgeInsets.all(8),
-  //                           decoration: BoxDecoration(
-  //                             color: Colors.white.withAlpha(20),
-  //                             borderRadius: BorderRadius.circular(12),
-  //                           ),
-  //                           child: const Icon(
-  //                             Icons.arrow_back_ios_new,
-  //                             color: Colors.white,
-  //                             size: 20,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                       const Text(
-  //                         'Notifications',
-  //                         style: TextStyle(
-  //                           fontSize: 14,
-  //                           fontWeight: FontWeight.bold,
-  //                           color: Colors.white,
-  //                         ),
-  //                       ),
-  //                       if (unreadCount > 0) ...[
-  //                         const SizedBox(width: 12),
-  //                         Container(
-  //                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-  //                           decoration: BoxDecoration(
-  //                             color: Colors.white,
-  //                             borderRadius: BorderRadius.circular(20),
-  //                           ),
-  //                           child: Text(
-  //                             '$unreadCount new',
-  //                             style: const TextStyle(
-  //                               color: Color(0xFFF48706),
-  //                               fontSize: 11,
-  //                               fontWeight: FontWeight.w600,
-  //                             ),
-  //                           ),
-  //                         ),
-  //                       ],
-                        
-                        
-  //                     ],
-  //                   ),
-                    
-  //                 ],
-                
-  //             ),
-            
-  //         ),
-  //       ),
-  //     ),
-  //     //leading: const SizedBox(),
-  //   );
-  // }
 
   Widget _buildHeaderAction(IconData icon, String tooltip, VoidCallback onTap) {
     return GestureDetector(
@@ -1239,7 +1150,8 @@ class _NotificationListScreenState extends State<NotificationListScreen>
         _handleNotificationByType(notification);
     }
   }
-
+  
+//Condition for navigating to the specific page by using the case if needed in the future add the navigation according to the type
   void _handleNotificationByType(NotificationModel notification) {
     switch (notification.type.toLowerCase()) {
       case 'like':
@@ -1268,6 +1180,9 @@ class _NotificationListScreenState extends State<NotificationListScreen>
           _navigateToProfile(notification.sender!.id);
         }
         break;
+        case 'shop':
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>ShopPage()));
+
       
       default:
         Navigator.pushAndRemoveUntil(
