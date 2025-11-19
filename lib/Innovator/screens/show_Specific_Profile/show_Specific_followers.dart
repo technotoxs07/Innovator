@@ -1033,7 +1033,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.people_outline, size: 16),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 2),
                   Text('Followers (${followers.length})'),
                 ],
               ),
@@ -1043,7 +1043,7 @@ class _FollowersFollowingContentState extends State<FollowersFollowingContent> w
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.person_add_outlined, size: 16),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 2),
                   Text('Following (${following.length})'),
                 ],
               ),

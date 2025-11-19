@@ -11,6 +11,8 @@ import 'package:get/get.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
+import 'package:innovator/Innovator/services/in_app_notifcation.dart';
+import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
@@ -24,8 +26,10 @@ import 'package:innovator/Innovator/services/Daily_Notifcation.dart';
 import 'package:innovator/Innovator/services/Firebase_Messaging.dart';
  
 late Size mq;
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  GlobalKey<NavigatorState> get navigatorKey => Get.key;
+
+// ✅ CRITICAL: Track Firebase initialization state
 bool _isFirebaseInitialized = false;
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -157,9 +161,21 @@ Future<void> _initializeDailyNotifications() async {
   }
 } 
 Future<void> _initializeDeferredServices() async {
-  try { 
-    await Future.delayed(const Duration(milliseconds: 500)); 
-    if (!_isFirebaseInitialized) { 
+  try {
+    developer.log('⏰ Starting deferred services...');
+    
+    // ✅ FIX: Wait longer for UI to be fully ready
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // ✅ Verify navigator is ready
+    if (navigatorKey.currentContext == null) {
+      developer.log('⚠️ Navigator not ready, waiting...');
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    
+    // ✅ Make sure Firebase is initialized before these services
+    if (!_isFirebaseInitialized) {
+      developer.log('⚠️ Firebase not ready, initializing now...');
       await _initializeFirebase();
     }
     
@@ -240,7 +256,6 @@ void _showImmediateFeedback(RemoteMessage message) {
         ),
       ),
     );
-
     HapticFeedback.lightImpact();
   } catch (e) {
   }
@@ -309,16 +324,25 @@ void main() async {
         _isFirebaseInitialized = true;
  
       }
- 
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler); 
-      await _initializeCriticalOnly(); 
-            runApp( DevicePreview(
-              builder: (context) {
-                return  ProviderScope(child: InnovatorHomePage());
-              },
-            )); 
-      _initializeNonCriticalServices(); 
-    } catch (e) { 
+      
+      // Set background message handler (must be after Firebase init)
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      
+      // Initialize critical UI components
+      await _initializeCriticalOnly();
+      
+      // Start the app
+      developer.log('🎨 Starting UI...');
+      runApp(DevicePreview(builder: (context) => ProviderScope(child: InnovatorHomePage())));
+      
+      // Initialize non-critical services in background
+      developer.log('🔧 Starting background initialization...');
+      _initializeNonCriticalServices();
+      
+      developer.log('✅ App started successfully');
+    } catch (e, stackTrace) {
+      developer.log('❌ Critical error in main: $e\n$stackTrace');
+      // Still try to run the app
       runApp(const ProviderScope(child: InnovatorHomePage()));
     }
   }, (error, stackTrace) {
@@ -332,20 +356,73 @@ class InnovatorHomePage extends ConsumerStatefulWidget {
   ConsumerState<InnovatorHomePage> createState() => _InnovatorHomePageState();
 }
 
-class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> {
+class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with WidgetsBindingObserver{
+
+  final NotificationPollingService _pollingService = NotificationPollingService();
+  
   @override
   void initState() {
-    super.initState(); 
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    developer.log('🏠 InnovatorHomePage initialized');
+    
+    // Initialize deferred services after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
   
       _initializeDeferredServices();
+      
+      // ✅ FIX: Wait longer before starting polling to ensure overlay is ready
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && InAppNotificationService().isReady) {
+          _pollingService.startPolling();
+          developer.log('✅ Notification polling started from main');
+        } else {
+          // Retry after another delay if not ready
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              // Force start even if not "ready" - the service will handle it
+              _pollingService.startPolling();
+              developer.log('✅ Notification polling started (forced retry)');
+            }
+          });
+        }
+      });
     });
   }
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pollingService.stopPolling();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        developer.log('📱 App resumed - restarting notification polling');
+        _pollingService.startPolling();
+        _pollingService.forceCheck(); // Immediate check
+        break;
+      case AppLifecycleState.paused:
+        developer.log('⏸️ App paused - pausing notification polling');
+        _pollingService.stopPolling();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     mq = MediaQuery.of(context).size;
 
     return GetMaterialApp(
+      // ✅ FIX: Use the global navigator key for InAppNotificationService
       navigatorKey: navigatorKey,
       title: 'Innovator',
       theme: _buildAppTheme(),

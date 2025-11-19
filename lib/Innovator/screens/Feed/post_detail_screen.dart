@@ -452,7 +452,7 @@ Future<void> _fetchAuthorData(String authorId) async {
                       Text(
                         _formatTimeAgo(content!.createdAt),
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                           color: Colors.grey.shade600,
                           fontSize: 12.0,
                           fontWeight: FontWeight.w500,
                         ),
@@ -617,55 +617,84 @@ Widget _buildAuthorAvatar() {
   }
 
   Widget _buildMediaPreview() {
-    if (content!.optimizedFiles.isNotEmpty) {
-      final optimizedFile = content!.optimizedFiles.first;
-      
-      if (optimizedFile.type == 'image') {
-        return GestureDetector(
-          onTap: () => _showMediaGallery([optimizedFile.url], 0),
-          child: CachedNetworkImage(
-            imageUrl: _formatMediaUrl(optimizedFile.url),
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              height: 200,
-              color: Colors.grey[300],
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-            errorWidget: (context, url, error) => Container(
-              height: 200,
-              color: Colors.grey[300],
-              child: const Center(child: Icon(Icons.error)),
-            ),
-          ),
-        );
-        
-      }
-      // } else if (optimizedFile.type == 'video') {
-      //   return Container(
-      //     color: Colors.black,
-      //     child: AspectRatio(
-      //       aspectRatio: 16 / 9,
-      //       child: AutoPlayVideoWidget(
-      //         url: _formatMediaUrl(optimizedFile.url),
-      //         thumbnailUrl: optimizedFile.thumbnail != null ? _formatMediaUrl(optimizedFile.thumbnail!) : null,
-      //       ),
-      //     ),
-      //   );
-      // }
+  if (!content!.hasMedia) return const SizedBox.shrink();
+
+  // Check for optimized video files first
+  final hasOptimizedVideo = content!.optimizedFiles.any(
+    (file) => file.type == 'video',
+  );
+  
+  final hasOptimizedImages = content!.optimizedFiles.any(
+    (file) => file.type == 'image',
+  );
+
+  // Handle optimized video
+  if (hasOptimizedVideo) {
+    final videoFile = content!.optimizedFiles.firstWhere(
+      (file) => file.type == 'video',
+    );
+
+    final videoUrl = videoFile.url;
+    final thumbnailUrl = videoFile.thumbnail;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16.0),
+        child: _buildVideoPlayer(
+          _formatMediaUrl(videoUrl),
+          thumbnailUrl != null ? _formatMediaUrl(thumbnailUrl) : null,
+        ),
+      ),
+    );
+  }
+
+  // Handle optimized images
+  if (hasOptimizedImages) {
+    final imageUrls = content!.optimizedFiles
+        .where((file) => file.type == 'image')
+        .map((file) => _formatMediaUrl(file.url))
+        .toList();
+
+    if (imageUrls.isNotEmpty) {
+      return _buildImageGallery(imageUrls);
+    }
+  }
+
+  // Fallback to original files
+  if (content!.files.isNotEmpty) {
+    final firstFile = content!.files.first;
+    final formattedUrl = _formatMediaUrl(firstFile);
+
+    // Check if it's a video
+    if (FileTypeHelper.isVideo(formattedUrl)) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16.0),
+          child: _buildVideoPlayer(formattedUrl, null),
+        ),
+      );
     }
 
-    // Fallback to original files
-    if (content!.files.isNotEmpty) {
-      final firstFile = content!.files.first;
-      return GestureDetector(
-        onTap: () => _showMediaGallery(content!.files, 0),
+    // Otherwise show image
+    return GestureDetector(
+      onTap: () => _showMediaGallery(content!.files, 0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16.0),
         child: CachedNetworkImage(
-          imageUrl: _formatMediaUrl(firstFile),
+          imageUrl: formattedUrl,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
             height: 200,
             color: Colors.grey[300],
-            child: const Center(child: CircularProgressIndicator()),
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+              ),
+            ),
           ),
           errorWidget: (context, url, error) => Container(
             height: 200,
@@ -673,12 +702,204 @@ Widget _buildAuthorAvatar() {
             child: const Center(child: Icon(Icons.error)),
           ),
         ),
-      );
-    }
-
-    return const SizedBox.shrink();
+      ),
+    );
   }
 
+  return const SizedBox.shrink();
+}
+
+
+Widget _buildVideoPlayer(String videoUrl, String? thumbnailUrl) {
+  return Container(
+    color: Colors.black,
+    child: AspectRatio(
+      aspectRatio: 16 / 9,
+      child: AutoPlayVideoWidget(
+        url: videoUrl,
+        thumbnailUrl: thumbnailUrl,
+      ),
+    ),
+  );
+}
+
+bool _isVideoFile(String url) {
+  final lowerUrl = url.toLowerCase();
+  return lowerUrl.endsWith('.mp4') ||
+      lowerUrl.endsWith('.mov') ||
+      lowerUrl.endsWith('.avi') ||
+      lowerUrl.endsWith('.m3u8') ||
+      lowerUrl.contains('video');
+}
+
+Widget _buildImageGallery(List<String> imageUrls) {
+  if (imageUrls.length == 1) {
+    return GestureDetector(
+      onTap: () => _showMediaGallery(imageUrls, 0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16.0),
+        child: CachedNetworkImage(
+          imageUrl: imageUrls.first,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            height: 200,
+            color: Colors.grey[300],
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+              ),
+            ),
+          ),
+          errorWidget: (context, url, error) => Container(
+            height: 200,
+            color: Colors.grey[300],
+            child: const Center(child: Icon(Icons.error)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // For multiple images, use a grid
+  return Container(
+    constraints: BoxConstraints(maxHeight: 400),
+    child: GridView.builder(
+      physics: NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      padding: EdgeInsets.zero,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 4.0,
+        mainAxisSpacing: 4.0,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: imageUrls.length > 4 ? 4 : imageUrls.length,
+      itemBuilder: (context, index) {
+        if (index == 3 && imageUrls.length > 4) {
+          return GestureDetector(
+            onTap: () => _showMediaGallery(imageUrls, index),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrls[index],
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '+${imageUrls.length - 4}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return GestureDetector(
+          onTap: () => _showMediaGallery(imageUrls, index),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: imageUrls[index],
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: Colors.grey[300],
+                child: Center(
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: Colors.grey[300],
+                child: Icon(Icons.error, color: Colors.white),
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+// Widget _buildImageGridItem(List<String> urls, int index) {
+//   return GestureDetector(
+//     onTap: () => _showMediaGallery(urls, index),
+//     child: ClipRRect(
+//       borderRadius: BorderRadius.circular(8),
+//       child: CachedNetworkImage(
+//         imageUrl: urls[index],
+//         fit: BoxFit.cover,
+//         placeholder: (context, url) => Container(
+//           color: Colors.grey[300],
+//           child: Center(
+//             child: Container(
+//               width: 30,
+//               height: 30,
+//               child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+//             ),
+//           ),
+//         ),
+//         errorWidget: (context, url, error) => Container(
+//           color: Colors.grey[300],
+//           child: Icon(Icons.error, color: Colors.white),
+//         ),
+//       ),
+//     ),
+//   );
+// }
+
+// Widget _buildImageGridItemWithOverlay(List<String> urls, int index) {
+//   return GestureDetector(
+//     onTap: () => _showMediaGallery(urls, index),
+//     child: Stack(
+//       fit: StackFit.expand,
+//       children: [
+//         ClipRRect(
+//           borderRadius: BorderRadius.circular(8),
+//           child: CachedNetworkImage(
+//             imageUrl: urls[index],
+//             fit: BoxFit.cover,
+//           ),
+//         ),
+//         Container(
+//           decoration: BoxDecoration(
+//             color: Colors.black.withOpacity(0.6),
+//             borderRadius: BorderRadius.circular(8),
+//           ),
+//           child: Center(
+//             child: Text(
+//               '+${urls.length - 4}',
+//               style: TextStyle(
+//                 color: Colors.white,
+//                 fontSize: 28,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//           ),
+//         ),
+//       ],
+//     ),
+//   );
+// }
   Widget _buildActionButtons() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -959,16 +1180,33 @@ Widget _buildAuthorAvatar() {
 }
 
   void _showMediaGallery(List<String> mediaUrls, int initialIndex) {
+  final selectedUrl = mediaUrls[initialIndex];
+
+  // If selected item is a video, open fullscreen video player
+  if (_isVideoFile(selectedUrl)) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OptimizedMediaGalleryScreen(
-          mediaUrls: mediaUrls,
-          initialIndex: initialIndex,
+        builder: (context) => FullscreenVideoPage(
+          url: selectedUrl,
+          thumbnail: null,
         ),
       ),
     );
+    return;
   }
+
+  // For images, open the gallery screen
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => OptimizedMediaGalleryScreen(
+        mediaUrls: mediaUrls,
+        initialIndex: initialIndex,
+      ),
+    ),
+  );
+}
 
   bool _isAuthorCurrentUser() {
     if (AppData().isCurrentUser(content!.author.id)) {

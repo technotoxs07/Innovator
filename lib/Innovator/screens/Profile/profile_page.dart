@@ -11,7 +11,8 @@ import 'package:innovator/Innovator/Authorization/Login.dart';
 import 'package:innovator/Innovator/models/Feed_Content_Model.dart';
 import 'package:innovator/Innovator/screens/Add_Content/Create_post.dart';
 import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
-import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart' show VideoFeedPage;
+import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart'
+    show VideoFeedPage;
 import 'package:innovator/Innovator/screens/Follow/follow_Button.dart';
 import 'package:innovator/Innovator/screens/Follow/follow-Service.dart';
 import 'package:innovator/Innovator/screens/Profile/Edit_Profile.dart';
@@ -549,33 +550,32 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 TabBar(
-              
                   controller: _tabController,
-                   labelColor: const Color.fromRGBO(244, 135, 6, 1),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color.fromRGBO(244, 135, 6, 1),
+                  labelColor: const Color.fromRGBO(244, 135, 6, 1),
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: const Color.fromRGBO(244, 135, 6, 1),
                   tabs: [
-                          Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.people_outline, size: 16),
-                  const SizedBox(width: 4),
-                  Text('Followers'),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.person_add_outlined, size: 16),
-                  const SizedBox(width: 4),
-                  Text('Following '),
-                ],
-              ),
-            ),
-      ]
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.people_outline, size: 16),
+                          const SizedBox(width: 4),
+                          Text('Followers'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.person_add_outlined, size: 16),
+                          const SizedBox(width: 4),
+                          Text('Following '),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 Expanded(
                   child: TabBarView(
@@ -649,12 +649,21 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                             //           'http://182.93.94.210:3067${follow.picture}',
                             //         )
                             //         : null,
-                              backgroundImage: follow.picture.toString().isNotEmpty
-              ? NetworkImage(
-                follow.picture.toString().toString().startsWith('http://')|| follow.picture.toString().toString().startsWith('https://')? follow.picture.toString()
-                :'http://182.93.94.210:3067${follow.picture}'
-                )
-              : null,
+                            backgroundImage:
+                                follow.picture.toString().isNotEmpty
+                                    ? NetworkImage(
+                                      follow.picture
+                                                  .toString()
+                                                  .toString()
+                                                  .startsWith('http://') ||
+                                              follow.picture
+                                                  .toString()
+                                                  .toString()
+                                                  .startsWith('https://')
+                                          ? follow.picture.toString()
+                                          : 'http://182.93.94.210:3067${follow.picture}',
+                                    )
+                                    : null,
                             child:
                                 follow.picture == null
                                     ? Icon(
@@ -692,7 +701,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   },
                 ),
               ),
-              
             ],
           );
         } else {
@@ -742,19 +750,31 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                           leading: CircleAvatar(
                             radius: 24,
                             backgroundColor: Color.fromRGBO(235, 111, 70, 0.2),
+
                             // backgroundImage:
                             //     follower.picture != null
                             //         ? NetworkImage(
                             //           'http://182.93.94.210:3067${follower.picture}',
                             //         )
                             //         : NetworkImage(''),
-
-                               backgroundImage: follower.picture.toString().toString().isNotEmpty
-              ? NetworkImage(
-                follower.picture.toString().toString().startsWith('http://')|| follower.picture.toString().toString().startsWith('https://')? follower.picture.toString()
-                :'http://182.93.94.210:3067${follower.picture.toString()}'
-                )
-              : null,
+                            backgroundImage:
+                                follower.picture
+                                        .toString()
+                                        .toString()
+                                        .isNotEmpty
+                                    ? NetworkImage(
+                                      follower.picture
+                                                  .toString()
+                                                  .toString()
+                                                  .startsWith('http://') ||
+                                              follower.picture
+                                                  .toString()
+                                                  .toString()
+                                                  .startsWith('https://')
+                                          ? follower.picture.toString()
+                                          : 'http://182.93.94.210:3067${follower.picture.toString()}',
+                                    )
+                                    : null,
                             child:
                                 follower.picture == null
                                     ? Icon(
@@ -792,7 +812,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   },
                 ),
               ),
-              
             ],
           );
         } else {
@@ -802,373 +821,413 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     );
   }
 
-
-Widget _buildProfileSection(UserProfile profile) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SizedBox(height: 20),
-      Padding(
-        padding: const EdgeInsets.only(right: 10, left: 10),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Stack(
-                  children: [
-                    Obx(
-                      () => CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Color.fromRGBO(235, 111, 70, 0.2),
-                        key: ValueKey(
-                          'profile_${_userController.profilePictureVersion.value}',
-                        ),
-                        backgroundImage:
-                            _userController.getFullProfilePicturePath() != null
-                                ? NetworkImage(
+  Widget _buildProfileSection(UserProfile profile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.only(right: 10, left: 10),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Stack(
+                    children: [
+                      Obx(
+                        () => CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Color.fromRGBO(235, 111, 70, 0.2),
+                          key: ValueKey(
+                            'profile_${_userController.profilePictureVersion.value}',
+                          ),
+                          backgroundImage:
+                              _userController.getFullProfilePicturePath() !=
+                                      null
+                                  ? NetworkImage(
                                     '${_userController.getFullProfilePicturePath()!}?v=${_userController.profilePictureVersion.value}',
                                   )
-                                : null,
-                        child: _userController.profilePicture.value == null ||
-                                _userController.profilePicture.value == ''
-                            ? Icon(
-                                Icons.person,
-                                size: 60,
-                                color: Color.fromRGBO(244, 135, 6, 1),
-                              )
-                            : null,
+                                  : null,
+                          child:
+                              _userController.profilePicture.value == null ||
+                                      _userController.profilePicture.value == ''
+                                  ? Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Color.fromRGBO(244, 135, 6, 1),
+                                  )
+                                  : null,
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: GestureDetector(
-                        onTap: _isUploading ? null : _pickAndUploadImage,
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Color.fromRGBO(244, 135, 6, 1),
-                            shape: BoxShape.circle,
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: GestureDetector(
+                          onTap: _isUploading ? null : _pickAndUploadImage,
+                          child: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Color.fromRGBO(244, 135, 6, 1),
+                              shape: BoxShape.circle,
+                            ),
+                            child:
+                                _isUploading
+                                    ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                           ),
-                          child: _isUploading
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(width: 15),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Obx(
-                      () => Text(
-                        _userController.userName.value ?? profile.name,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      profile.email,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Color.fromRGBO(244, 135, 6, 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      margin: EdgeInsets.only(top: 8),
-                      child: Text(
-                        '${profile.level.toUpperCase()}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color.fromRGBO(244, 135, 6, 1),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                      
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Colors.red, fontSize: 12),
-                ),
-              ),
-            // SizedBox(height: 10),
-            Divider(
-              thickness: 0.8,
-              color: Colors.grey[300],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0, right: 20.0,),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      FutureBuilder<List<FollowerFollowing>>(
-                        future: UserProfileService.getFollowers(),
-                        builder: (context, snapshot) {
-                          int followerCount = 0;
-                          if (snapshot.connectionState == ConnectionState.done &&
-                              snapshot.hasData) {
-                            followerCount = snapshot.data!.length;
-                          }
-                          return GestureDetector(
-                            onTap: () => _showFollowersFollowingDialog(context),
-                            child: Column(
-                              children: [
-                                Text(
-                                  '$followerCount ',
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(244, 135, 6, 1),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                     Text(
-                                  'Followers',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(width: 40),
-                      FutureBuilder<List<FollowerFollowing>>(
-                        future: UserProfileService.getFollowing(),
-                        builder: (context, snapshot) {
-                          int followingCount = 0;
-                          if (snapshot.connectionState == ConnectionState.done &&
-                              snapshot.hasData) {
-                            followingCount = snapshot.data!.length;
-                          }
-                          return GestureDetector(
-                            onTap: () {
-                              _tabController.index = 1;
-                              _showFollowersFollowingDialog(context);
-                            },
-                            child: Column(
-                              children: [
-                                Text(
-                                  '$followingCount',
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(244, 135, 6, 1),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Following',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      
                     ],
                   ),
-                  Container(
-height:35,
-width: 35,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                                          padding: EdgeInsets.all(0),
-                      onPressed: (){
-                                showModalBottomSheet(
-                                  backgroundColor: Colors.white,
-                                  context: context, builder: (context){
-                                  return Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ListTile(
-                                        leading: Icon(Icons.info_outline),
-                                        title: Text('My Information'),
-                                        onTap: ()  {
-                                          Navigator.of(context).pop();
-                                          showAdaptiveDialog(context: context, builder: (context) {
-                                            return AlertDialog(
-                                              backgroundColor: Colors.white,
-                                           
-                                              content: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                      SizedBox(height: 24),
-      Padding(
-        padding: EdgeInsets.all(12),
-        child: Text(
-          'Personal Information',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
-      SizedBox(height: 8),
-      ProfileInfoCard(
-        title: 'Email',
-        value: profile.email,
-        icon: Icons.email,
-      ),
-      ProfileInfoCard(
-        title: 'Phone',
-        value: profile.phone,
-        icon: Icons.phone,
-      ),
-      ProfileInfoCard(
-        title: 'Date of Birth',
-        value: formatDate(profile.dob),
-        icon: Icons.calendar_today,
-      ),
-      ProfileInfoCard(
-        title: 'Member Since',
-        value: formatDate(profile.createdAt),
-        icon: Icons.access_time,
-      ),
-                                                ],
-                                              ),
-                                              actions: [
-                                                TextButton(onPressed: (){
-                                                                                          Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (_) => EditProfileScreen(),
-                              ),
-                            );
-                                                }, child: Text('Edit'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: Text('Close'),
-                                                ),
-                                              ],
-                                            );
-                                          });
-                                        },
-                                      ),
-                                      
-                                      ListTile(
-                                        leading: Icon(Icons.logout),
-                                        title: Text('Logout'),
-                                        onTap: () async {
-                                          await AppData().clearAuthToken();
-                                          Get.offAll(()=>LoginPage());
-                                        },
-                                      ),
-                                      
-                                      
-                                    ] ,
-                                  );
-                                });
-                    }, icon: Icon(Icons.more_vert_outlined,color: Colors.grey,)),
+                  SizedBox(width: 15),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Obx(
+                        () => Text(
+                          _userController.userName.value ?? profile.name,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        profile.email,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color.fromRGBO(244, 135, 6, 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        margin: EdgeInsets.only(top: 8),
+                        child: Text(
+                          '${profile.level.toUpperCase()}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color.fromRGBO(244, 135, 6, 1),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-
-      SizedBox(height: 24),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-                    'Create New Post',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.black),
+              SizedBox(height: 12),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(color: Colors.red, fontSize: 12),
                   ),
-                  SizedBox(height: 10),
-          
-          InkWell(
-            onTap: (){
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>CreatePostScreen()));
-            },
-            child:Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(8),
+                ),
+              // SizedBox(height: 10),
+              Divider(thickness: 0.8, color: Colors.grey[300]),
+              Padding(
+                padding: const EdgeInsets.only(left: 20.0, right: 20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        FutureBuilder<List<FollowerFollowing>>(
+                          future: UserProfileService.getFollowers(),
+                          builder: (context, snapshot) {
+                            int followerCount = 0;
+                            if (snapshot.connectionState ==
+                                    ConnectionState.done &&
+                                snapshot.hasData) {
+                              followerCount = snapshot.data!.length;
+                            }
+                            return GestureDetector(
+                              onTap:
+                                  () => _showFollowersFollowingDialog(context),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '$followerCount ',
+                                    style: TextStyle(
+                                      color: Color.fromRGBO(244, 135, 6, 1),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Followers',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(width: 40),
+                        FutureBuilder<List<FollowerFollowing>>(
+                          future: UserProfileService.getFollowing(),
+                          builder: (context, snapshot) {
+                            int followingCount = 0;
+                            if (snapshot.connectionState ==
+                                    ConnectionState.done &&
+                                snapshot.hasData) {
+                              followingCount = snapshot.data!.length;
+                            }
+                            return GestureDetector(
+                              onTap: () {
+                                _tabController.index = 1;
+                                _showFollowersFollowingDialog(context);
+                              },
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '$followingCount',
+                                    style: TextStyle(
+                                      color: Color.fromRGBO(244, 135, 6, 1),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Following',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 35,
+                      width: 35,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.all(0),
+                        onPressed: () {
+                          showModalBottomSheet(
+                            backgroundColor: Colors.white,
+                            context: context,
+                            builder: (context) {
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    leading: Icon(Icons.info_outline),
+                                    title: Text('My Information'),
+                                    onTap: () {
+                                      Navigator.of(context).pop();
+                                      showAdaptiveDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            backgroundColor: Colors.white,
+
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                SizedBox(height: 24),
+                                                Padding(
+                                                  padding: EdgeInsets.all(12),
+                                                  child: Text(
+                                                    'Personal Information',
+                                                    style: TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8),
+                                                ProfileInfoCard(
+                                                  title: 'Email',
+                                                  value: profile.email,
+                                                  icon: Icons.email,
+                                                ),
+                                                ProfileInfoCard(
+                                                  title: 'Phone',
+                                                  value: profile.phone,
+                                                  icon: Icons.phone,
+                                                ),
+                                                ProfileInfoCard(
+                                                  title: 'Date of Birth',
+                                                  value: formatDate(
+                                                    profile.dob,
+                                                  ),
+                                                  icon: Icons.calendar_today,
+                                                ),
+                                                ProfileInfoCard(
+                                                  title: 'Member Since',
+                                                  value: formatDate(
+                                                    profile.createdAt,
+                                                  ),
+                                                  icon: Icons.access_time,
+                                                ),
+                                              ],
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(
+                                                    context,
+                                                  ).pushReplacement(
+                                                    MaterialPageRoute(
+                                                      builder:
+                                                          (_) =>
+                                                              EditProfileScreen(),
+                                                    ),
+                                                  );
+                                                },
+                                                child: Text('Edit',style: TextStyle(fontFamily: 'Inter', fontSize: 14, color: Colors.orange),),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Close',style: TextStyle(fontFamily: 'Inter', fontSize: 14, color: Colors.black),),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+
+                                  ListTile(
+                                    leading: Icon(Icons.logout),
+                                    title: Text('Logout'),
+                                    onTap: () async {
+                                      await AppData().clearAuthToken();
+                                      Get.offAll(() => LoginPage());
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        icon: Icon(
+                          Icons.more_vert_outlined,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-          
-              child: 
-              Center(
-                child: Text(
-                  'Write Something...',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black45),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 24),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Create New Post',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(height: 10),
+
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CreatePostScreen()),
+                );
+              },
+              child: Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+
+                child: Center(
+                  child: Text(
+                    'Write Something...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black45,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-SizedBox(height: 30),
-      Padding(
-        padding: const EdgeInsets.only(right: 10,left: 10,top: 2,bottom: 2),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Posts',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-           ElevatedButton.icon(
-            
-            onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>VideoFeedPage()));
-           }, label:Text('Reels',style: TextStyle(color: Colors.black),),
-           icon: Icon(Icons.video_collection,color: Color.fromRGBO(244, 135, 6, 1),),
-           style: ElevatedButton.styleFrom(
-            elevation: 0,
-            backgroundColor: Colors.grey.shade200,
-
-           ),
-           ),
           ],
         ),
-      ),
-      // SizedBox(height: 20),
-      Divider(
-        thickness: 0.8,
-        color: Colors.grey[300],
-      ),
-    ],
-  );
-}
+        SizedBox(height: 30),
+        Padding(
+          padding: const EdgeInsets.only(
+            right: 10,
+            left: 10,
+            top: 2,
+            bottom: 2,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Posts',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => VideoFeedPage()),
+                  );
+                },
+                label: Text('Reels', style: TextStyle(color: Colors.black)),
+                icon: Icon(
+                  Icons.video_collection,
+                  color: Color.fromRGBO(244, 135, 6, 1),
+                ),
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // SizedBox(height: 20),
+        Divider(thickness: 0.8, color: Colors.grey[300]),
+      ],
+    );
+  }
+
   Widget _buildContentItem(int index) {
     final content = _contents[index];
     return RepaintBoundary(
@@ -1205,22 +1264,22 @@ SizedBox(height: 30),
       backgroundColor: Colors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-      
+
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios),
-          onPressed: (){
+          onPressed: () {
             Navigator.pop(context);
           },
         ),
-        
+
         title: Text('My Profile'),
         backgroundColor: Color.fromRGBO(244, 135, 6, 1),
-      ) ,
+      ),
       body: Padding(
-        padding: const EdgeInsets.only(right: 12,left: 12),
+        padding: const EdgeInsets.only(right: 12, left: 12),
         child: CustomScrollView(
           controller: _scrollController,
-        
+
           slivers: [
             SliverToBoxAdapter(
               child: FutureBuilder<UserProfile>(

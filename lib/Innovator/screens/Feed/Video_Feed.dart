@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/Authorization/Login.dart';
+import 'package:innovator/Innovator/controllers/user_controller.dart';
+import 'package:innovator/Innovator/screens/Profile/profile_page.dart';
 import 'package:innovator/main.dart';
 import 'package:innovator/Innovator/screens/Feed/VideoPlayer/videoplayerpackage.dart';
 import 'package:innovator/Innovator/screens/Likes/Content-Like-Service.dart';
@@ -537,7 +540,6 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
           'Authorization': 'Bearer ${AppData().authToken}',
         },
       ).timeout(Duration(seconds: 30));
-      
       return response;
     } catch (e) {
       rethrow;
@@ -1007,17 +1009,37 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
           // Author Info
           Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundImage: widget.content.author.picture.isNotEmpty
-                    ? CachedNetworkImageProvider(widget.content.author.picture)
-                    : null,
-                child: widget.content.author.picture.isEmpty
-                    ? Text(widget.content.author.name.isNotEmpty
-                        ? widget.content.author.name[0].toUpperCase()
-                        : '?')
-                    : null,
-              ),
+               GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: AppData().currentUserId ?? '')));
+                },
+                 child: Hero(
+                      tag:
+                          'avatar_${widget.content.author.id}_${_isAuthorCurrentUser() ? Get.find<UserController>().profilePictureVersion.value : 0}',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              Color.fromRGBO(244, 135, 6, 1), // your theme
+                              Color.fromRGBO(255, 204, 0, 1), // golden highlight
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orangeAccent.shade100,
+                              blurRadius: 12.0,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: _buildAuthorAvatar(),
+                        ),
+                      ),
+                    ),
+               ),
               SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -1095,6 +1117,96 @@ class _ReelsVideoItemState extends State<ReelsVideoItem> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAuthorAvatar() {
+    final userController = Get.find<UserController>();
+
+    if (_isAuthorCurrentUser()) {
+      return Obx(() {
+        final picturePath = userController.getFullProfilePicturePath();
+        final version = userController.profilePictureVersion.value;
+
+        return CircleAvatar(
+          key: ValueKey('feed_avatar_${widget.content.author.id}_$version'),
+          backgroundImage:
+              picturePath != null
+                  ? CachedNetworkImageProvider('$picturePath?v=$version')
+                  : null,
+          child:
+              picturePath == null || picturePath.isEmpty
+                  ? Text(
+                    widget.content.author.name.isNotEmpty
+                        ? widget.content.author.name[0].toUpperCase()
+                        : '?',
+                  )
+                  : null,
+        );
+      });
+    }
+
+    // ✅ ENHANCED: Cache user data if not already cached
+    if (!userController.isUserCached(widget.content.author.id)) {
+      userController.cacheUserProfilePicture(
+        widget.content.author.id,
+        widget.content.author.picture.isNotEmpty
+            ? widget.content.author.picture 
+            : null,
+        widget.content.author.name,
+      );
+    }
+
+    // Use cached data with fallback to original author data
+    final cachedImageUrl = userController.getOtherUserFullProfilePicturePath(
+      widget.content.author.id,
+    );
+    final cachedName = userController.getOtherUserName(
+      widget.content.author.id,
+    );
+
+    final imageUrl =
+        cachedImageUrl ??
+        (widget.content.author.picture.isNotEmpty
+            ? 'http://182.93.94.210:3067${widget.content.author.picture}'
+            : null);
+
+    final displayName = cachedName ?? widget.content.author.name;
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return CircleAvatar(
+        child: Text(
+          displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      imageBuilder:
+          (context, imageProvider) => CircleAvatar(
+            backgroundImage: imageProvider,
+            key: ValueKey(
+              'other_user_${widget.content.author.id}_${imageUrl.hashCode}',
+            ),
+          ),
+      placeholder:
+          (context, url) => CircleAvatar(
+            child: Container(
+              width: 20,
+              height: 20,
+              child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+            ),
+          ),
+      errorWidget:
+          (context, url, error) => CircleAvatar(
+            child: Text(
+              displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+            ),
+          ),
+      cacheKey: 'user_${widget.content.author.id}_${imageUrl.hashCode}',
+      memCacheWidth: 80,
+      memCacheHeight: 80,
     );
   }
 

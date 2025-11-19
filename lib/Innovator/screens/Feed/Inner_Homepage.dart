@@ -39,52 +39,52 @@ import '../../models/Feed_Content_Model.dart';
 
 // VideoPlaybackManager class
 
-class LoadingConfig {
-  static const String loadingGifPath =
-      'animation/IdeaBulb.gif'; // Update this path to your GIF file
-}
+// class LoadingConfig {
+//   static const String loadingGifPath =
+//       'animation/IdeaBulb.gif'; // Update this path to your GIF file
+// }
 
 
 // Replace the RefreshIndicator in your build metho
 // Enhanced CacheManager class
-class CacheManager {
-  static const String _cacheKey = 'feed_cache';
-  static const int _maxCacheSize = 100;
-  static List<FeedContent> _memoryCache = [];
+// class CacheManager {
+//   static const String _cacheKey = 'feed_cache';
+//   static const int _maxCacheSize = 100;
+//   static List<FeedContent> _memoryCache = [];
 
-  static Future<void> cacheFeedContent(List<FeedContent> contents) async {
-    try {
-      _memoryCache.addAll(contents);
+//   static Future<void> cacheFeedContent(List<FeedContent> contents) async {
+//     try {
+//       _memoryCache.addAll(contents);
 
-      if (_memoryCache.length > _maxCacheSize) {
-        _memoryCache = _memoryCache.sublist(
-          _memoryCache.length - _maxCacheSize,
-        );
-      }
+//       if (_memoryCache.length > _maxCacheSize) {
+//         _memoryCache = _memoryCache.sublist(
+//           _memoryCache.length - _maxCacheSize,
+//         );
+//       }
 
-      debugPrint(
-        'Cached ${contents.length} feed items. Total cache size: ${_memoryCache.length}',
-      );
-    } catch (e) {
-      debugPrint('Error caching feed content: $e');
-    }
-  }
+//       debugPrint(
+//         'Cached ${contents.length} feed items. Total cache size: ${_memoryCache.length}',
+//       );
+//     } catch (e) {
+//       debugPrint('Error caching feed content: $e');
+//     }
+//   }
 
-  static Future<List<FeedContent>> getCachedFeed() async {
-    try {
-      debugPrint('Retrieved ${_memoryCache.length} cached feed items');
-      return List.from(_memoryCache);
-    } catch (e) {
-      debugPrint('Error getting cached feed: $e');
-      return [];
-    }
-  }
+//   static Future<List<FeedContent>> getCachedFeed() async {
+//     try {
+//       debugPrint('Retrieved ${_memoryCache.length} cached feed items');
+//       return List.from(_memoryCache);
+//     } catch (e) {
+//       debugPrint('Error getting cached feed: $e');
+//       return [];
+//     }
+//   }
 
-  static void clearCache() {
-    _memoryCache.clear();
-    debugPrint('Feed cache cleared');
-  }
-}
+//   static void clearCache() {
+//     _memoryCache.clear();
+//     debugPrint('Feed cache cleared');
+//   }
+// }
 
 // Enhanced Author model
 
@@ -260,9 +260,9 @@ class _Inner_HomePageState extends State<Inner_HomePage> {
     }
 
     // Register FireChatController if not already registered
-    if (!Get.isRegistered<FireChatController>()) {
-      Get.put(FireChatController());
-    }
+    // if (!Get.isRegistered<FireChatController>()) {
+    //   Get.put(FireChatController());
+    // }
 
     _requestNotificationPermission();
     _initializeInfiniteScroll();
@@ -3062,8 +3062,8 @@ Future<void> _handleEditContent() async {
                 height: 50,
                 child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
               ),
-              SizedBox(height: 16),
-              Text('Updating content...'),
+             // SizedBox(height: 16),
+              //Text('Updating content...'),
             ],
           ),
         ),
@@ -4230,38 +4230,44 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   }
 
   void _handleVisibilityChanged(VisibilityInfo info) {
-    if (!mounted || _disposed || _controller == null) return;
+  if (!mounted || _disposed) return;
 
-    final visibleFraction = info.visibleFraction;
+  final visibleFraction = info.visibleFraction;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _disposed) return;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted || _disposed) return;
 
-      if (visibleFraction > 0.5) {
-        // Only initialize the video player when the widget is actually
-        // visible. This avoids creating many VideoPlayerControllers for
-        // offscreen list items which can cause jank and memory pressure.
-        if (!_initialized && !_disposed && _controller == null) {
-          try {
-            _initializeVideoPlayer();
-          } catch (e) {
-            developer.log('Error initializing video on visibility: $e');
-          }
-        }
-
-        _activeVideos[videoId] = this;
-        _muteOtherVideos();
-        if (_initialized && _controller != null && !_controller!.value.isPlaying && _isPlaying) {
-          _controller!.play();
-        }
-      } else {
-        _activeVideos.remove(videoId);
-        if (_initialized && _controller != null && _controller!.value.isPlaying) {
-          _controller!.pause();
+    // STRICTER VISIBILITY CHECK
+    if (visibleFraction > 0.7) {  // Increased from 0.3 to 0.7 (70% visible)
+      // Initialize if not already done
+      if (!_initialized && !_disposed && _controller == null) {
+        try {
+          _initializeVideoPlayer();
+        } catch (e) {
+          developer.log('Error initializing video on visibility: $e');
         }
       }
-    });
-  }
+
+      _activeVideos[videoId] = this;
+      _muteOtherVideos();
+      
+      // Only play if video is well within view
+      if (_initialized && _controller != null && !_controller!.value.isPlaying && _isPlaying) {
+        _controller!.play();
+      }
+    } else if (visibleFraction < 0.5) {  // Pause earlier when scrolling away
+      // Remove from active videos and pause
+      _activeVideos.remove(videoId);
+      if (_initialized && _controller != null) {
+        if (_controller!.value.isPlaying) {
+          _controller!.pause();
+          debugPrint('🎬 Video paused (visibility: ${visibleFraction.toStringAsFixed(2)})');
+        }
+      }
+    }
+  });
+}
+
 
   void _muteOtherVideos() {
     WidgetsBinding.instance.addPostFrameCallback((_) {

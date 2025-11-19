@@ -27,6 +27,7 @@ import 'package:innovator/Innovator/utils/Drawer/drawer_cache_manager.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // Synchronous-only cache for instant access
 class InstantCache {
@@ -434,6 +435,9 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                       );
                     }),
           _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
+                //  _QuickMenuItem(icon: Icons.help_rounded, title: 'Payment', onTap: (){
+                //   Navigator.push(context, MaterialPageRoute(builder: (context)=>PaymentScreen()));
+                //  }),
           _QuickMenuItem(icon: Icons.person_rounded, title: 'Profile', onTap: _goToProfile),
           _QuickMenuItem(icon: Icons.psychology_rounded, title: 'Eliza ChatBot', onTap: _goToEliza),
           _QuickMenuItem(icon: Icons.event_available, title: 'Events', onTap: _goToEvents),
@@ -486,7 +490,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Innovator App v:1.0.35', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
+              Text('Innovator App v:1.0.40', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
               Text('Pvt Ltd', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
             ],
           ),

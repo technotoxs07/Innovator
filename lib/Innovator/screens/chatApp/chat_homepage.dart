@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:innovator/Innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
@@ -16,12 +17,17 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handlePageVisible();
     });
+
+    
     return Scaffold(
     backgroundColor: Get.theme.scaffoldBackgroundColor,
     //appBar: _buildAppBar(),
     body: CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(child: _buildUserStatus()),
+        // SizedBox(
+        //   height: 10,
+        // ),
+       SliverToBoxAdapter(child: SizedBox(height: 20,)),
         // SliverToBoxAdapter(child: _buildCurrentUserCard()), // Uncomment if needed
         SliverToBoxAdapter(child: _buildIntegratedSearchBar()),
         SliverFillRemaining(
@@ -198,7 +204,9 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
                     isOnline: true,
                     showOnlineIndicator: false,
                     heroTag: 'status_avatar_${user['id']}_$index',
+
                   ),
+
                 ),
                 // Online indicator
                 Positioned(
@@ -236,6 +244,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
             ),
           ],
         ),
+        
       ),
     );
   }
@@ -464,14 +473,14 @@ Widget _buildUsersList() {
     
     // Check if we're in search mode
     final isSearchMode = controller.searchQuery.value.isNotEmpty;
-    final displayUsers = isSearchMode ? controller.searchResults : controller.allUsers;
+    final displayUsers = isSearchMode ? controller.searchResults : controller.chatList;
     
     // ENHANCED: Better loading state management with follow status
-    if (controller.isLoadingFollowStatus.value && controller.allUsers.isEmpty) {
+    if (controller.isLoadingFollowStatus.value && controller.chatList.isEmpty) {
       return _buildFollowStatusLoadingState();
     }
     
-    if (controller.isLoadingUsers.value && controller.allUsers.isEmpty) {
+    if (controller.isLoadingUsers.value && controller.chatList.isEmpty) {
       return _buildLoadingState();
     }
 
@@ -498,6 +507,7 @@ Widget _buildUsersList() {
       onRefresh: () async {
         // ENHANCED: Force refresh with follow status check
         await controller.refreshUsersWithFollowStatus();
+        await controller.loadUserChats();
       },
       color: const Color.fromRGBO(244, 135, 6, 1),
       child: Column(
@@ -508,17 +518,20 @@ Widget _buildUsersList() {
           else
             _buildFollowStatusInfoBar(),
           Expanded(
-            child: ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: displayUsers.length,
-              itemBuilder: (context, index) {
-                final user = displayUsers[index];
-                developer.log('Building card for user: ${user['name']}');
-                return _buildUserCard(user, index);
-              },
+            child: displayUsers.isEmpty ? _buildEmptyState()
+              : ListView.builder(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: displayUsers.length,
+                itemBuilder: (context, index) {
+                  final item = displayUsers[index];
+                  final user = isSearchMode ? item : (item['otherUser'] as Map<String, dynamic>? ?? item);
+                  developer.log('Building card for user: ${user['name']}');
+                  return _buildUserCard(item, user, index, isSearchMode);
+                },
+              ),
             ),
-          ),
+          
         ],
       ),
     );
@@ -790,17 +803,21 @@ Widget _buildFollowStatusLoadingState() {
     );
   }
 
-  Widget _buildUserCard(Map<String, dynamic> user, int index) {
+  Widget _buildUserCard(Map<String, dynamic> chatData ,Map<String, dynamic> user, int index, bool isSearchMode) {
   final isOnline = user['isOnline'] ?? false;
   final isMutualFollow = user['isMutualFollow'] ?? false;
   
   final userId = user['userId']?.toString() ?? 
                 user['_id']?.toString() ?? 
                 user['id']?.toString() ?? '';
+  final bool showOnlineIndicator = true;
   
   // Generate chat ID to get badge count
   final chatId = controller.generateChatId(controller.currentUserId.value, userId);
-  
+   final lastMessage = !isSearchMode ? chatData['lastMessage']?.toString() : null;
+  final lastMessageTime = !isSearchMode ? chatData['lastMessageTime'] as Timestamp? : null;
+  final lastMessageSender = !isSearchMode ? chatData['lastMessageSender']?.toString() : null;
+  final isMyLastMessage = lastMessageSender == controller.currentUserId.value;
   final isRecentUser = controller.recentUsers.any((recentUser) {
     final recentUserId = recentUser['userId']?.toString() ?? 
                         recentUser['_id']?.toString() ?? 
@@ -938,64 +955,112 @@ Widget _buildFollowStatusLoadingState() {
                                 }
                                 return const SizedBox.shrink();
                               }),
+                              
+                              if(showOnlineIndicator)
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: isOnline ? Colors.green : Colors.grey,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                    boxShadow: isOnline ? [
+                                      BoxShadow(
+                                        color: Colors.green.withAlpha(60),
+                                        blurRadius: 4,
+                                        spreadRadius: 1
+                                      )
+                                    ]
+                                    : null,
+                                  ),
+                                ),
+
                               // Mutual follow indicator
-                              if (isMutualFollow) ...[
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color.fromRGBO(244, 135, 6, 1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.verified,
-                                        color: Colors.white,
-                                        size: 12,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        'Mutual',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              // Recent user indicator
-                              if (isRecentUser) ...[
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Text(
-                                    'Recent',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              // if (isMutualFollow) ...[
+                              //   const SizedBox(width: 4),
+                              //   Container(
+                              //     padding: const EdgeInsets.symmetric(
+                              //       horizontal: 6,
+                              //       vertical: 2,
+                              //     ),
+                              //     decoration: BoxDecoration(
+                              //       color: const Color.fromRGBO(244, 135, 6, 1),
+                              //       borderRadius: BorderRadius.circular(8),
+                              //     ),
+                              //     child: Row(
+                              //       mainAxisSize: MainAxisSize.min,
+                              //       children: [
+                              //         Icon(
+                              //           Icons.verified,
+                              //           color: Colors.white,
+                              //           size: 12,
+                              //         ),
+                              //         const SizedBox(width: 2),
+                              //         // Text(
+                              //         //   'Mutual',
+                              //         //   style: TextStyle(
+                              //         //     color: Colors.white,
+                              //         //     fontSize: 10,
+                              //         //     fontWeight: FontWeight.bold,
+                              //         //   ),
+                              //         // ),
+                              //       ],
+                              //     ),
+                              //   ),
+                              // ],
+                              // // Recent user indicator
+                              // if (isRecentUser) ...[
+                              //   const SizedBox(width: 4),
+                              //   Container(
+                              //     padding: const EdgeInsets.symmetric(
+                              //       horizontal: 6,
+                              //       vertical: 2,
+                              //     ),
+                              //     decoration: BoxDecoration(
+                              //       color: Colors.blue,
+                              //       borderRadius: BorderRadius.circular(8),
+                              //     ),
+                              //     child: const Text(
+                              //       'Recent',
+                              //       style: TextStyle(
+                              //         color: Colors.white,
+                              //         fontSize: 10,
+                              //         fontWeight: FontWeight.bold,
+                              //       ),
+                              //     ),
+                              //   ),
+                              //],
                             ],
                           ),
                           const SizedBox(height: 4),
+                          if(lastMessage != null && lastMessage.isNotEmpty) ...[
+                            Row(children: [
+                              if(isMyLastMessage)
+                              Padding(padding: 
+                              EdgeInsets.only(right: 4),
+                              child: Icon(
+                                Icons.done_all,
+                                size: 14,
+                                color: Colors.grey.shade600,
+                              ),),
+                              Expanded(child: Text(lastMessage,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              )),
+                              if(lastMessageTime != null) ...[
+                                SizedBox(width: 4,),
+                                Text(
+                                  controller.formatChatTime(lastMessageTime),
+                                  style: TextStyle(color: Colors.grey.shade500,
+                                  fontSize: 12),
+                                )
+                              ]
+                            ],)
+                          ]else ...[
                           Text(
                             isOnline
                                 ? 'Online'
@@ -1006,25 +1071,26 @@ Widget _buildFollowStatusLoadingState() {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          ],
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isMutualFollow
-                            ? const Color.fromRGBO(244, 135, 6, 1)
-                            : const Color.fromRGBO(244, 135, 6, 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        isMutualFollow ? Icons.chat : Icons.chat_bubble_outline,
-                        color: isMutualFollow
-                            ? Colors.white
-                            : const Color.fromRGBO(244, 135, 6, 1),
-                        size: 20,
-                      ),
-                    ),
+                    // Container(
+                    //   padding: const EdgeInsets.all(8),
+                    //   decoration: BoxDecoration(
+                    //     color: isMutualFollow
+                    //         ? const Color.fromRGBO(244, 135, 6, 1)
+                    //         : const Color.fromRGBO(244, 135, 6, 0.1),
+                    //     borderRadius: BorderRadius.circular(12),
+                    //   ),
+                    //   child: Icon(
+                    //     isMutualFollow ? Icons.chat : Icons.chat_bubble_outline,
+                    //     color: isMutualFollow
+                    //         ? Colors.white
+                    //         : const Color.fromRGBO(244, 135, 6, 1),
+                    //     size: 20,
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
@@ -1068,77 +1134,77 @@ Widget _buildFollowStatusLoadingState() {
     );
   }
 
-  // Widget _buildEmptyState() {
-  //   return Center(
-  //     child: Column(
-  //       mainAxisAlignment: MainAxisAlignment.center,
-  //       children: [
-  //         Container(
-  //           padding: const EdgeInsets.all(24),
-  //           decoration: BoxDecoration(
-  //             color: const Color.fromRGBO(244, 135, 6, 0.1),
-  //             shape: BoxShape.circle,
-  //           ),
-  //           child: const Icon(
-  //             Icons.people_outline,
-  //             size: 64,
-  //             color: Color.fromRGBO(244, 135, 6, 1),
-  //           ),
-  //         ),
-  //         const SizedBox(height: 24),
-  //         Text(
-  //           'No mutual followers yet',
-  //           style: TextStyle(
-  //             fontSize: 20,
-  //             fontWeight: FontWeight.bold,
-  //             color: Colors.grey.shade700,
-  //           ),
-  //         ),
-  //         const SizedBox(height: 8),
-  //         Text(
-  //           'Start following people to see them here',
-  //           style: TextStyle(
-  //             fontSize: 14,
-  //             color: Colors.grey.shade500,
-  //           ),
-  //         ),
-  //         const SizedBox(height: 24),
-  //         Row(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           children: [
-  //             ElevatedButton.icon(
-  //               onPressed: () => controller.refreshUsersAndCache(),
-  //               style: ElevatedButton.styleFrom(
-  //                 backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
-  //                 foregroundColor: Colors.white,
-  //                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-  //                 shape: RoundedRectangleBorder(
-  //                   borderRadius: BorderRadius.circular(25),
-  //                 ),
-  //               ),
-  //               icon: const Icon(Icons.refresh),
-  //               label: const Text('Refresh'),
-  //             ),
-  //             const SizedBox(width: 12),
-  //             OutlinedButton.icon(
-  //               onPressed: () => Get.to(() => const AddToChatScreen()),
-  //               style: OutlinedButton.styleFrom(
-  //                 foregroundColor: const Color.fromRGBO(244, 135, 6, 1),
-  //                 side: const BorderSide(color: Color.fromRGBO(244, 135, 6, 1)),
-  //                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-  //                 shape: RoundedRectangleBorder(
-  //                   borderRadius: BorderRadius.circular(25),
-  //                 ),
-  //               ),
-  //               icon: const Icon(Icons.person_search),
-  //               label: const Text('Find Users'),
-  //             ),
-  //           ],
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(244, 135, 6, 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.people_outline,
+              size: 64,
+              color: Color.fromRGBO(244, 135, 6, 1),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No mutual followers yet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Start following people to see them here',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => controller.refreshUsersAndCache(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(244, 135, 6, 1),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () {},
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color.fromRGBO(244, 135, 6, 1),
+                  side: const BorderSide(color: Color.fromRGBO(244, 135, 6, 1)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+                icon: const Icon(Icons.person_search),
+                label: const Text('Find Users'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   // void _showLogoutDialog() {
   //   Get.dialog(
