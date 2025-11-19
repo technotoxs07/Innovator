@@ -9,6 +9,7 @@ import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/partner/partner_attendance.dart';
 import 'package:innovator/KMS/screens/school/school_overall_attendance.dart';
 import 'package:innovator/KMS/screens/school/school_complaint_box_student.dart';
 import 'package:innovator/KMS/screens/student/student_complain_box_screen.dart';
@@ -179,12 +180,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             //             SchoolAttendanceScreen(),
                                             //   ),
                                             // );
-                                            Navigator.push(
+                                            // Navigator.push(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             AdminComplaintScreen(),
+                                            //   ),
+                                            // );
+                                                    Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
                                                     (context) =>
-                                                        AdminComplaintScreen(),
+                                                        PartenerAttendanceScreen(),
                                               ),
                                             );
                                           }

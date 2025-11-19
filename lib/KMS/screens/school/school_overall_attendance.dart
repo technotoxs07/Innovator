@@ -1,11 +1,9 @@
- 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 import 'package:innovator/KMS/screens/school/tutor_attendance.dart';
-
 class SchoolAttendanceScreen extends ConsumerStatefulWidget {
   const SchoolAttendanceScreen({super.key});
 
@@ -35,7 +33,7 @@ class _SchoolAttendanceScreenState
     if (status == 'All Status') {
       return gradeDate;
     } else {
-      return gradeDate.where((teacher) => teacher['attendance'] == status).toList();
+      return gradeDate.where((grade) => grade['attendance'] == status).toList();
     }
   }
 
