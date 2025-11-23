@@ -7,7 +7,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:innovator/Innovator/models/Blocked_Model.dart';
 import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
 import 'package:innovator/Innovator/screens/comment/JWT_Helper.dart';
 import 'package:innovator/Innovator/services/firebase_services.dart';
@@ -438,50 +437,5 @@ class AppData {
     }
   }
 
-  Future<BlockedUsersResponse> fetchBlockedUsers({
-    int page = 0,
-    int limit = 20,
-  }) async {
-    try {
-      if (_authToken == null) {
-        throw Exception('Authentication required');
-      }
-
-      final uri = Uri.parse('http://182.93.94.210:3067/api/v1/blocked-users')
-          .replace(queryParameters: {
-        'page': page.toString(),
-        'limit': limit.toString(),
-      });
-
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_authToken',
-        },
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return BlockedUsersResponse.fromJson(jsonDecode(response.body));
-      }
-      throw Exception('Failed to fetch blocked users');
-    } catch (e) {
-      return BlockedUsersResponse(
-        status: 500,
-        blockedUsers: [],
-        pagination: BlockedUsersPagination.fromJson({}),
-        error: e.toString(),
-        message: '',
-      );
-    }
-  }
-
-  Future<bool> isUserBlocked(String userId) async {
-    try {
-      final response = await fetchBlockedUsers(limit: 100);
-      return response.blockedUsers.any((user) => user.id == userId);
-    } catch (e) {
-      return false;
-    }
-  }
+  
 }

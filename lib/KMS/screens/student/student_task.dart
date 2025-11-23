@@ -39,7 +39,6 @@ class StudentTaskScreen extends ConsumerWidget {
             'November 25, 2025- 11:59 P.M.,Tuesday',
             40, //completedvalue
             60, //pendingValue
-            
           ),
           taskHistory(
             'Chapter 2 :Basic of Flutter',

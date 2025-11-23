@@ -8,6 +8,8 @@ import 'package:innovator/Innovator/screens/Course/services/api_services.dart';
 import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 import 'dart:developer' as developer;
 
+import 'package:lottie/lottie.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -834,20 +836,17 @@ Widget _buildProfileAvatar(AppData appData) {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.red.withAlpha(10),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.error_outline,
-                size: 40,
-                color: Colors.red,
-              ),
-            ),
+            // Container(
+            //   width: double.infinity,
+            //   height: double.infinity,
+            //   padding: const EdgeInsets.all(20),
+            //   // decoration: BoxDecoration(
+            //   //   color: Colors.red.withAlpha(10),
+            //   //   borderRadius: BorderRadius.circular(20),
+            //   // ),
+            //   child: 
+            // ),
+Lottie.asset('animation/No_Internet.json',fit: BoxFit.contain),
             const SizedBox(height: 20),
             const Text(
               'Oops! Something went wrong',
@@ -858,14 +857,14 @@ Widget _buildProfileAvatar(AppData appData) {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              _errorMessage,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
+            // Text(
+            //   _errorMessage,
+            //   style: TextStyle(
+            //     fontSize: 14,
+            //     color: Colors.grey[600],
+            //   ),
+            //   textAlign: TextAlign.center,
+            // ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _fetchCourses,

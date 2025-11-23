@@ -7,6 +7,7 @@ import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/screens/Shop/Cart_List/Orders_detail_page.dart';
 import 'package:innovator/Innovator/models/Shop_cart_model.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 
 class OrdersHistoryPage extends StatefulWidget {
   const OrdersHistoryPage({Key? key}) : super(key: key);
@@ -227,17 +228,18 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red),
             SizedBox(height: 16),
-            Text(_errorMessage!),
+            Lottie.asset('animation/No_Internet.json', fit: BoxFit.fill),
+            //Text(_errorMessage!),
             SizedBox(height: 16),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: _refreshOrders,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
               ),
-              child: Text('Retry'),
+              label: Text('Retry'),
+              icon: Icon(Icons.refresh),
             ),
           ],
         ),

@@ -43,6 +43,54 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     super.dispose();
   }
 
+
+  Future<BlockedUsersResponse> fetchBlockedUsers({
+    int page = 0,
+    int limit = 20,
+  }) async {
+    try {
+      if (AppData().authToken == null) {
+        throw Exception('Authentication required');
+      }
+
+      final uri = Uri.parse('http://182.93.94.210:3067/api/v1/blocked-users')
+          .replace(queryParameters: {
+        'page': page.toString(),
+        'limit': limit.toString(),
+      });
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AppData().authToken}',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return BlockedUsersResponse.fromJson(jsonDecode(response.body));
+      }
+      throw Exception('Failed to fetch blocked users');
+    } catch (e) {
+      return BlockedUsersResponse(
+        status: 500,
+        blockedUsers: [],
+        pagination: BlockedUsersPagination.fromJson({}),
+        error: e.toString(),
+        message: '',
+      );
+    }
+  }
+
+  Future<bool> isUserBlocked(String userId) async {
+    try {
+      final response = await fetchBlockedUsers(limit: 100);
+      return response.blockedUsers.any((user) => user.id == userId);
+    } catch (e) {
+      return false;
+    }
+  }
+
   void _setupScrollListener() {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >= 
@@ -91,7 +139,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     });
 
     try {
-      final response = await _appData.fetchBlockedUsers(page: 0, limit: 20);
+      final response = await fetchBlockedUsers(page: 0, limit: 20);
       
       if (response.status == 200) {
         setState(() {
@@ -124,7 +172,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     });
 
     try {
-      final response = await _appData.fetchBlockedUsers(
+      final response = await fetchBlockedUsers(
         page: _currentPage + 1, 
         limit: 20
       );

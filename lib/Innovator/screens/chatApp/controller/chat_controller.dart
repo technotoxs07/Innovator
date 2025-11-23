@@ -10,10 +10,7 @@ import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/screens/chatApp/FollowStatusManager.dart'
     show FollowStatusManager;
 import 'package:innovator/Innovator/services/Firebase_Messaging.dart';
-import 'package:innovator/Innovator/services/call_permission_service.dart';
 import 'package:innovator/Innovator/services/firebase_services.dart';
-import 'package:innovator/Innovator/services/webrtc_call_service.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 class FireChatController extends GetxController {
   // Reactive variables
@@ -733,6 +730,7 @@ int getTotalUnreadCountFromMutualFollowers() {
     developer.log('❌ Error handling outgoing message: $e');
   }
 }
+
 
 // ENHANCED: Handle incoming messages (when I receive a message)
 Future<void> _handleIncomingMessageForTop(String chatId, Map<String, dynamic> messageData) async {
@@ -2140,7 +2138,7 @@ Future<void> cleanupNonMutualFollowerBadges() async {
 
   // Global message listener for real-time updates
   void _startGlobalMessageListener() {
-   if (currentUserId.value.isEmpty) return;
+  if (currentUserId.value.isEmpty) return;
 
   try {
     FirebaseFirestore.instance
@@ -2149,39 +2147,268 @@ Future<void> cleanupNonMutualFollowerBadges() async {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .listen((snapshot) {
-          for (var change in snapshot.docChanges) {
-            final messageData = change.doc.data() as Map<String, dynamic>?;
-            if (messageData == null) continue;
+      for (var change in snapshot.docChanges) {
+        final messageData = change.doc.data() as Map<String, dynamic>?;
+        if (messageData == null) continue;
 
-            final chatId = messageData['chatId']?.toString() ?? '';
-            final senderId = messageData['senderId']?.toString() ?? '';
-            final isMyMessage = senderId == currentUserId.value;
+        final chatId = messageData['chatId']?.toString() ?? '';
+        final senderId = messageData['senderId']?.toString() ?? '';
+        final isMyMessage = senderId == currentUserId.value;
 
-            // Add message ID to data
-            messageData['id'] = change.doc.id;
+        // Add message ID to data
+        messageData['id'] = change.doc.id;
 
-            switch (change.type) {
-              case DocumentChangeType.added:
-                if (isMyMessage) {
-                  // Handle outgoing message
-                  _handleOutgoingMessage(chatId, messageData);
-                } else {
-                  // Handle incoming message
-                  _handleIncomingMessageForTop(chatId, messageData);
-                }
-                break;
-              case DocumentChangeType.modified:
-                _handleMessageUpdate(change.doc.id, messageData);
-                break;
-              default:
-                break;
+        switch (change.type) {
+          case DocumentChangeType.added:
+            developer.log('📨 New message detected - ChatID: $chatId, IsMyMessage: $isMyMessage');
+            
+            // ✅ CRITICAL FIX: Handle ALL new messages (both sent and received)
+            if (isMyMessage) {
+              // I sent a message - ALWAYS move to top immediately
+              developer.log('📤 Handling my message sent: $chatId');
+              _handleMyMessageSent(chatId, messageData);
+            } else {
+              // I received a message - move to top AND handle badges
+              developer.log('📥 Handling message received: $chatId');
+              _handleMessageReceived(chatId, messageData);
             }
-          }
-        });
-        
-    developer.log('✅ Global message listener with top movement started');
+            break;
+          case DocumentChangeType.modified:
+            _handleMessageUpdate(change.doc.id, messageData);
+            break;
+          default:
+            break;
+        }
+      }
+    });
+
+    developer.log('✅ Global message listener started with top movement');
   } catch (e) {
-    developer.log('❌ Error setting up global message listener with top movement: $e');
+    developer.log('❌ Error setting up global message listener: $e');
+  }
+}
+
+Future<void> _handleMyMessageSent(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    developer.log('📤 Processing my sent message for chat: $chatId');
+    
+    // CRITICAL: Move to top WITHOUT any follow status checks
+    await _moveToTopUniversal(chatId, messageData);
+    
+    // Update recent users
+    final receiverId = messageData['receiverId']?.toString() ?? '';
+    if (receiverId.isNotEmpty) {
+      try {
+        final receiverDoc = await FirebaseService.getUserById(receiverId);
+        if (receiverDoc.exists) {
+          final receiverData = receiverDoc.data() as Map<String, dynamic>;
+          receiverData['id'] = receiverId;
+          receiverData['userId'] = receiverId;
+          receiverData['_id'] = receiverId;
+          
+          addUserToRecent(receiverData);
+        }
+      } catch (e) {
+        developer.log('Error adding receiver to recent: $e');
+      }
+    }
+    
+    developer.log('✅ My message processed and chat moved to top: $chatId');
+  } catch (e) {
+    developer.log('❌ Error handling my message sent: $e');
+  }
+}
+
+Future<void> _handleMessageReceived(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    developer.log('📥 Processing received message from: $senderId');
+    
+    // Move to top first (before any checks)
+    await _moveToTopUniversal(chatId, messageData);
+    
+    // Then handle badges and follow status
+    final senderDoc = await FirebaseService.getUserById(senderId);
+    if (!senderDoc.exists) return;
+    
+    final senderData = senderDoc.data() as Map<String, dynamic>;
+    senderData['id'] = senderId;
+    senderData['userId'] = senderId;
+    senderData['_id'] = senderId;
+    
+    // Add sender to recent users
+    addUserToRecent(senderData);
+    
+    // Handle badge counting (only if not currently viewing this chat)
+    if (currentChatId.value != chatId) {
+      // Only increment badge if sender is mutual follower
+      if (isMutualFollower(senderData)) {
+        initializeBadgeForChat(chatId);
+        final currentBadge = chatBadges[chatId]?.value ?? 0;
+        chatBadges[chatId]!.value = currentBadge + 1;
+        unreadCounts[chatId] = currentBadge + 1;
+        updateTotalUnreadBadges();
+        _animateNewBadge(chatId);
+      }
+    } else {
+      // Auto-mark as read if viewing this chat
+      Future.delayed(const Duration(milliseconds: 500), () {
+        markMessagesAsRead(chatId);
+      });
+    }
+    
+    developer.log('✅ Received message processed and chat moved to top: $chatId');
+  } catch (e) {
+    developer.log('❌ Error handling message received: $e');
+  }
+}
+
+Future<void> _moveToTopUniversal(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    developer.log('⬆️ Moving chat to top universally: $chatId');
+    
+    // Step 1: Update Firestore timestamp
+    await _updateChatTimestampInFirestore(chatId, messageData);
+    
+    // Step 2: Move in local list immediately
+    await _moveInLocalListUniversal(chatId, messageData);
+    
+    developer.log('✅ Chat moved to top successfully: $chatId');
+    
+  } catch (e) {
+    developer.log('❌ Error in universal move to top: $e');
+  }
+}
+
+// 5. NEW: Update Firestore timestamp
+Future<void> _updateChatTimestampInFirestore(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final chatDocRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+    
+    await chatDocRef.set({
+      'lastMessage': messageData['message']?.toString() ?? '',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+      'lastMessageSender': messageData['senderId']?.toString() ?? '',
+      'lastMessageSenderName': messageData['senderName']?.toString() ?? '',
+      'lastMessageId': messageData['id']?.toString() ?? '',
+      'lastMessageType': messageData['messageType']?.toString() ?? 'text',
+      'updatedAt': FieldValue.serverTimestamp(),
+      'participants': messageData['participants'] ?? [],
+      'chatId': chatId,
+    }, SetOptions(merge: true));
+    
+    developer.log('✅ Firestore chat timestamp updated: $chatId');
+  } catch (e) {
+    developer.log('❌ Error updating Firestore timestamp: $e');
+  }
+}
+
+
+// 6. NEW: Move in local list without any checks
+Future<void> _moveInLocalListUniversal(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final chatIndex = chatList.indexWhere((chat) => chat['chatId'] == chatId);
+    
+    if (chatIndex == -1) {
+      // Chat doesn't exist - create it
+      developer.log('📝 Chat not in list, creating new entry: $chatId');
+      await _createChatEntryUniversal(chatId, messageData);
+      return;
+    }
+    
+    if (chatIndex == 0) {
+      // Already at top - just update data and trigger refresh
+      final chat = chatList[0];
+      _updateChatData(chat, messageData);
+      chatList.refresh(); // Force UI update
+      developer.log('📌 Chat already at top, data updated and UI refreshed: $chatId');
+      return;
+    }
+    
+    // Move from current position to top
+    final chat = chatList.removeAt(chatIndex);
+    _updateChatData(chat, messageData);
+    chatList.insert(0, chat);
+    
+    developer.log('⬆️ Chat moved from position $chatIndex to top: $chatId');
+    
+    // Trigger UI refresh
+    chatList.refresh();
+    
+  } catch (e) {
+    developer.log('❌ Error moving in local list: $e');
+  }
+}
+
+// 7. NEW: Create chat entry without follow checks
+Future<void> _createChatEntryUniversal(String chatId, Map<String, dynamic> messageData) async {
+  try {
+    final senderId = messageData['senderId']?.toString() ?? '';
+    final receiverId = messageData['receiverId']?.toString() ?? '';
+    final isMyMessage = senderId == currentUserId.value;
+    
+    // Determine the other user ID
+    final otherUserId = isMyMessage ? receiverId : senderId;
+    
+    if (otherUserId.isEmpty) return;
+    
+    // Get other user data
+    final otherUserDoc = await FirebaseService.getUserById(otherUserId);
+    if (!otherUserDoc.exists) return;
+    
+    final otherUserData = Map<String, dynamic>.from(
+      otherUserDoc.data() as Map<String, dynamic>,
+    );
+    otherUserData['id'] = otherUserId;
+    otherUserData['userId'] = otherUserId;
+    otherUserData['_id'] = otherUserId;
+    
+    // Check follow status for enhanced display (but don't block creation)
+    final email = otherUserData['email']?.toString();
+    if (email != null) {
+      try {
+        final followStatus = await followStatusManager.checkFollowStatus(email);
+        if (followStatus != null && followStatus['isMutualFollow'] == true) {
+          final apiUserData = followStatus['user'] as Map<String, dynamic>;
+          otherUserData['name'] = apiUserData['name'];
+          otherUserData['picture'] = apiUserData['picture'];
+          otherUserData['apiPictureUrl'] = 'http://182.93.94.210:3067${apiUserData['picture']}';
+          otherUserData['isMutualFollow'] = true;
+        }
+      } catch (e) {
+        developer.log('Error checking follow status: $e');
+      }
+    }
+    
+    // Create new chat entry
+    final newChat = {
+      'id': chatId,
+      'chatId': chatId,
+      'participants': [currentUserId.value, otherUserId],
+      'otherUser': otherUserData,
+      'lastMessage': messageData['message']?.toString() ?? '',
+      'lastMessageTime': messageData['timestamp'] ?? Timestamp.now(),
+      'lastMessageSender': senderId,
+      'lastMessageSenderName': messageData['senderName']?.toString() ?? '',
+      'lastMessageId': messageData['id']?.toString() ?? '',
+      'lastMessageType': messageData['messageType']?.toString() ?? 'text',
+      'createdAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+      'isActive': true,
+    };
+    
+    // Add at the top of the list
+    chatList.insert(0, newChat);
+    
+    // Initialize badge for this chat
+    initializeBadgeForChat(chatId);
+    
+    developer.log('✅ New chat entry created and added to top: $chatId');
+    
+    chatList.refresh();
+    
+  } catch (e) {
+    developer.log('❌ Error creating new chat entry: $e');
   }
 }
 
@@ -2716,36 +2943,6 @@ void _moveChatToTopWithMutualCheck(String chatId, Map<String, dynamic> messageDa
 }) async {
   if (message.trim().isEmpty || currentUserId.value.isEmpty) return;
 
-  // Validate receiver exists and is mutual follower
-  Map<String, dynamic>? receiverUser = userCache[receiverId];
-  if (receiverUser == null) {
-    try {
-      final receiverDoc = await FirebaseService.getUserById(receiverId);
-      if (receiverDoc.exists) {
-        receiverUser = Map<String, dynamic>.from(
-          receiverDoc.data() as Map<String, dynamic>,
-        );
-        receiverUser['id'] = receiverId;
-        receiverUser['userId'] = receiverId;
-        receiverUser['_id'] = receiverId;
-        userCache[receiverId] = receiverUser;
-      } else {
-        developer.log('Error: Receiver user not found: $receiverId');
-        Get.snackbar(
-          'Error',
-          'Recipient user not found. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withAlpha(80),
-          colorText: Colors.white,
-        );
-        return;
-      }
-    } catch (e) {
-      developer.log('Error validating receiver: $e');
-      return;
-    }
-  }
-
   final chatId = FirebaseService.generateChatId(currentUserId.value, receiverId);
   final tempMessageId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -2761,13 +2958,14 @@ void _moveChatToTopWithMutualCheck(String chatId, Map<String, dynamic> messageDa
     'isRead': false,
     'messageType': 'text',
     'isSending': true,
+    'participants': [currentUserId.value, receiverId],
   };
 
   messages.insert(0, tempMessage);
   messageStatuses[tempMessageId] = 'sending';
 
-  // IMMEDIATELY move chat to top when I send a message
-  await _handleOutgoingMessage(chatId, tempMessage);
+  // ✅ CRITICAL: Move to top IMMEDIATELY when sending
+  await _moveToTopUniversal(chatId, tempMessage);
 
   isSendingMessage.value = true;
 
@@ -2789,13 +2987,13 @@ void _moveChatToTopWithMutualCheck(String chatId, Map<String, dynamic> messageDa
 
     animateFab();
 
-    developer.log('Message sent successfully and chat moved to top: ${sentMessageRef.id}');
+    developer.log('✅ Message sent and chat moved to top: ${sentMessageRef.id}');
   } catch (e) {
     // Remove failed message
     messages.removeWhere((msg) => msg['id'] == tempMessageId);
     messageStatuses.remove(tempMessageId);
 
-    developer.log('Error sending message: $e');
+    developer.log('❌ Error sending message: $e');
     Get.snackbar(
       'Error',
       'Failed to send message. Please try again.',
