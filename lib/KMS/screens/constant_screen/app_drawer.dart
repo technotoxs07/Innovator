@@ -62,32 +62,32 @@ class AppDrawer extends ConsumerWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 10),
-              _drawer(context, 0, 'Tutor', Icons.person_2_outlined),
-              _drawer(context, 1, 'School', Icons.temple_hindu_sharp),
-              _drawer(context, 2, 'Examination', Icons.assessment),
-              _drawer(context, 3, 'Attendance', Icons.calendar_month_outlined),
-              _drawer(context, 4, 'Activities', Icons.trending_up),
-              _drawer(context, 5, 'Teacher KYC', Icons.person_add_alt),
+              SizedBox(height: 30),
+              _drawer(context, 0, 'Tutor',  'assets/kms/drawer/tutor.png'),
+              _drawer(context, 1, 'School',  'assets/kms/drawer/school.png'),
+              _drawer(context, 2, 'Examination', 'assets/kms/drawer/examination.png'),
+              _drawer(context, 3, 'Attendance',  'assets/kms/drawer/attendance.png'),
+              _drawer(context, 4, 'Activities',  'assets/kms/drawer/activities.png'),
+              _drawer(context, 5, 'Teacher KYC',  'assets/kms/drawer/teacher.png'),
               _drawer(
                 context,
                 6,
                 'Salary + Commission Partner',
-                Icons.attach_money_rounded,
+                'assets/kms/drawer/salary.png'
               ),
               _drawer(
                 context,
                 7,
                 'Components Delivery',
-                Icons.dashboard_outlined,
+                'assets/kms/drawer/components.png'
               ),
-              _drawer(context, 8, 'Complain Box', Icons.help_outline_sharp),
-              _drawer(context, 9, 'Teacher Learning Material', Icons.menu_book),
+              _drawer(context, 8, 'Complain Box',  'assets/kms/drawer/complainBox.png'),
+              _drawer(context, 9, 'Teacher Learning Material',  'assets/kms/drawer/teaching.png'),
               _drawer(
                 context,
                 10,
                 'Progress Tracking',
-                Icons.watch_later_rounded,
+              'assets/kms/drawer/progresstracking.png',
               ),
               SizedBox(height: context.screenHeight * 0.1),
               ElevatedButton.icon(
@@ -112,7 +112,7 @@ class AppDrawer extends ConsumerWidget {
                             Text('Comeback Soon!', style: AppStyle.heading2),
                             SizedBox(height: 20),
                             Text(
-                              'Are You Sure You Want to Logout?',
+                              'Are you sure you want to Logout?',
                               style: TextStyle(
                                 color: Colors.black45,
                                 fontSize: 16,
@@ -186,32 +186,36 @@ class AppDrawer extends ConsumerWidget {
     );
   }
 
-  Widget _drawer(BuildContext context, int id, String title, IconData icon) {
+  Widget _drawer(BuildContext context, int id, String title, String  image) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextButton.icon(
-          onPressed: () {
-            switch (id) {
-              //Use the navigator here according to the id
-              // case 0:
-              // Navigator.push(context, MaterialPageRoute(builder: (context)=>));
-              // break;
-            }
-          },
-          icon: Icon(icon, color: Colors.white, size: 30),
-          label: Text(
-            title,
-            style: TextStyle(
-              // fontFamily: 'Inter',
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              // color: Colors.white,
-              color: Color(0xffFEFCE8),
+        GestureDetector(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(image),
+              SizedBox(width:20),
+            Flexible(
+              child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                // fontFamily: 'Inter',
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                // color: Colors.white,
+                color: Color(0xffFEFCE8),
+              ),
+                        ),
             ),
+            ],
           ),
         ),
+        SizedBox(height: 20,),
         Divider(color: Colors.grey.shade200),
+        SizedBox(height: 6,)
       ],
     );
   }

@@ -53,7 +53,7 @@ class AppbarScreen extends ConsumerWidget {
     
         Container(
           height: 40,
-          width: 88,
+          width: 80,
           margin: EdgeInsets.only(right: 10),
           decoration: BoxDecoration(
             color: AppStyle.primaryColor,
@@ -66,7 +66,7 @@ class AppbarScreen extends ConsumerWidget {
               Padding(
                 padding: EdgeInsets.only(left: 10),
                 child: Container(
-                  width: 30,
+                  width: 20,
                   height: 30,
                   decoration: const BoxDecoration(
                     color: Colors.white,
@@ -84,9 +84,26 @@ class AppbarScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: () {},
+              PopupMenuButton(
+               
                 icon: Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                itemBuilder: (BuildContext context) => <PopupMenuEntry>[
+                  PopupMenuItem(
+                    value: 'profile',
+                    child: Text('Profile', style: TextStyle(color: Colors.black)),
+                  ),
+                  PopupMenuItem(
+                    value: 'settings',
+                    child: Text('Settings', style: TextStyle(color: Colors.black)),
+                  ),
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Text('Logout', style: TextStyle(color: Colors.black)),
+                  ),
+                ],
+                // onSelected: (value) {
+                  
+                // },
               ),
             ],
           ),

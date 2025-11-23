@@ -71,6 +71,7 @@ dependencies:
   shimmer: ^3.0.0
   device_preview: ^1.2.0
   dio: ^5.9.0
+  dotted_border: ^3.1.0
 
 
 dev_dependencies:
@@ -106,7 +107,8 @@ flutter:
     - assets/images/ 
     - assets/icon/
     - assets/icon/multi-pop-5-188168.mp3
-    - assets/kms/   
+    - assets/kms/
+    - assets/kms/drawer/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
