@@ -168,6 +168,7 @@ Future<void> _resetAndLoadProducts() async {
 
     await _loadProducts();
   }
+}
 
   List<dynamic> _getFilteredAndSortedProducts() {
     // Check if we can use cached results
@@ -409,6 +410,7 @@ Future<void> _resetAndLoadProducts() async {
     );
   }
 
+
   Widget _buildSortTile({
     required String title,
     required bool isSelected,
@@ -597,6 +599,7 @@ Future<void> _resetAndLoadProducts() async {
     }
   }
 
+
   void _scrollListener() {
     if (_scrollController.hasClients &&
         _scrollController.position.extentAfter < _scrollThreshold &&
@@ -706,6 +709,7 @@ Future<void> _resetAndLoadProducts() async {
       ),
     );
   }
+
 
   Widget _buildTopBar() {
     return Positioned(
@@ -920,6 +924,7 @@ Future<void> _resetAndLoadProducts() async {
     );
   }
 
+
   Widget _buildLoader() {
     return const Center(
       child: Padding(
@@ -1093,4 +1098,4 @@ Future<void> _resetAndLoadProducts() async {
       ),
     );
   }
-}
+    }
