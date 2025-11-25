@@ -1,11 +1,10 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'package:innovator/main.dart';
-import 'package:innovator/screens/Feed/Inner_Homepage.dart';
-import 'package:innovator/screens/Feed/Video_Feed.dart';
-import 'package:innovator/widget/FloatingMenuwidget.dart';
+import 'package:innovator/Innovator/screens/Feed/Inner_Homepage.dart';
+import 'package:innovator/Innovator/screens/Feed/Video_Feed.dart';
+import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
+import 'package:innovator/Innovator/widget/FloatingMenuwidget.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -15,14 +14,61 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final NotificationPollingService _pollingService = NotificationPollingService();
 
   @override
   void initState() {
     super.initState();
-    // Check for app updates when the widget initializes
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Check for app updates
     _checkForUpdate();
+    
+    // Start notification polling
+    _startNotificationPolling();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Note: We don't stop polling here as it should continue app-wide
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // Handle app lifecycle changes
+    switch (state) {
+      case AppLifecycleState.resumed:
+        log('📱 App resumed - starting notification polling');
+        _pollingService.startPolling();
+        // Force check immediately when app resumes
+        _pollingService.forceCheck();
+        break;
+      case AppLifecycleState.paused:
+        log('⏸️ App paused - stopping notification polling');
+        _pollingService.stopPolling();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  void _startNotificationPolling() {
+    // Start polling service
+    _pollingService.startPolling();
+    log('✅ Notification polling started');
+    
+    // Also do an immediate check
+    Future.delayed(const Duration(seconds: 2), () {
+      _pollingService.forceCheck();
+    });
   }
 
   Future<void> _checkForUpdate() async {
@@ -33,7 +79,7 @@ class _HomepageState extends State<Homepage>
 
       if (info.updateAvailability == UpdateAvailability.updateAvailable) {
         log('Update available!');
-
+ 
         // Check if immediate update is required (for critical updates)
         if (info.immediateUpdateAllowed) {
           _performImmediateUpdate();
@@ -131,7 +177,6 @@ class _HomepageState extends State<Homepage>
             Inner_HomePage(),
             // Add the floating menu widget
             FloatingMenuWidget(),
-            // Remove FeedToggleButton from Homepage
           ],
         ),
       ),
