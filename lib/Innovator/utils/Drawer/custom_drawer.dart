@@ -269,7 +269,11 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       ),
       child: Column(
         children: [
-          _buildHeader(),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfileScreen(userId: AppData().currentUserId ?? '',)));
+            },
+            child: _buildHeader()),
           Expanded(child: _buildMenu()),
         ],
       ),

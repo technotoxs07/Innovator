@@ -53,12 +53,19 @@ class _LikeButtonState extends State<LikeButton> {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(
+    // return IconButton(
+    //   icon: Icon(
+    //     isLiked ? Icons.favorite : Icons.favorite_border,
+    //     color: isLiked ? Colors.red : null,
+    //   ),
+    //   onPressed: 
+    // );
+    return InkWell(
+      onTap:isLoading ? null : _handleToggleLike ,
+    child:   Icon(
         isLiked ? Icons.favorite : Icons.favorite_border,
         color: isLiked ? Colors.red : null,
-      ),
-      onPressed: isLoading ? null : _handleToggleLike,
+      )
     );
   }
 }

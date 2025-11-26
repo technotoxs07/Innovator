@@ -273,8 +273,11 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // color: Colors.red,
         borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: Colors.grey.shade300
+      ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(4),
@@ -283,100 +286,102 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Clean and minimal header
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withAlpha(10),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.people_outline,
-                    color: Color(0xFF6366F1),
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'People May You Know',
-                        style: TextStyle(
-                          fontSize: isTablet ? 17 : 16,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1F2937),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Connect with new people',
-                        style: TextStyle(
-                          fontSize: isTablet ? 14 : 13,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    if (mounted) {
-                      setState(() {
-                        _suggestedUsers.clear();
-                      });
-                    }
-                  },
-                  child: Container(
-                    width: 32,
-                    height: 32,
+      child: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Clean and minimal header
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFF6366F1).withAlpha(10),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Colors.grey[600],
+                    child: const Icon(
+                      Icons.people_outline,
+                      color: Color(0xFF6366F1),
+                      size: 18,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          // Users horizontal list
-          SizedBox(
-            height: 160,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _suggestedUsers.length,
-              itemBuilder: (context, index) {
-                final user = _suggestedUsers[index];
-                return Container(
-                  width: 120,
-                  margin: EdgeInsets.only(
-                    right: index == _suggestedUsers.length - 1 ? 0 : 12,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'People May You Know',
+                          style: TextStyle(
+                            fontSize: isTablet ? 17 : 16,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Connect with new people',
+                          style: TextStyle(
+                            fontSize: isTablet ? 14 : 13,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: _buildUserCard(user, isTablet),
-                );
-              },
+                  GestureDetector(
+                    onTap: () {
+                      if (mounted) {
+                        setState(() {
+                          _suggestedUsers.clear();
+                        });
+                      }
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-
-          const SizedBox(height: 20),
-        ],
+        
+            // Users horizontal list
+            SizedBox(
+              height: 160,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _suggestedUsers.length,
+                itemBuilder: (context, index) {
+                  final user = _suggestedUsers[index];
+                  return Container(
+                    width: 150,
+                    margin: EdgeInsets.only(
+                      right: index == _suggestedUsers.length - 1 ? 0 : 12,
+                    ),
+                    child: _buildUserCard(user, isTablet),
+                  );
+                },
+              ),
+            ),
+        
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -400,19 +405,19 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
                 children: [
                   _buildUserAvatar(user, radius: isTablet ? 24 : 22),
                   // Level badge - cleaner design
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: _getLevelColor(user.level),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
+                  // Positioned(
+                  //   bottom: -2,Hjr 
+                  //   right: -2,
+                  //   child: Container(
+                  //     width: 16,
+                  //     height: 16,
+                  //     decoration: BoxDecoration(
+                  //       color: _getLevelColor(user.level),
+                  //       shape: BoxShape.circle,
+                  //       border: Border.all(color: Colors.white, width: 2),
+                  //     ),
+                  //   ),
+                  // ),
                   // Verified badge - minimal
                   if (user.isVerified)
                     Positioned(
@@ -456,7 +461,7 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
                 Text(
                   user.profession,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 8,
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w400,
                   ),
@@ -466,36 +471,32 @@ class _SuggestedUsersWidgetState extends State<SuggestedUsersWidget> {
                 ),
               ],
 
-              const SizedBox(height: 12),
+              //const SizedBox(height: 12),
 
               // Follow button - modern design
-              SizedBox(
-                width: 32,
-                height: 32,
-                child: FollowButton(
-                  targetUserEmail: user.email,
-                  initialFollowStatus: false,
-                  onFollowSuccess: () {
-                    debugPrint('Followed user: ${user.name}');
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Now following ${user.name}'),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: const Color(0xFF10B981),
-                          margin: const EdgeInsets.all(16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+              FollowButton(
+                targetUserEmail: user.email,
+                initialFollowStatus: false,
+                onFollowSuccess: () {
+                  debugPrint('Followed user: ${user.name}');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Now following ${user.name}'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: const Color(0xFF10B981),
+                        margin: const EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      );
-                    }
-                  },
-                  onUnfollowSuccess: () {
-                    debugPrint('Unfollowed user: ${user.name}');
-                  },
-                ),
+                      ),
+                    );
+                  }
+                },
+                onUnfollowSuccess: () {
+                  debugPrint('Unfollowed user: ${user.name}');
+                },
               ),
             ],
           ),
