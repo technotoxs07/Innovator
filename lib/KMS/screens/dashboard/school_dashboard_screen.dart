@@ -19,6 +19,7 @@ class SchoolDashboardScreen extends ConsumerWidget {
             
           // Grid Content
           GridView(
+               padding: EdgeInsets.all(0),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             
@@ -32,28 +33,28 @@ class SchoolDashboardScreen extends ConsumerWidget {
             
             children: [
               //Attendance Rate
-              FittedBox(
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  color: Colors.white,
-                  elevation: 5,
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 10, left: 10, top: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Attendance Rate',
-                          style: AppStyle.heading2.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppStyle.fontFamilySecondary,
-                            fontSize: 15,
-                          ),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                color: Colors.white,
+                elevation: 5,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 10, left: 10, top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Attendance Rate',
+                        style: AppStyle.heading2.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppStyle.fontFamilySecondary,
+                          fontSize: 15,
                         ),
-                            
-                        Row(
+                      ),
+                          
+                      Flexible(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             CustomPaint(
@@ -90,8 +91,8 @@ class SchoolDashboardScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
