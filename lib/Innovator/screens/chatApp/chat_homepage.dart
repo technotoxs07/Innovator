@@ -2,11 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:innovator/Innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
-import 'package:innovator/Innovator/screens/Follow/Follow_status_Manager.dart';
-import 'package:innovator/Innovator/screens/chatApp/Add_to_Chat.dart';
 import 'package:innovator/Innovator/screens/chatApp/EnhancedUserAvtar.dart';
 import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
-import 'package:lottie/lottie.dart';
 import 'dart:developer' as developer;
 
 class OptimizedChatHomePage extends GetView<FireChatController> {
@@ -22,7 +19,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
     return Scaffold(
     backgroundColor: Get.theme.scaffoldBackgroundColor,
     //appBar: _buildAppBar(),
-    body: CustomScrollView(
+    body: CustomScrollView(  
       slivers: [
         // SizedBox(
         //   height: 10,
@@ -49,7 +46,7 @@ class OptimizedChatHomePage extends GetView<FireChatController> {
       } else {
         developer.log('✅ Users already loaded: ${controller.allUsers.length}');
       }
-    } catch (e) {
+    } catch (e) { 
       developer.log('❌ Error handling page visible: $e');
     }
   }
@@ -835,7 +832,9 @@ Widget _buildFollowStatusLoadingState() {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: Material(
+            elevation: 3,
             color: Colors.transparent,
+               borderRadius: BorderRadius.circular(16),
             child: InkWell(
               onTap: () => controller.navigateToChat(user),
               borderRadius: BorderRadius.circular(16),
@@ -844,21 +843,21 @@ Widget _buildFollowStatusLoadingState() {
                 decoration: BoxDecoration(
                   color: Get.theme.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: isMutualFollow
-                      ? Border.all(
-                          color: const Color.fromRGBO(244, 135, 6, 0.3),
-                          width: 1,
-                        )
-                      : null,
-                  boxShadow: [
-                    BoxShadow(
-                      color: isMutualFollow
-                          ? const Color.fromRGBO(244, 135, 6, 0.1)
-                          : Colors.black.withAlpha(5),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  // border: isMutualFollow
+                  //     ? Border.all(
+                  //         color: const Color.fromRGBO(244, 135, 6, 0.3),
+                  //         width: 1,
+                  //       )
+                  //     : null,
+                  // boxShadow: [
+                  //   BoxShadow(
+                  //     color: isMutualFollow
+                  //         ? const Color.fromRGBO(244, 135, 6, 0.1)
+                  //         : Colors.black.withAlpha(5),
+                  //     blurRadius: 8,
+                  //     offset: const Offset(0, 2),
+                  //   ),
+                  // ],
                 ),
                 child: Row(
                   children: [

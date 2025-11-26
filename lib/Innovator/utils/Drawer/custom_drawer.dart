@@ -269,7 +269,11 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       ),
       child: Column(
         children: [
-          _buildHeader(),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfileScreen(userId: AppData().currentUserId ?? '',)));
+            },
+            child: _buildHeader()),
           Expanded(child: _buildMenu()),
         ],
       ),
@@ -429,10 +433,113 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       child: Column(
         children: [
                     _QuickMenuItem(icon: Icons.app_blocking_sharp, title: 'KMS', onTap: (){
-                      Navigator.push(context, MaterialPageRoute(builder: (context){
-                        return SignupScreen();
-                      })
-                      );
+                      showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      title: const Text(
+        '🚀 Coming Soon',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFFEB6B46),
+        ),
+        textAlign: TextAlign.center,
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEB6B46), Color(0xFFFF8A65)],
+              ),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Text(
+              '📊',
+              style: TextStyle(fontSize: 60),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Knowledge Management System',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 15),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withAlpha(10),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.blue.withAlpha(30),
+                width: 1,
+              ),
+            ),
+            child: const Text(
+              '✨ We\'re working on something amazing! The KMS feature will help you manage and organize knowledge efficiently.\n\n💡 Stay tuned for updates!',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 15),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withAlpha(20),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    Text('🔔', style: TextStyle(fontSize: 14)),
+                    SizedBox(width: 6),
+                    Text(
+                      'Notify Me',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.amber,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text(
+            'Got It! 👍',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFFEB6B46),
+            ),
+          ),
+        ),
+      ],
+      actionsPadding: const EdgeInsets.only(right: 16, bottom: 16),
+    ),
+  );
                     }),
           _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
                 //  _QuickMenuItem(icon: Icons.help_rounded, title: 'Payment', onTap: (){
@@ -490,7 +597,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Innovator App v:1.0.40', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
+              Text('Innovator App v:1.0.42', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
               Text('Pvt Ltd', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
             ],
           ),

@@ -127,53 +127,12 @@ class _FollowButtonState extends State<FollowButton>
 
     // Show loading spinner while initializing
     if (_isInitializing) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(size / 2),
-          ),
-          child: Center(
-            child: SizedBox(
-              width: size * 0.4,
-              height: size * 0.4,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ),
-        ),
-      );
+      return Center(child: CircularProgressIndicator(strokeWidth: 1.5));
     }
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return MouseRegion(
-          onEnter: (_) => _handleHoverChange(true),
-          onExit: (_) => _handleHoverChange(false),
-          child: SizedBox(
-            width: size * _widthAnimation.value,
-            height: size,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _getButtonColor(),
-
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(size / 2),
-                ),
-                elevation: 2,
-              ),
-              onPressed: _isLoading ? null : _handleButtonPress,
-              child: _buildChild(size),
-            ),
-          ),
-        );
-      },
+    return TextButton(
+      onPressed: _isLoading ? null : _handleButtonPress,
+      child: _buildChild(size),
     );
   }
 
@@ -220,7 +179,26 @@ class _FollowButtonState extends State<FollowButton>
 
     switch (_state) {
       case 0:
-        return Icon(Icons.add, color: Colors.white, size: size * 0.6);
+        // return Icon(Icons.add, color: Colors.white, size: size * 0.6);
+        // return Text('Follow ',style: TextStyle(fontWeight: FontWeight.w700,color: Colors.blue),);
+        return Text.rich(
+          TextSpan(
+            children: [
+              WidgetSpan(
+                child: Icon(Icons.person_add, color: Colors.blueAccent),
+              ),
+              WidgetSpan(child: SizedBox(width: 5)),
+
+              TextSpan(
+                text: 'Follow',
+                style: TextStyle(
+                  color: Colors.blueAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        );
       case 1:
         return Text(
           'Requested',
@@ -231,7 +209,31 @@ class _FollowButtonState extends State<FollowButton>
           ),
         );
       case 2:
-        return Icon(Icons.check, color: Colors.white, size: size * 0.6);
+        // return Icon(Icons.check, color: Colors.white, size: size * 0.6);
+        // return Text('Following',style: TextStyle(fontWeight: FontWeight.w700,color: Colors.green),);
+        // return Text.rich(TextSpan(
+        //   children: [
+
+        //   TextSpan(text: 'Following',style: TextStyle(color: Colors.blueAccent,fontWeight: FontWeight.bold)),
+        //         WidgetSpan(child: SizedBox(width: 5,)),
+        //          WidgetSpan(child: Icon(Icons.check,color: Colors.blueAccent,)),
+        // ]));
+        return InkWell(
+          child: Row(
+            children: [
+              Text(
+                'Following',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.green,
+                ),
+              ),
+
+              Icon(Icons.check, color: Colors.green),
+            ],
+          ),
+        );
+
       default:
         return Icon(Icons.person_add, color: Colors.white, size: size * 0.6);
     }

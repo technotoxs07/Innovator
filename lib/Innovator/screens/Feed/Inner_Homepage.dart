@@ -37,13 +37,15 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../models/Feed_Content_Model.dart';
 
+
+late Size mq;
+
 // VideoPlaybackManager class
 
 // class LoadingConfig {
 //   static const String loadingGifPath =
 //       'animation/IdeaBulb.gif'; // Update this path to your GIF file
 // }
-
 
 // Replace the RefreshIndicator in your build metho
 // Enhanced CacheManager class
@@ -1556,95 +1558,101 @@ class ContentData {
   ContentData({required this.contents, required this.hasMore, this.nextCursor});
 
   factory ContentData.fromNewFeedApi(Map<String, dynamic> json) {
-  try {
-    debugPrint('📊 Raw API Response structure:');
-    debugPrint('   - Status: ${json['status']}');
-    debugPrint('   - Message: ${json['message']}');
+    try {
+      debugPrint('📊 Raw API Response structure:');
+      debugPrint('   - Status: ${json['status']}');
+      debugPrint('   - Message: ${json['message']}');
 
-    // FIXED: Handle both String and Map types for 'data'
-    Map<String, dynamic> data;
-    
-    if (json['data'] is String) {
-      // If data is a String, parse it as JSON
-      debugPrint('   - Data is String, parsing...');
-      data = jsonDecode(json['data']) as Map<String, dynamic>;
-    } else if (json['data'] is Map<String, dynamic>) {
-      // If data is already a Map, use it directly
-      debugPrint('   - Data is already Map');
-      data = json['data'] as Map<String, dynamic>;
-    } else {
-      debugPrint('   - Data is null or invalid type: ${json['data']?.runtimeType}');
-      data = {};
-    }
+      // FIXED: Handle both String and Map types for 'data'
+      Map<String, dynamic> data;
 
-    debugPrint('📊 Data structure keys: ${data.keys.toList()}');
+      if (json['data'] is String) {
+        // If data is a String, parse it as JSON
+        debugPrint('   - Data is String, parsing...');
+        data = jsonDecode(json['data']) as Map<String, dynamic>;
+      } else if (json['data'] is Map<String, dynamic>) {
+        // If data is already a Map, use it directly
+        debugPrint('   - Data is already Map');
+        data = json['data'] as Map<String, dynamic>;
+      } else {
+        debugPrint(
+          '   - Data is null or invalid type: ${json['data']?.runtimeType}',
+        );
+        data = {};
+      }
 
-    // Parse different content arrays from the API response
-    final normalContentList = data['normalContent'] as List<dynamic>? ?? [];
-    final videoContentList = data['videoContent'] as List<dynamic>? ?? [];
-    final normalList = data['normal'] as List<dynamic>? ?? [];
-    final videosList = data['videos'] as List<dynamic>? ?? [];
+      debugPrint('📊 Data structure keys: ${data.keys.toList()}');
 
-    // Combine all content arrays
-    final allItems = <dynamic>[];
-    allItems.addAll(normalContentList);
-    allItems.addAll(videoContentList);
-    allItems.addAll(normalList);
-    allItems.addAll(videosList);
+      // Parse different content arrays from the API response
+      final normalContentList = data['normalContent'] as List<dynamic>? ?? [];
+      final videoContentList = data['videoContent'] as List<dynamic>? ?? [];
+      final normalList = data['normal'] as List<dynamic>? ?? [];
+      final videosList = data['videos'] as List<dynamic>? ?? [];
 
-    // Parse pagination info
-    final hasMore = data['hasMore'] as bool? ?? false;
-    final nextCursor = data['nextCursor'] as String?;
+      // Combine all content arrays
+      final allItems = <dynamic>[];
+      allItems.addAll(normalContentList);
+      allItems.addAll(videoContentList);
+      allItems.addAll(normalList);
+      allItems.addAll(videosList);
 
-    debugPrint('📊 ContentData parsing:');
-    debugPrint('   - Total items: ${allItems.length}');
-    debugPrint('   - Has more: $hasMore');
-    debugPrint('   - Next cursor: $nextCursor');
+      // Parse pagination info
+      final hasMore = data['hasMore'] as bool? ?? false;
+      final nextCursor = data['nextCursor'] as String?;
 
-    final contents =
-        allItems
-            .map((item) {
-              try {
-                // Handle case where item might be a String
-                Map<String, dynamic> itemData;
-                if (item is String) {
-                  itemData = jsonDecode(item) as Map<String, dynamic>;
-                } else if (item is Map<String, dynamic>) {
-                  itemData = item;
-                } else {
-                  debugPrint('❌ Invalid item type: ${item.runtimeType}');
+      debugPrint('📊 ContentData parsing:');
+      debugPrint('   - Total items: ${allItems.length}');
+      debugPrint('   - Has more: $hasMore');
+      debugPrint('   - Next cursor: $nextCursor');
+
+      final contents =
+          allItems
+              .map((item) {
+                try {
+                  // Handle case where item might be a String
+                  Map<String, dynamic> itemData;
+                  if (item is String) {
+                    itemData = jsonDecode(item) as Map<String, dynamic>;
+                  } else if (item is Map<String, dynamic>) {
+                    itemData = item;
+                  } else {
+                    debugPrint('❌ Invalid item type: ${item.runtimeType}');
+                    return null;
+                  }
+
+                  return FeedContent.fromJson(itemData);
+                } catch (e) {
+                  debugPrint('❌ Error parsing individual content item: $e');
+                  debugPrint('❌ Item type: ${item.runtimeType}');
+                  debugPrint(
+                    '❌ Item data: ${item.toString().substring(0, math.min(200, item.toString().length))}',
+                  );
                   return null;
                 }
-                
-                return FeedContent.fromJson(itemData);
-              } catch (e) {
-                debugPrint('❌ Error parsing individual content item: $e');
-                debugPrint('❌ Item type: ${item.runtimeType}');
-                debugPrint('❌ Item data: ${item.toString().substring(0, math.min(200, item.toString().length))}');
-                return null;
-              }
-            })
-            .where((content) => content != null && content.id.isNotEmpty)
-            .cast<FeedContent>()
-            .toList();
+              })
+              .where((content) => content != null && content.id.isNotEmpty)
+              .cast<FeedContent>()
+              .toList();
 
-    debugPrint('   - Valid contents parsed: ${contents.length}');
+      debugPrint('   - Valid contents parsed: ${contents.length}');
 
-    // ✅ Cache all user data immediately after parsing
-    _cacheUsersFromContents(contents);
+      // ✅ Cache all user data immediately after parsing
+      _cacheUsersFromContents(contents);
 
-    return ContentData(
-      contents: contents,
-      hasMore: hasMore,
-      nextCursor: nextCursor,
-    );
-  } catch (e, stackTrace) {
-    debugPrint('❌ ContentData.fromNewFeedApi error: $e');
-    debugPrint('❌ Stack trace: $stackTrace');
-    debugPrint('❌ JSON structure: ${json.toString().substring(0, math.min(500, json.toString().length))}');
-    return ContentData(contents: [], hasMore: false, nextCursor: null);
+      return ContentData(
+        contents: contents,
+        hasMore: hasMore,
+        nextCursor: nextCursor,
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ ContentData.fromNewFeedApi error: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+      debugPrint(
+        '❌ JSON structure: ${json.toString().substring(0, math.min(500, json.toString().length))}',
+      );
+      return ContentData(contents: [], hasMore: false, nextCursor: null);
+    }
   }
-}
 
   // ✅ NEW: Cache user data from feed contents
   static void _cacheUsersFromContents(List<FeedContent> contents) {
@@ -1732,7 +1740,7 @@ class _FeedItemState extends State<FeedItem>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recordView();
     });
-   // isOwnContent = _isAuthorCurrentUser();
+    // isOwnContent = _isAuthorCurrentUser();
   }
 
   @override
@@ -1914,7 +1922,7 @@ class _FeedItemState extends State<FeedItem>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16.0),
+                  const SizedBox(width: 10.0),
 
                   // Author Info
                   Expanded(
@@ -1958,56 +1966,49 @@ class _FeedItemState extends State<FeedItem>
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16.0,
-
                                     fontFamily: 'InterThin',
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              SizedBox(width: 10.0),
+                              SizedBox(width: 5),
                               Container(
                                 width: 4.0,
                                 height: 4.0,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade400,
+                                  color: _getTypeColor(widget.content.type),
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               if (!isOwnContent) ...[
-                                const SizedBox(width: 10.0),
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  key: ValueKey(
-                                    'follow_${widget.content.author.email}_${widget.content.author.id}',
-                                  ), // Unique key
-                                  child: FollowButton(
-                                    targetUserEmail:
-                                        widget.content.author.email,
-                                    initialFollowStatus:
-                                        widget.content.isFollowed,
-                                    onFollowSuccess: () {
-                                      debugPrint(
-                                        '✅ Follow success callback for ${widget.content.author.email}',
-                                      );
-                                      if (mounted) {
-                                        setState(() {
-                                          widget.content.isFollowed = true;
-                                        });
-                                        widget.onFollowToggled(true);
-                                      }
-                                    },
-                                    onUnfollowSuccess: () {
-                                      debugPrint(
-                                        '✅ Unfollow success callback for ${widget.content.author.email}',
-                                      );
-                                      if (mounted) {
-                                        setState(() {
-                                          widget.content.isFollowed = false;
-                                        });
-                                        widget.onFollowToggled(false);
-                                      }
-                                    },
-                                  ),
+                                //  SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+                                FollowButton(
+                                  targetUserEmail:
+                                      widget.content.author.email,
+                                  initialFollowStatus:
+                                      widget.content.isFollowed,
+                                  onFollowSuccess: () {
+                                    debugPrint(
+                                      '✅ Follow success callback for ${widget.content.author.email}',
+                                    );
+                                    if (mounted) {
+                                      setState(() {
+                                        widget.content.isFollowed = true;
+                                      });
+                                      widget.onFollowToggled(true);
+                                    }
+                                  },
+                                  onUnfollowSuccess: () {
+                                    debugPrint(
+                                      '✅ Unfollow success callback for ${widget.content.author.email}',
+                                    );
+                                    if (mounted) {
+                                      setState(() {
+                                        widget.content.isFollowed = false;
+                                      });
+                                      widget.onFollowToggled(false);
+                                    }
+                                  },
                                 ),
                               ],
                               Spacer(),
@@ -2034,7 +2035,7 @@ class _FeedItemState extends State<FeedItem>
 
                           Row(
                             children: [
-                              const SizedBox(width: 8.0),
+                              const SizedBox(width: 4.0),
                               Text(
                                 formattedTimeAgo,
                                 style: TextStyle(
@@ -2108,11 +2109,11 @@ class _FeedItemState extends State<FeedItem>
                               child: _LinkifyText(
                                 text: widget.content.status,
                                 style: TextStyle(
-                                  fontSize: 14.5,
-                                  height: 1.2,
-                                  color:Colors.black,
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  color: Colors.black,
                                   fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5,
+                                  letterSpacing: 0.6,
                                   fontStyle: FontStyle.normal,
                                   fontFamily: 'InterThin',
                                 ),
@@ -2121,23 +2122,20 @@ class _FeedItemState extends State<FeedItem>
                                 overflow:
                                     _isExpanded ? null : TextOverflow.ellipsis,
                               ),
-                            ), 
+                            ),
                             if (needsExpandCollapse)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isExpanded = !_isExpanded;
-                                    });
-                                  },
-                                  child: Text(
-                                    _isExpanded ? 'See Less' : 'See More',
-                                    style: TextStyle(
-                                      color: Colors.blue.shade700,
-                                      fontSize: 11.0,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _isExpanded = !_isExpanded;
+                                  });
+                                },
+                                child: Text(
+                                  _isExpanded ? 'See Less' : 'See More',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontSize: 11.0,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -2163,80 +2161,79 @@ class _FeedItemState extends State<FeedItem>
               height: 1.0,
               thickness: 1.0,
             ),
+            SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(             
+              padding: EdgeInsets.only(
+                right: 10,
+                left: 10,
+                bottom: 13,
+                top: 10,
+              ),
+              child: Row(
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          LikeButton(
-                              contentId: widget.content.id,
-                              initialLikeStatus: widget.content.isLiked,
-                              likeService: likeService,
-                              onLikeToggled: (isLiked) {
-                                widget.onLikeToggled(isLiked);
-                                SoundPlayer player = SoundPlayer();
-                                player.playlikeSound();
-                              },
-                            ),
-                          SizedBox(width: 4.0),
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _showComments = !_showComments;
-                              });
-                            },
-                            child: Image.asset(
-                              'assets/icon/comment.png',
-                              color:
-                                  _showComments
-                                      ? Colors.blue.shade700
-                                      : Colors.grey.shade800,
-                              width: 25,
-                              height: 25,
-                            ),
-                          ),
-                        ],
-                      ),
-                      InkWell(
-                        onTap: () {
-                          _showShareOptions(context);
+                      LikeButton(
+                        contentId: widget.content.id,
+                        initialLikeStatus: widget.content.isLiked,
+                        likeService: likeService,
+                        onLikeToggled: (isLiked) {
+                          widget.onLikeToggled(isLiked);
+                          SoundPlayer player = SoundPlayer();
+                          player.playlikeSound();
                         },
-                        child: Image.asset(
-                          'assets/icon/send.png',
-                          width: 20,
-                          height: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        '${widget.content.likes} Likes',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                          fontSize: 11.0,
                         ),
                       ),
                     ],
                   ),
-                
-                  Padding(
-                    padding: EdgeInsets.only(left: 10,top: 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${widget.content.likes} Likes',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                            fontSize: 11.0,
-                          ),
+                  SizedBox(width: 30),
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _showComments = !_showComments;
+                          });
+                        },
+                        child: Image.asset(
+                          'assets/icon/comment.png',
+                          color:
+                              _showComments
+                                  ? Colors.blue.shade700
+                                  : Colors.grey.shade800,
+                          width: 25,
+                          height: 25,
                         ),
-                        SizedBox(width: 10.0),
-                        Text(
-                          '${widget.content.comments} Comments',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                            fontSize: 11.0,
-                          ),
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        '${widget.content.comments} Comments',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                          fontSize: 11.0,
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  Spacer(),
+
+                  InkWell(
+                    onTap: () {
+                      _showShareOptions(context);
+                    },
+                    child: Image.asset(
+                      'assets/icon/send.png',
+                      width: 20,
+                      height: 20,
                     ),
                   ),
                 ],
@@ -2342,7 +2339,7 @@ class _FeedItemState extends State<FeedItem>
       userController.cacheUserProfilePicture(
         widget.content.author.id,
         widget.content.author.picture.isNotEmpty
-            ? widget.content.author.picture 
+            ? widget.content.author.picture
             : null,
         widget.content.author.name,
       );
@@ -2616,6 +2613,7 @@ class _FeedItemState extends State<FeedItem>
       ),
     );
   }
+
   // Widget _buildSingleImageOptimized(String url) {
   //   return GestureDetector(
   //     onTap: () => _showMediaGallery(context, [url], 0),
@@ -2704,7 +2702,7 @@ class _FeedItemState extends State<FeedItem>
     String label,
     IconData icon,
     Color color,
-  ){
+  ) {
     return GestureDetector(
       onTap: () => _showMediaGallery(context, [fileUrl], 0),
       child: Container(
@@ -2727,37 +2725,39 @@ class _FeedItemState extends State<FeedItem>
   }
 
   void _showMediaGallery(
-  BuildContext context,
-  List<String> mediaUrls,
-  int initialIndex,
-) {
-  final selectedUrl = mediaUrls[initialIndex];
+    BuildContext context,
+    List<String> mediaUrls,
+    int initialIndex,
+  ) {
+    final selectedUrl = mediaUrls[initialIndex];
 
-  // If selected item is a video, open full screen video player directly
-  if (FileTypeHelper.isVideo(selectedUrl)) {
+    // If selected item is a video, open full screen video player directly
+    if (FileTypeHelper.isVideo(selectedUrl)) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => FullscreenVideoPage(
+                url: selectedUrl,
+                thumbnail: widget.content.thumbnailUrl,
+              ),
+        ),
+      );
+      return;
+    }
+
+    // For images and other media, open the gallery screen
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullscreenVideoPage(
-          url: selectedUrl,
-          thumbnail: widget.content.thumbnailUrl,
-        ),
+        builder:
+            (context) => OptimizedMediaGalleryScreen(
+              mediaUrls: mediaUrls,
+              initialIndex: initialIndex,
+            ),
       ),
     );
-    return;
   }
-
-  // For images and other media, open the gallery screen
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => OptimizedMediaGalleryScreen(
-        mediaUrls: mediaUrls,
-        initialIndex: initialIndex,
-      ),
-    ),
-  );
-}
 
   void _showShareOptions(BuildContext context) {
     final TextEditingController shareTextController = TextEditingController();
@@ -2912,319 +2912,338 @@ class _FeedItemState extends State<FeedItem>
 
   // Replace your existing _showQuickSuggestions method with this updated version
 
-void _showQuickSuggestions(BuildContext context) {
-  showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit, color: Color(0xFFF48706)),
-              title: const Text('Edit content'),
-              onTap: () => Navigator.pop(context, 'edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Delete post'),
-              onTap: () => Navigator.pop(context, 'delete'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy, color: Colors.blue),
-              title: const Text('Copy content'),
-              onTap: () => Navigator.pop(context, 'copy'),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      );
-    },
-  ).then((value) async {
-    if (value == 'edit') {
-      await _handleEditContent();
-    } else if (value == 'delete') {
-      await _handleDeleteContent();
-    } else if (value == 'copy') {
-      Clipboard.setData(ClipboardData(text: widget.content.status));
-      Get.snackbar(
-        'Copied',
-        'Content copied to clipboard',
-        backgroundColor: Colors.green.withAlpha(80),
-        colorText: Colors.white,
-        duration: Duration(seconds: 1),
-      );
-    }
-  });
-}
-
-// New method to handle edit content
-Future<void> _handleEditContent() async {
-  final TextEditingController controller = TextEditingController(
-    text: widget.content.status,
-  );
-  
-  final result = await showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: Row(
-        children: [
-          Icon(Icons.edit, color: Color(0xFFF48706)),
-          SizedBox(width: 8),
-          Text('Edit Content'),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: controller,
-              maxLines: 8,
-              maxLength: 500,
-              decoration: InputDecoration(
-                hintText: 'Update your content',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(0xFFF48706), width: 2),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (controller.text.trim().isEmpty) {
-              Get.snackbar(
-                'Error',
-                'Content cannot be empty',
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
-              );
-              return;
-            }
-            Navigator.pop(context, controller.text.trim());
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFFF48706),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text('Save'),
-        ),
-      ],
-    ),
-  );
-  
-  if (result != null && result.trim().isNotEmpty && result != widget.content.status) {
-    // Show loading dialog
-    Get.dialog(
-      Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
+  void _showQuickSuggestions(BuildContext context) {
+    showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 50,
-                height: 50,
-                child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-             // SizedBox(height: 16),
-              //Text('Updating content...'),
+              ListTile(
+                leading: const Icon(Icons.edit, color: Color(0xFFF48706)),
+                title: const Text('Edit content'),
+                onTap: () => Navigator.pop(context, 'edit'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Delete post'),
+                onTap: () => Navigator.pop(context, 'delete'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy, color: Colors.blue),
+                title: const Text('Copy content'),
+                onTap: () => Navigator.pop(context, 'copy'),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
-    
-    // Call API to update content
-    final success = await ApiService.updateContent(
-      widget.content.id,
-      result.trim(),
-      context: context,
-    );
-    
-    Get.back(); // Close loading dialog
-    
-    if (success) {
-      setState(() {
-        widget.content.status = result.trim();
-      });
-      Get.snackbar(
-        'Success',
-        'Content updated successfully',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        icon: Icon(Icons.check_circle, color: Colors.white),
-        duration: Duration(seconds: 1),
-      );
-    } else {
-      Get.snackbar(
-        'Error',
-        'Failed to update content. Please try again.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        icon: Icon(Icons.error, color: Colors.white),
-        duration: Duration(seconds: 1),
-      );
-    }
-  }
-}
-
-// New method to handle delete content
-Future<void> _handleDeleteContent() async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: Row(
-        children: [
-          Icon(Icons.warning, color: Colors.red),
-          SizedBox(width: 8),
-          Text('Delete Post'),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Are you sure you want to delete this post?',
-            style: TextStyle(fontSize: 16),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'This action cannot be undone.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text('Delete'),
-        ),
-      ],
-    ),
-  );
-  
-  if (confirm == true) {
-    // Show loading dialog
-    Get.dialog(
-      Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                child: Image.asset('animation/IdeaBulb.gif', fit: BoxFit.contain),
-              ),
-              SizedBox(height: 16),
-              Text('Deleting post...'),
-            ],
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
-    
-    // Call API to delete content
-    final success = await ApiService.deleteFiles(
-      widget.content.id,
-      context: context,
-    );
-    
-    Get.back(); // Close loading dialog
-    
-    if (success) {
-      Get.snackbar(
-        'Deleted',
-        'Post deleted successfully',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        icon: Icon(Icons.check_circle, color: Colors.white),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 3),
-      );
-      
-      // Trigger a refresh of the feed
-      // You might want to emit an event or callback to parent widget
-      // to remove this item from the feed list
-      if (context.mounted) {
-        // Navigate back or refresh feed
-        Navigator.of(context).pop();
+        );
+      },
+    ).then((value) async {
+      if (value == 'edit') {
+        await _handleEditContent();
+      } else if (value == 'delete') {
+        await _handleDeleteContent();
+      } else if (value == 'copy') {
+        Clipboard.setData(ClipboardData(text: widget.content.status));
+        Get.snackbar(
+          'Copied',
+          'Content copied to clipboard',
+          backgroundColor: Colors.green.withAlpha(80),
+          colorText: Colors.white,
+          duration: Duration(seconds: 1),
+        );
       }
-    } else {
-      Get.snackbar(
-        'Error',
-        'Failed to delete post. Please try again.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        icon: Icon(Icons.error, color: Colors.white),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 3),
+    });
+  }
+
+  // New method to handle edit content
+  Future<void> _handleEditContent() async {
+    final TextEditingController controller = TextEditingController(
+      text: widget.content.status,
+    );
+
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.edit, color: Color(0xFFF48706)),
+                SizedBox(width: 8),
+                Text('Edit Content'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    maxLines: 8,
+                    maxLength: 500,
+                    decoration: InputDecoration(
+                      hintText: 'Update your content',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Color(0xFFF48706),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.text.trim().isEmpty) {
+                    Get.snackbar(
+                      'Error',
+                      'Content cannot be empty',
+                      backgroundColor: Colors.red,
+                      colorText: Colors.white,
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, controller.text.trim());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFF48706),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text('Save'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null &&
+        result.trim().isNotEmpty &&
+        result != widget.content.status) {
+      // Show loading dialog
+      Get.dialog(
+        Center(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  child: Image.asset(
+                    'animation/IdeaBulb.gif',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                // SizedBox(height: 16),
+                //Text('Updating content...'),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
       );
+
+      // Call API to update content
+      final success = await ApiService.updateContent(
+        widget.content.id,
+        result.trim(),
+        context: context,
+      );
+
+      Get.back(); // Close loading dialog
+
+      if (success) {
+        setState(() {
+          widget.content.status = result.trim();
+        });
+        Get.snackbar(
+          'Success',
+          'Content updated successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: Icon(Icons.check_circle, color: Colors.white),
+          duration: Duration(seconds: 1),
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to update content. Please try again.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: Icon(Icons.error, color: Colors.white),
+          duration: Duration(seconds: 1),
+        );
+      }
     }
   }
-}
+
+  // New method to handle delete content
+  Future<void> _handleDeleteContent() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Delete Post'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Are you sure you want to delete this post?',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'This action cannot be undone.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text('Delete'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirm == true) {
+      // Show loading dialog
+      Get.dialog(
+        Center(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  child: Image.asset(
+                    'animation/IdeaBulb.gif',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text('Deleting post...'),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Call API to delete content
+      final success = await ApiService.deleteFiles(
+        widget.content.id,
+        context: context,
+      );
+
+      Get.back(); // Close loading dialog
+
+      if (success) {
+        Get.snackbar(
+          'Deleted',
+          'Post deleted successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: Icon(Icons.check_circle, color: Colors.white),
+          snackPosition: SnackPosition.BOTTOM,
+          duration: Duration(seconds: 3),
+        );
+
+        // Trigger a refresh of the feed
+        // You might want to emit an event or callback to parent widget
+        // to remove this item from the feed list
+        if (context.mounted) {
+          // Navigate back or refresh feed
+          Navigator.of(context).pop();
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to delete post. Please try again.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: Icon(Icons.error, color: Colors.white),
+          snackPosition: SnackPosition.BOTTOM,
+          duration: Duration(seconds: 3),
+        );
+      }
+    }
+  }
 
   // Add this method to the _FeedItemState class
 
@@ -3812,11 +3831,8 @@ class FullscreenVideoPage extends StatefulWidget {
   final String url;
   final String? thumbnail;
 
-  const FullscreenVideoPage({
-    Key? key,
-    required this.url,
-    this.thumbnail,
-  }) : super(key: key);
+  const FullscreenVideoPage({Key? key, required this.url, this.thumbnail})
+    : super(key: key);
 
   @override
   State<FullscreenVideoPage> createState() => _FullscreenVideoPageState();
@@ -3884,7 +3900,8 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (_controller == null || _disposed) return;
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _controller!.pause();
     } else if (state == AppLifecycleState.resumed && _isPlaying) {
       _controller!.play();
@@ -3951,28 +3968,31 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
           children: [
             // Video player
             Center(
-              child: _initialized && _controller != null
-                  ? AspectRatio(
-                      aspectRatio: _controller!.value.aspectRatio,
-                      child: VideoPlayer(_controller!),
-                    )
-                  : (widget.thumbnail != null
-                      ? CachedNetworkImage(
-                          imageUrl: widget.thumbnail!,
-                          fit: BoxFit.contain,
-                          placeholder: (c, u) =>
-                              Center(child: Image.asset('animation/IdeaBulb.gif')),
-                        )
-                      : Center(child: Image.asset('animation/IdeaBulb.gif'))),
+              child:
+                  _initialized && _controller != null
+                      ? AspectRatio(
+                        aspectRatio: _controller!.value.aspectRatio,
+                        child: VideoPlayer(_controller!),
+                      )
+                      : (widget.thumbnail != null
+                          ? CachedNetworkImage(
+                            imageUrl: widget.thumbnail!,
+                            fit: BoxFit.contain,
+                            placeholder:
+                                (c, u) => Center(
+                                  child: Image.asset('animation/IdeaBulb.gif'),
+                                ),
+                          )
+                          : Center(
+                            child: Image.asset('animation/IdeaBulb.gif'),
+                          )),
             ),
             // Tap area for play/pause (only active when controls are visible or video is paused)
             Positioned.fill(
               child: GestureDetector(
                 onTap: _onScreenTap,
                 behavior: HitTestBehavior.translucent,
-                child: Container(
-                  color: Colors.transparent,
-                ),
+                child: Container(color: Colors.transparent),
               ),
             ),
             // Top bar with back button (always on top with higher z-index)
@@ -3984,10 +4004,7 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.7),
-                      Colors.transparent,
-                    ],
+                    colors: [Colors.black.withOpacity(0.7), Colors.transparent],
                   ),
                 ),
                 child: Padding(
@@ -4055,7 +4072,10 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
                       ],
                     ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -4089,7 +4109,6 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage>
     );
   }
 }
-
 
 //AutoPlayVideoWidget with enhanced performance
 class AutoPlayVideoWidget extends StatefulWidget {
@@ -4230,44 +4249,50 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   }
 
   void _handleVisibilityChanged(VisibilityInfo info) {
-  if (!mounted || _disposed) return;
-
-  final visibleFraction = info.visibleFraction;
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
     if (!mounted || _disposed) return;
 
-    // STRICTER VISIBILITY CHECK
-    if (visibleFraction > 0.7) {  // Increased from 0.3 to 0.7 (70% visible)
-      // Initialize if not already done
-      if (!_initialized && !_disposed && _controller == null) {
-        try {
-          _initializeVideoPlayer();
-        } catch (e) {
-          developer.log('Error initializing video on visibility: $e');
+    final visibleFraction = info.visibleFraction;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _disposed) return;
+
+      // STRICTER VISIBILITY CHECK
+      if (visibleFraction > 0.7) {
+        // Increased from 0.3 to 0.7 (70% visible)
+        // Initialize if not already done
+        if (!_initialized && !_disposed && _controller == null) {
+          try {
+            _initializeVideoPlayer();
+          } catch (e) {
+            developer.log('Error initializing video on visibility: $e');
+          }
+        }
+
+        _activeVideos[videoId] = this;
+        _muteOtherVideos();
+
+        // Only play if video is well within view
+        if (_initialized &&
+            _controller != null &&
+            !_controller!.value.isPlaying &&
+            _isPlaying) {
+          _controller!.play();
+        }
+      } else if (visibleFraction < 0.5) {
+        // Pause earlier when scrolling away
+        // Remove from active videos and pause
+        _activeVideos.remove(videoId);
+        if (_initialized && _controller != null) {
+          if (_controller!.value.isPlaying) {
+            _controller!.pause();
+            debugPrint(
+              '🎬 Video paused (visibility: ${visibleFraction.toStringAsFixed(2)})',
+            );
+          }
         }
       }
-
-      _activeVideos[videoId] = this;
-      _muteOtherVideos();
-      
-      // Only play if video is well within view
-      if (_initialized && _controller != null && !_controller!.value.isPlaying && _isPlaying) {
-        _controller!.play();
-      }
-    } else if (visibleFraction < 0.5) {  // Pause earlier when scrolling away
-      // Remove from active videos and pause
-      _activeVideos.remove(videoId);
-      if (_initialized && _controller != null) {
-        if (_controller!.value.isPlaying) {
-          _controller!.pause();
-          debugPrint('🎬 Video paused (visibility: ${visibleFraction.toStringAsFixed(2)})');
-        }
-      }
-    }
-  });
-}
-
+    });
+  }
 
   void _muteOtherVideos() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -4364,14 +4389,15 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
   // NEW: Method to open fullscreen
   void _openFullscreen() {
     if (!mounted || _controller == null) return;
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullscreenVideoPage(
-          url: widget.url,
-          thumbnail: widget.thumbnailUrl,
-        ),
+        builder:
+            (context) => FullscreenVideoPage(
+              url: widget.url,
+              thumbnail: widget.thumbnailUrl,
+            ),
       ),
     );
   }
@@ -4459,7 +4485,8 @@ class AutoPlayVideoWidgetState extends State<AutoPlayVideoWidget>
             children: [
               // Video player with tap to fullscreen
               GestureDetector(
-                onTap: _openFullscreen, // CHANGED: Now opens fullscreen instead of toggle play/pause
+                onTap:
+                    _openFullscreen, // CHANGED: Now opens fullscreen instead of toggle play/pause
                 behavior: HitTestBehavior.opaque,
                 child: SizedBox(
                   width: targetWidth,

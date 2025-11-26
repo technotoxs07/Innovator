@@ -928,13 +928,7 @@ class _SpecificUserProfilePageState extends State<SpecificUserProfilePage>
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primaryColor.withAlpha(30),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    
                   ),
                   child: FollowButton(
                     targetUserEmail: profileData['email'],

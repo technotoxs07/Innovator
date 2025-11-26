@@ -10,15 +10,15 @@
     
     <!-- Camera and Media Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- <uses-permission android:name="android.permission.RECORD_AUDIO" /> -->
+    <!-- <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" /> -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     
     <!-- Phone and Call Permissions -->
-    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <!-- <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.USE_SIP" />
+    <uses-permission android:name="android.permission.USE_SIP" /> -->
     
     <!-- Notification and System Permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
@@ -38,15 +38,15 @@
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
     
     <!-- Foreground Service Permission (Android 9+) -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" /> -->
 
     <!-- CRITICAL: Add these for proper call handling -->
-    <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE" />
-    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
-    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <!-- <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE" /> -->
+    <!-- <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" /> -->
+    <!-- <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" /> -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     
     <!-- Features -->
@@ -96,10 +96,7 @@
             </intent-filter>
             
             <!-- CRITICAL: Call notification handling -->
-            <intent-filter>
-                <action android:name="android.intent.action.CALL_PRIVILEGED" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+          
             
             <!-- Deep linking for calls -->
             <intent-filter android:autoVerify="true">
@@ -111,7 +108,7 @@
             
             <!-- CRITICAL: Handle call from terminated state -->
             <intent-filter>
-                <action android:name="com.innovation.innovator.INCOMING_CALL" />
+                <!-- <action android:name="com.innovation.innovator.INCOMING_CALL" /> -->
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -178,13 +175,13 @@
 
         <!-- Call Service (if you're using a calling service) -->
         <!-- Enhanced Call Service -->
-        <service
+        <!-- <service
             android:name=".CallService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="phoneCall|microphone|camera"
             android:stopWithTask="false"
-            android:directBootAware="true" />
+            android:directBootAware="true" /> -->
 
         <!-- CRITICAL: Enhanced notification listener service -->
         <service
@@ -203,9 +200,7 @@
             android:value="2"/>
         
         <!-- CRITICAL: Notification channel ID for calls - MUST match your code -->
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="incoming_calls"/>
+        
         
         <!-- Default notification icon -->
         <meta-data
