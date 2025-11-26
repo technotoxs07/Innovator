@@ -47,6 +47,7 @@ late Size mq;
 //       'animation/IdeaBulb.gif'; // Update this path to your GIF file
 // }
 
+
 // Replace the RefreshIndicator in your build metho
 // Enhanced CacheManager class
 // class CacheManager {

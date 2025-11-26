@@ -19,7 +19,7 @@ class StudentDashboardScreen extends ConsumerWidget {
             // Grid Content
             GridView(
               shrinkWrap: true,
-
+ padding: EdgeInsets.all(0),
               physics: const NeverScrollableScrollPhysics(),
 
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -32,30 +32,30 @@ class StudentDashboardScreen extends ConsumerWidget {
 
               children: [
                 //Attendance Rate
-                FittedBox(
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Attendance Rate',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
-                              ),
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  color: Colors.white,
+                  elevation: 5,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          child: Text(
+                            'Attendance Rate',
+                            style: AppStyle.heading2.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppStyle.fontFamilySecondary,
+                              fontSize: 15,
                             ),
                           ),
-
-                          CustomPaint(
+                        ),
+                
+                        Flexible(
+                          child: CustomPaint(
                             painter: AttendanceRate(
                               percentage:
                                   75, //pass the backend value later when it comes from the backends
@@ -65,8 +65,8 @@ class StudentDashboardScreen extends ConsumerWidget {
                               context.screenHeight * 0.1,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -133,57 +133,55 @@ class StudentDashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 //Overall Progress
-                FittedBox(
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    color: Colors.white,
-                    elevation: 5,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            child: Text(
-                              'Overall Progress',
-                              style: AppStyle.heading2.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppStyle.fontFamilySecondary,
-                                fontSize: 15,
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  color: Colors.white,
+                  elevation: 5,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          child: Text(
+                            'Overall Progress',
+                            style: AppStyle.heading2.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppStyle.fontFamilySecondary,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                
+                        Flexible(
+                          child: Row(
+                            children: [
+                              CustomPaint(
+                                painter: OverallProgressPieChart(
+                                  progressValue: 75,
+                                ),
+                                size: Size(
+                                  context.screenWidth * 0.2,
+                                  context.screenHeight * 0.1,
+                                ),
                               ),
-                            ),
-                          ),
-
-                          FittedBox(
-                            child: Row(
-                              children: [
-                                CustomPaint(
-                                  painter: OverallProgressPieChart(
-                                    progressValue: 75,
-                                  ),
-                                  size: Size(
-                                    context.screenWidth * 0.2,
-                                    context.screenHeight * 0.1,
+                              SizedBox(width: 10),
+                              Padding(
+                                padding: EdgeInsets.only(bottom: 40),
+                                child: Text(
+                                  '75%', //pass the same value passed in the progress value later that comes from the backend
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 15,
                                   ),
                                 ),
-                                SizedBox(width: 10),
-                                Padding(
-                                  padding: EdgeInsets.only(bottom: 40),
-                                  child: Text(
-                                    '75%', //pass the same value passed in the progress value later that comes from the backend
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -216,7 +214,7 @@ class StudentDashboardScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 30),
 
             // Learning Material
             Container(

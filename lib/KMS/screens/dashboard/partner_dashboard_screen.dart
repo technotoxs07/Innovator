@@ -18,6 +18,7 @@ class PartnerDashboardScreen extends ConsumerWidget {
           // Grid Content
           GridView(
             shrinkWrap: true,
+            padding: EdgeInsets.all(0),
             physics: const NeverScrollableScrollPhysics(),
             
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -30,30 +31,30 @@ class PartnerDashboardScreen extends ConsumerWidget {
             
             children: [
               //Profile Status
-              FittedBox(
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  color: Colors.white,
-                  elevation: 5,
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          child: Text(
-                            'Profile Status',
-                            style: AppStyle.heading2.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppStyle.fontFamilySecondary,
-                              fontSize: 15,
-                            ),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                color: Colors.white,
+                elevation: 5,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 15, left: 15, top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedBox(
+                        child: Text(
+                          'Profile Status',
+                          style: AppStyle.heading2.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppStyle.fontFamilySecondary,
+                            fontSize: 15,
                           ),
                         ),
-                            
-                        CustomPaint(
+                      ),
+                          
+                      Flexible(
+                        child: CustomPaint(
                           painter: ProfileStatusCircularPercentage(
                             percentage:
                                 75, //pass the backend value later when it comes from the backends
@@ -63,8 +64,8 @@ class PartnerDashboardScreen extends ConsumerWidget {
                             context.screenHeight * 0.1,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -304,7 +305,7 @@ class PartnerDashboardScreen extends ConsumerWidget {
           ),
             
           // This week classes container
-          SizedBox(height: 17),
+          SizedBox(height: 30),
           Container(
             width: double.infinity,
             height: 250,

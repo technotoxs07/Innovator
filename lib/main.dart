@@ -14,6 +14,7 @@ import 'package:get/get.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/services/in_app_notifcation.dart';
 import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
+import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
@@ -426,7 +427,7 @@ void main() async {
       
       // Start the app
       developer.log('🎨 Starting UI...');
-      runApp(DevicePreview(builder: (context) => ProviderScope(child: InnovatorHomePage())));
+      runApp(DevicePreview(builder: (context)=>ProviderScope(child: InnovatorHomePage())));
       
       // Initialize non-critical services in background
       developer.log('🔧 Starting background initialization...');
@@ -436,12 +437,12 @@ void main() async {
     } catch (e, stackTrace) {
       developer.log('❌ Critical error in main: $e\n$stackTrace');
       // Still try to run the app
-      runApp(DevicePreview(builder:(context) =>  ProviderScope(child: InnovatorHomePage())));
+      runApp(const ProviderScope(child: InnovatorHomePage()));
     }
   }, (error, stackTrace) {
     developer.log('❌ Uncaught error: $error\n$stackTrace');
   });
-} 
+}
 
 // ============================================================================
 // MAIN APP WIDGET
@@ -526,7 +527,8 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with Widg
       title: 'Innovator',
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      // home: const SplashScreen(),
+      home:LoginScreen(),
       onInit: () {
         developer.log('🎮 GetX onInit called');
         // Lazy initialization of controllers

@@ -9,10 +9,15 @@ import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart';
+import 'package:innovator/KMS/screens/partner/partner_assignment_management.dart';
 import 'package:innovator/KMS/screens/partner/partner_attendance.dart';
 import 'package:innovator/KMS/screens/school/school_overall_attendance.dart';
 import 'package:innovator/KMS/screens/school/school_complaint_box_student.dart';
+import 'package:innovator/KMS/screens/student/student_attendance.dart';
 import 'package:innovator/KMS/screens/student/student_complain_box_screen.dart';
+import 'package:innovator/KMS/screens/student/student_examination.dart';
+import 'package:innovator/KMS/screens/student/student_task.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -164,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             //             StudentComplainBoxScreen(),
                                             //   ),
                                             // );
-                                            //    Navigator.pushReplacement(
+                                            // Navigator.pushReplacement(
                                             //   context,
                                             //   MaterialPageRoute(
                                             //     builder:
@@ -188,12 +193,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             //             AdminComplaintScreen(),
                                             //   ),
                                             // );
-                                                    Navigator.push(
+                                            //         Navigator.push(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             PartenerAttendanceScreen(),
+                                            //   ),
+                                            // );
+                                            // Navigator.push(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             StudentAttendanceScreen(),
+                                            //   ),
+                                            // );
+                                            // Navigator.push(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             StudentTaskScreen(),
+                                            //   ),
+                                            // );
+                                            //         Navigator.push(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             PartnerAssignmentManagementScreen(),
+                                            //   ),
+                                            // );
+                                            //           Navigator.push(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             StudentExaminationScreen(),
+                                            //   ),
+                                            // );
+                                            Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
                                                     (context) =>
-                                                        PartenerAttendanceScreen(),
+                                                        PartnerAssignedSchoolScreen(),
                                               ),
                                             );
                                           }

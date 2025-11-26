@@ -27,6 +27,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           GridView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.all(0),
             
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -61,7 +62,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             ],
           ),
         
-        SizedBox(height: 20,),
+        SizedBox(height: 30,),
           Text(
             'Distribution (Pie Chart)',
             style: TextStyle(
