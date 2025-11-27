@@ -1,23 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
-import 'package:innovator/KMS/constants/mediaquery.dart';
-import 'package:innovator/KMS/screens/admin/admin_complaint.dart';
+import 'package:innovator/KMS/constants/mediaquery.dart'; 
 import 'package:innovator/KMS/screens/auth/forgot_password_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart';
-import 'package:innovator/KMS/screens/partner/partner_assignment_management.dart';
-import 'package:innovator/KMS/screens/partner/partner_attendance.dart';
-import 'package:innovator/KMS/screens/school/school_overall_attendance.dart';
-import 'package:innovator/KMS/screens/school/school_complaint_box_student.dart';
-import 'package:innovator/KMS/screens/student/student_attendance.dart';
-import 'package:innovator/KMS/screens/student/student_complain_box_screen.dart';
-import 'package:innovator/KMS/screens/student/student_examination.dart';
-import 'package:innovator/KMS/screens/student/student_task.dart';
+import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';  
+import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart'; 
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -128,14 +116,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           if (_formKey.currentState!
                                               .validate()) {
                                             // Manage the navigation according to the role of the user
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             AdminDashboardScreen(),
-                                            //   ),
-                                            // );
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) =>
+                                                        AdminDashboardScreen(),
+                                              ),
+                                            );
                                             // Navigator.pushReplacement(
                                             //   context,
                                             //   MaterialPageRoute(
@@ -233,14 +221,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             //             StudentExaminationScreen(),
                                             //   ),
                                             // );
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (context) =>
-                                                        PartnerAssignedSchoolScreen(),
-                                              ),
-                                            );
+                                            // Navigator.push(
+                                            //   context,
+                                            //   MaterialPageRoute(
+                                            //     builder:
+                                            //         (context) =>
+                                            //             PartnerAssignedSchoolScreen(),
+                                            //   ),
+                                            // );
                                           }
                                         },
                                 style: ElevatedButton.styleFrom(
