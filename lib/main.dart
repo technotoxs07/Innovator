@@ -577,7 +577,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
         } catch (e) {
           developer.log('❌ Controller initialization error: $e');
         }
-      },
+      }, 
       getPages: [
         GetPage(
           name: '/home',

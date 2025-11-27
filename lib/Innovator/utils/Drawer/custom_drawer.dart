@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/Authorization/Login.dart';
 import 'package:innovator/Innovator/controllers/user_controller.dart';
+import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/main.dart';
 import 'package:innovator/Innovator/screens/Eliza_ChatBot/Elizahomescreen.dart';
@@ -166,12 +167,16 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
   late String _userEmail;
   late String? _userPicture;
   bool _isRefreshing = false;
+  bool _KMSEnabled = false;  // Move here and initialize to false
+
 
   @override
   void initState() {
     super.initState();
     // CRITICAL: Only synchronous operations here
     _loadDataSynchronously();
+    _KMSEnabled = false;  // Explicitly set to false on init
+
     // Start background refresh AFTER drawer is shown
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshInBackground();
@@ -280,6 +285,9 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
     );
   }
 
+  //bool _KMSEnabled = false;
+
+
   Widget _buildHeader() {
     return Container(
       // height: MediaQuery.of(context).size.height * 0.34,
@@ -298,7 +306,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 1),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -386,9 +394,48 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                   ),
                 ),
               ],
-              
-
-            
+              const SizedBox(height: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                // decoration: BoxDecoration(
+                //   color: Colors.white.withAlpha(15),
+                //   borderRadius: BorderRadius.circular(20),
+                //   //border: Border.all(color: Colors.white.withAlpha(30)),
+                // ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _KMSEnabled ? Icons.notifications_active : Icons.notifications_off,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'KMS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: _KMSEnabled,
+                      onChanged: (value) {
+                        setState(() => _KMSEnabled = value);
+                        if(value)
+                        {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+                        }
+                      },
+                     // activeColor: Colors.white,
+                      //activeTrackColor: Colors.green,
+                      inactiveTrackColor: Colors.white.withAlpha(20),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -432,115 +479,116 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         children: [
-                    _QuickMenuItem(icon: Icons.app_blocking_sharp, title: 'KMS', onTap: (){
-                      showDialog(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
-      title: const Text(
-        '🚀 Coming Soon',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFFEB6B46),
-        ),
-        textAlign: TextAlign.center,
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEB6B46), Color(0xFFFF8A65)],
-              ),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Text(
-              '📊',
-              style: TextStyle(fontSize: 60),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Knowledge Management System',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 15),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.withAlpha(10),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.blue.withAlpha(30),
-                width: 1,
-              ),
-            ),
-            child: const Text(
-              '✨ We\'re working on something amazing! The KMS feature will help you manage and organize knowledge efficiently.\n\n💡 Stay tuned for updates!',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withAlpha(20),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Text('🔔', style: TextStyle(fontSize: 14)),
-                    SizedBox(width: 6),
-                    Text(
-                      'Notify Me',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.amber,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text(
-            'Got It! 👍',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFEB6B46),
-            ),
-          ),
-        ),
-      ],
-      actionsPadding: const EdgeInsets.only(right: 16, bottom: 16),
-    ),
-  );
-                    }),
+                   // _QuickMenuItem(icon: Icons.app_blocking_sharp, title: 'KMS', onTap: (){
+  //                     showDialog(
+  //   context: context,
+  //   builder: (dialogContext) => AlertDialog(
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  //     backgroundColor: Colors.white,
+  //     title: const Text(
+  //       '🚀 Coming Soon',
+  //       style: TextStyle(
+  //         fontSize: 20,
+  //         fontWeight: FontWeight.bold,
+  //         color: Color(0xFFEB6B46),
+  //       ),
+  //       textAlign: TextAlign.center,
+  //     ),
+  //     content: Column(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Container(
+  //           padding: const EdgeInsets.all(20),
+  //           decoration: BoxDecoration(
+  //             gradient: const LinearGradient(
+  //               colors: [Color(0xFFEB6B46), Color(0xFFFF8A65)],
+  //             ),
+  //             borderRadius: BorderRadius.circular(15),
+  //           ),
+  //           child: const Text(
+  //             '📊',
+  //             style: TextStyle(fontSize: 60),
+  //             textAlign: TextAlign.center,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 20),
+  //         const Text(
+  //           'Knowledge Management System',
+  //           style: TextStyle(
+  //             fontSize: 16,
+  //             fontWeight: FontWeight.w600,
+  //             color: Colors.grey,
+  //           ),
+  //           textAlign: TextAlign.center,
+  //         ),
+  //         const SizedBox(height: 15),
+  //         Container(
+  //           padding: const EdgeInsets.all(12),
+  //           decoration: BoxDecoration(
+  //             color: Colors.blue.withAlpha(10),
+  //             borderRadius: BorderRadius.circular(10),
+  //             border: Border.all(
+  //               color: Colors.blue.withAlpha(30),
+  //               width: 1,
+  //             ),
+  //           ),
+  //           child: const Text(
+  //             '✨ We\'re working on something amazing! The KMS feature will help you manage and organize knowledge efficiently.\n\n💡 Stay tuned for updates!',
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               color: Colors.black87,
+  //               height: 1.5,
+  //             ),
+  //             textAlign: TextAlign.center,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 15),
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Container(
+  //               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //               decoration: BoxDecoration(
+  //                 color: Colors.amber.withAlpha(20),
+  //                 borderRadius: BorderRadius.circular(20),
+  //               ),
+  //               child: const Row(
+  //                 children: [
+  //                   Text('🔔', style: TextStyle(fontSize: 14)),
+  //                   SizedBox(width: 6),
+  //                   Text(
+  //                     'Notify Me',
+  //                     style: TextStyle(
+  //                       fontSize: 12,
+  //                       fontWeight: FontWeight.w600,
+  //                       color: Colors.amber,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //     actions: [
+  //       TextButton(
+  //         onPressed: () => Navigator.pop(dialogContext),
+  //         child: const Text(
+  //           'Got It! 👍',
+  //           style: TextStyle(
+  //             fontSize: 14,
+  //             fontWeight: FontWeight.w600,
+  //             color: Color(0xFFEB6B46),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //     actionsPadding: const EdgeInsets.only(right: 16, bottom: 16),
+  //   ),
+  // );
+  //Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+      //              }),
           _QuickMenuItem(icon: Icons.message_rounded, title: 'Messages', onTap: _goToMessages),
                 //  _QuickMenuItem(icon: Icons.help_rounded, title: 'Payment', onTap: (){
                 //   Navigator.push(context, MaterialPageRoute(builder: (context)=>PaymentScreen()));
