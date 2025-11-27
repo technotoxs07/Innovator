@@ -527,8 +527,8 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with Widg
       title: 'Innovator',
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
-      // home: const SplashScreen(),
-      home:LoginScreen(),
+      home: const SplashScreen(),
+      //home:LoginScreen(),
       onInit: () {
         developer.log('🎮 GetX onInit called');
         // Lazy initialization of controllers
@@ -545,7 +545,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage> with Widg
         } catch (e) {
           developer.log('❌ Controller initialization error: $e');
         }
-      },
+      }, 
       getPages: [
         GetPage(
           name: '/home',
