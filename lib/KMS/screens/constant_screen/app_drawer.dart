@@ -3,98 +3,123 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/KMS/constants/app_style.dart';
 import 'package:innovator/KMS/constants/mediaquery.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
+import 'package:innovator/KMS/screens/constant_screen/under_maintenance_page.dart';
+import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart';
+import 'package:innovator/KMS/screens/student/student_examination.dart';
 
+final drawerSelectedIndexProvider = StateProvider<int>((ref) => 0);
 
- enum ComplaintStatus { complaint, resolved}
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
+  static const List<DrawerItemData> drawerItems = [
+
+    DrawerItemData(
+      title: 'Tutor',
+      image: 'assets/kms/drawer/tutor.png',
+      screen: PartnerDashboardScreen(),
+    ),
+    DrawerItemData(
+      title: 'School',
+      image: 'assets/kms/drawer/school.png',
+      screen: SchoolDashboardScreen(),
+    ),
+    DrawerItemData(
+      title: 'Examination',
+      image: 'assets/kms/drawer/examination.png',
+      screen: StudentExaminationScreen(),
+    ),
+    DrawerItemData(
+      title: 'Attendance',
+      image: 'assets/kms/drawer/attendance.png',
+      screen: PartnerAssignedSchoolScreen(),
+    ),
+    DrawerItemData(
+      title: 'Activities',
+      image: 'assets/kms/drawer/activities.png',
+      screen: UnderMaintenanceScreen(),
+    ),
+    DrawerItemData(
+      title: 'Teacher KYC',
+      image: 'assets/kms/drawer/teacher.png',
+      screen: UnderMaintenanceScreen(),
+    ),
+    DrawerItemData(
+      title: 'Salary + Commission Partner',
+      image: 'assets/kms/drawer/salary.png',
+      screen: UnderMaintenanceScreen(),
+    ),
+    DrawerItemData(
+      title: 'Components Delivery',
+      image: 'assets/kms/drawer/components.png',
+      screen: UnderMaintenanceScreen(),
+    ),
+    DrawerItemData(
+      title: 'Complain Box',
+      image: 'assets/kms/drawer/complainBox.png',
+      screen: UnderMaintenanceScreen(),
+    ),
+    DrawerItemData(
+      title: 'Teacher Learning Material',
+      image: 'assets/kms/drawer/teaching.png',
+      screen: UnderMaintenanceScreen(),
+    ),
+    DrawerItemData(
+      title: 'Progress Tracking',
+      image: 'assets/kms/drawer/progresstracking.png',
+      screen: UnderMaintenanceScreen(),
+    ),
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = ref.watch(drawerSelectedIndexProvider);
+
     return Drawer(
       width: context.screenWidth * 0.7,
       backgroundColor: AppStyle.primaryColor,
       child: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.only(right: 10, left: 10, top: 25),
+          padding: const EdgeInsets.only(right: 10, left: 10, top: 25),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
                 child: Image.asset(
                   'assets/kms/school.png',
-                  height: 50,
-                  width: 50,
+                  height: 60,
+                  width: 60,
                 ),
               ),
+              const SizedBox(height: 30),
 
-              SizedBox(height: 20),
-              Card(
-                elevation: 10,
+              ...List.generate(drawerItems.length, (index) {
+                    final item = drawerItems[index];
+                    final isSelected = selectedIndex == index;
 
-                color: AppStyle.primaryColor,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.white),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: 10,
-                    left: 10,
-                    top: 15,
-                    bottom: 15,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.home_sharp, color: Colors.white),
-                      SizedBox(width: 15),
-                      Text(
-                        'Dashboard',
-                        style: AppStyle.bodyText.copyWith(
-                          fontFamily: 'Inter',
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xffFEFCE8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 30),
-              _drawer(context, 0, 'Tutor',  'assets/kms/drawer/tutor.png'),
-              _drawer(context, 1, 'School',  'assets/kms/drawer/school.png'),
-              _drawer(context, 2, 'Examination', 'assets/kms/drawer/examination.png'),
-              _drawer(context, 3, 'Attendance',  'assets/kms/drawer/attendance.png'),
-              _drawer(context, 4, 'Activities',  'assets/kms/drawer/activities.png'),
-              _drawer(context, 5, 'Teacher KYC',  'assets/kms/drawer/teacher.png'),
-              _drawer(
-                context,
-                6,
-                'Salary + Commission Partner',
-                'assets/kms/drawer/salary.png'
-              ),
-              _drawer(
-                context,
-                7,
-                'Components Delivery',
-                'assets/kms/drawer/components.png'
-              ),
-              _drawer(context, 8, 'Complain Box',  'assets/kms/drawer/complainBox.png'),
-              _drawer(context, 9, 'Teacher Learning Material',  'assets/kms/drawer/teaching.png'),
-              _drawer(
-                context,
-                10,
-                'Progress Tracking',
-              'assets/kms/drawer/progresstracking.png',
-              ),
-              SizedBox(height: context.screenHeight * 0.1),
+                    return _buildDrawerItem(
+                      context: context,
+                      ref: ref,
+                      index: index,
+                      title: item.title,
+                      image: item.image,
+                      isSelected: isSelected,
+                      screen: item.screen,
+                    );
+                  })
+                  .expand((widget) => [widget, const SizedBox(height: 8)])
+                  .toList(),
+
+              const SizedBox(height: 20),
+
+              // Logout Button
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(10),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   backgroundColor: Colors.white,
                 ),
@@ -145,10 +170,6 @@ class AppDrawer extends ConsumerWidget {
                                     backgroundColor: AppStyle.buttonColor,
                                   ),
                                   onPressed: () {
-                                    // Navigaton for the logout
-
-                                    // this auth service is the one for saving the accesstoken clear that one
-                                    //  AuthService().logout();
                                     Navigator.of(context).pop();
                                     Navigator.pushAndRemoveUntil(
                                       context,
@@ -175,10 +196,16 @@ class AppDrawer extends ConsumerWidget {
                     },
                   );
                 },
-                label: Text('Log Out', style: TextStyle(color: Colors.red)),
-                icon: Icon(Icons.logout_outlined, color: Colors.red),
+                label: const Text(
+                  'Log Out',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                icon: const Icon(Icons.logout_outlined, color: Colors.red),
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -186,37 +213,82 @@ class AppDrawer extends ConsumerWidget {
     );
   }
 
-  Widget _drawer(BuildContext context, int id, String title, String  image) {
+  Widget _buildDrawerItem({
+    required BuildContext context,
+    required WidgetRef ref,
+    required int index,
+    required String title,
+    required String image,
+    required bool isSelected,
+    required Widget screen,
+  }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(image),
-              SizedBox(width:20),
-            Flexible(
-              child: Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                // fontFamily: 'Inter',
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                // color: Colors.white,
-                color: Color(0xffFEFCE8),
-              ),
-                        ),
+          onTap: () {
+            Navigator.pop(context);
+
+            if (!isSelected) {
+              ref.read(drawerSelectedIndexProvider.notifier).state = index;
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => screen),
+              );
+            }
+          },
+          child: Container(
+            padding: EdgeInsets.only(top: 10, bottom: 10, right: 10, left: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? AppStyle.primaryColor : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  isSelected
+                      ? Border.all(color: Colors.white, width: 1.5)
+                      : null,
             ),
-            ],
+            child: Row(
+              children: [
+                Image.asset(
+                  image,
+                  width: 30,
+                  height: 30,
+                  color: isSelected ? Colors.white : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isSelected
+                              ? AppStyle.bodyTextColor
+                              : AppStyle.bodyTextColor,
+                      fontFamily: 'Inter',
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        SizedBox(height: 20,),
-        Divider(color: Colors.grey.shade200),
-        SizedBox(height: 6,)
+        Divider(color: Colors.grey.shade300, height: 20, thickness: 0.5),
       ],
     );
   }
+}
+
+class DrawerItemData {
+  final String title;
+  final String image;
+  final Widget screen;
+
+  const DrawerItemData({
+    required this.title,
+    required this.image,
+    required this.screen,
+  });
 }
