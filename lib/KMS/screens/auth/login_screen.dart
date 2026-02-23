@@ -686,7 +686,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter $formFieldTopText';
+                  return 'Please enter $formFieldTopText'.toUpperCase();
                 }
                 return null;
               },

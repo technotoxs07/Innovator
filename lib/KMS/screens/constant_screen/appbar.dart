@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/KMS/core/constants/app_style.dart';
+import 'package:innovator/KMS/provider/auth_provider.dart';
+import 'package:innovator/KMS/screens/auth/login_screen.dart';
 
 class AppbarScreen extends ConsumerWidget {
   const AppbarScreen({super.key});
@@ -50,7 +52,7 @@ class AppbarScreen extends ConsumerWidget {
             ),
           ],
         ),
-    
+
         Container(
           height: 40,
           width: 80,
@@ -61,7 +63,7 @@ class AppbarScreen extends ConsumerWidget {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-    
+
             children: [
               Padding(
                 padding: EdgeInsets.only(left: 10),
@@ -85,25 +87,123 @@ class AppbarScreen extends ConsumerWidget {
                 ),
               ),
               PopupMenuButton(
-               
+                color: Colors.white,
                 icon: Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                itemBuilder: (BuildContext context) => <PopupMenuEntry>[
-                  PopupMenuItem(
-                    value: 'profile',
-                    child: Text('Profile', style: TextStyle(color: Colors.black)),
-                  ),
-                  PopupMenuItem(
-                    value: 'settings',
-                    child: Text('Settings', style: TextStyle(color: Colors.black)),
-                  ),
-                  PopupMenuItem(
-                    value: 'logout',
-                    child: Text('Logout', style: TextStyle(color: Colors.black)),
-                  ),
-                ],
-                // onSelected: (value) {
-                  
-                // },
+                itemBuilder:
+                    (BuildContext context) => <PopupMenuEntry>[
+                      PopupMenuItem(
+                        value: 'profile',
+                        child: Text(
+                          'Profile',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'settings',
+                        child: Text(
+                          'Settings',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'logout',
+                        child: Text(
+                          'Logout',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    ],
+                onSelected: (value) {
+                  switch (value) {
+                    case 'profile':
+                      Navigator.pushNamed(context, '/profile');
+                      break;
+                    case 'settings':
+                      Navigator.pushNamed(context, '/settings');
+                      break;
+                    case 'logout':
+                      showAdaptiveDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            backgroundColor: AppStyle.alertDialogColor,
+                            title: Icon(Icons.logout, size: 50),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(height: 10),
+                                Text(
+                                  'Comeback Soon!',
+                                  style: AppStyle.heading2,
+                                ),
+                                SizedBox(height: 20),
+                                Text(
+                                  'Are you sure you want to Logout?',
+                                  style: TextStyle(
+                                    color: Colors.black45,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        if (Navigator.canPop(context)) {
+                                          Navigator.pop(context);
+                                        } else {
+                                          return;
+                                        }
+                                      },
+                                      child: Text(
+                                        'Cancel',
+                                        style: AppStyle.errorText,
+                                      ),
+                                    ),
+                                    SizedBox(width: 20),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            15,
+                                          ),
+                                        ),
+                                        minimumSize: Size(20, 40),
+                                        backgroundColor: AppStyle.buttonColor,
+                                      ),
+                                      onPressed: () async {
+                                        Navigator.pop(context);
+                                        await ref.read(authProvider).logout();
+                                        if (context.mounted) {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => LoginScreen(),
+                                            ),
+                                            (route) => false,
+                                          );
+                                        }
+                                      },
+                                      child: Text(
+                                        'Yes Logout',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                      break;
+                  }
+                  ;
+                },
               ),
             ],
           ),
