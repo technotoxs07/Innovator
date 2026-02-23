@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
-import 'package:innovator/KMS/constants/app_style.dart';
+import 'package:innovator/KMS/core/constants/app_style.dart';
 import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 import 'package:innovator/KMS/screens/student/student_task_details.dart';
 

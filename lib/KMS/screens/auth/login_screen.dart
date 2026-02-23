@@ -1,251 +1,554 @@
+// import 'package:flutter/material.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:innovator/KMS/core/constants/app_style.dart';
+// import 'package:innovator/KMS/core/constants/mediaquery.dart'; 
+// import 'package:innovator/KMS/screens/auth/forgot_password_screen.dart';
+// import 'package:innovator/KMS/screens/auth/signup_screen.dart';
+// import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';  
+// import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart'; 
+
+// class LoginScreen extends ConsumerStatefulWidget {
+//   const LoginScreen({super.key});
+
+//   @override
+//   ConsumerState<ConsumerStatefulWidget> createState() => _LoginScreenState();
+// }
+
+// class _LoginScreenState extends ConsumerState<LoginScreen> {
+//   final TextEditingController emailController = TextEditingController();
+
+//   final TextEditingController passwordController = TextEditingController();
+//   bool isLoading = false;
+//   final _formKey = GlobalKey<FormState>();
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return SafeArea(
+//       child: Scaffold(
+//         body: Container(
+//           width: double.infinity,
+//           height: double.infinity,
+//           decoration: BoxDecoration(
+//             image: DecorationImage(
+//               image: AssetImage('assets/kms/auth_backgroundimage.png'),
+//               fit: BoxFit.cover,
+//             ),
+//           ),
+//           child: Center(
+//             child: Padding(
+//               padding: EdgeInsets.only(
+//                 top: context.screenHeight * 0.02,
+//                 bottom: context.screenHeight * .05,
+//                 right: context.screenWidth * 0.05,
+//                 left: context.screenWidth * 0.05,
+//               ),
+//               child: ClipRRect(
+//                 borderRadius: BorderRadius.circular(24),
+//                 child: BackdropFilter(
+//                   filter: ColorFilter.mode(
+//                     Color(0xffC3C9CD),
+
+//                     BlendMode.dstOver,
+//                   ),
+//                   child: Container(
+//                     padding: const EdgeInsets.all(24),
+//                     decoration: BoxDecoration(
+//                       color: Colors.white60,
+//                       borderRadius: BorderRadius.circular(24),
+//                       border: Border.all(color: Colors.white, width: 1.5),
+//                     ),
+//                     child: SingleChildScrollView(
+//                       child: Form(
+//                         key: _formKey,
+//                         child: Column(
+//                           mainAxisSize: MainAxisSize.min,
+//                           children: [
+//                             // Put the logo here after logo is designed
+//                             Container(
+//                               height: 50,
+//                               width: 50,
+//                               color: AppStyle.primaryColor,
+//                               child: Image.asset(
+//                                 'assets/kms/settings.png',
+//                                 color: Colors.white,
+//                               ),
+//                             ),
+//                             const SizedBox(height: 16),
+
+//                             // Title
+//                             Text(
+//                               'Welcome Back',
+//                               style: AppStyle.heading1.copyWith(
+//                                 color: Colors.black,
+//                               ),
+//                             ),
+//                             const SizedBox(height: 8),
+
+//                             const SizedBox(height: 16),
+
+//                             // Email / Username
+//                             textFormField(
+//                               formFieldTopText: 'EMAIL',
+//                               controller: emailController,
+
+//                               icon: Icons.mail_outline,
+//                             ),
+//                             SizedBox(height: context.screenHeight * 0.02),
+
+//                             // Password
+//                             textFormField(
+//                               formFieldTopText: 'PASSWORD',
+//                               controller: passwordController,
+//                               icon: Icons.lock_outline,
+//                               isPassword: true,
+//                               fieldId: 'password',
+//                             ),
+//                             SizedBox(height: context.screenHeight * 0.04),
+
+//                             //Login Button
+//                             SizedBox(
+//                               width: double.infinity,
+//                               child: ElevatedButton(
+//                                 onPressed:
+//                                     isLoading
+//                                         ? null
+//                                         : () {
+//                                           if (_formKey.currentState!
+//                                               .validate()) {
+//                                             // Manage the navigation according to the role of the user
+//                                             Navigator.pushReplacement(
+//                                               context,
+//                                               MaterialPageRoute(
+//                                                 builder:
+//                                                     (context) =>
+//                                                         AdminDashboardScreen(),
+//                                               ),
+//                                             );
+//                                             // Navigator.pushReplacement(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             PartnerDashboardScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.pushReplacement(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             SchoolDashboardScreen(),
+//                                             //   ),
+//                                             // );
+
+//                                             // Navigator.pushReplacement(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             StudentDashboardScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.pushReplacement(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             StudentComplainBoxScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.pushReplacement(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             SchoolComplaintBoxStudentScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.pushReplacement(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             SchoolAttendanceScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.push(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             AdminComplaintScreen(),
+//                                             //   ),
+//                                             // );
+//                                             //         Navigator.push(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             PartenerAttendanceScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.push(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             StudentAttendanceScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.push(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             StudentTaskScreen(),
+//                                             //   ),
+//                                             // );
+//                                             //         Navigator.push(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             PartnerAssignmentManagementScreen(),
+//                                             //   ),
+//                                             // );
+//                                             //           Navigator.push(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             StudentExaminationScreen(),
+//                                             //   ),
+//                                             // );
+//                                             // Navigator.push(
+//                                             //   context,
+//                                             //   MaterialPageRoute(
+//                                             //     builder:
+//                                             //         (context) =>
+//                                             //             PartnerAssignedSchoolScreen(),
+//                                             //   ),
+//                                             // );
+//                                           }
+//                                         },
+//                                 style: ElevatedButton.styleFrom(
+//                                   backgroundColor: AppStyle.buttonColor,
+//                                   padding: const EdgeInsets.symmetric(
+//                                     vertical: 16,
+//                                   ),
+//                                   shape: RoundedRectangleBorder(
+//                                     borderRadius: BorderRadius.circular(12),
+//                                   ),
+//                                 ),
+//                                 child:
+//                                     isLoading
+//                                         ? const CircularProgressIndicator(
+//                                           color: Colors.white,
+//                                         )
+//                                         : Text(
+//                                           'Log in',
+//                                           style: TextStyle(
+//                                             fontSize: 18.0,
+//                                             fontWeight: FontWeight.bold,
+//                                             color: Colors.white,
+//                                           ),
+//                                         ),
+//                               ),
+//                             ),
+//                             SizedBox(height: context.screenHeight * 0.02),
+
+//                             // Login Link
+//                             Column(
+//                               children: [
+//                                 TextButton(
+//                                   onPressed: () {
+//                                     Navigator.pushReplacement(
+//                                       context,
+//                                       MaterialPageRoute(
+//                                         builder:
+//                                             (context) => ForgotPasswordScreen(),
+//                                       ),
+//                                     );
+//                                   },
+//                                   child: Text(
+//                                     'Forgot Password?',
+//                                     style: TextStyle(
+//                                       decoration: TextDecoration.underline,
+//                                       color: Colors.black,
+//                                       fontSize: AppStyle.mediumText,
+//                                     ),
+//                                   ),
+//                                 ),
+//                                 Row(
+//                                   mainAxisAlignment: MainAxisAlignment.center,
+//                                   children: [
+//                                     const Text(
+//                                       'Donot have an account? ',
+//                                       style: TextStyle(
+//                                         color: Colors.black,
+//                                         fontSize: AppStyle.mediumText,
+//                                       ),
+//                                     ),
+//                                     GestureDetector(
+//                                       onTap: () {
+//                                         Navigator.pushReplacement(
+//                                           context,
+//                                           MaterialPageRoute(
+//                                             builder:
+//                                                 (context) => SignupScreen(),
+//                                           ),
+//                                         );
+//                                       },
+//                                       child: const Text(
+//                                         'Signup',
+//                                         style: TextStyle(
+//                                           color: Colors.black,
+//                                           fontSize: AppStyle.mediumText,
+
+//                                           decoration: TextDecoration.underline,
+//                                         ),
+//                                       ),
+//                                     ),
+//                                   ],
+//                                 ),
+//                               ],
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget textFormField({
+//     required TextEditingController controller,
+//     required IconData icon,
+//     bool isPassword = false,
+//     required String formFieldTopText,
+//     String? fieldId,
+//   }) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text(
+//           formFieldTopText,
+//           style: TextStyle(
+//             fontSize: AppStyle.mediumText,
+//             fontWeight: FontWeight.w500,
+//             color: Colors.black,
+//           ),
+//         ),
+//         SizedBox(height: 5),
+//         Consumer(
+//           builder: (context, ref, child) {
+//             final obscureText =
+//                 isPassword && fieldId != null
+//                     ? ref.watch(obscureProvider(fieldId))
+//                     : false;
+
+//             return TextFormField(
+//               controller: controller,
+//               obscureText: obscureText,
+//               style: const TextStyle(color: Colors.black),
+//               decoration: InputDecoration(
+//                 labelStyle: const TextStyle(color: Colors.black),
+//                 filled: true,
+//                 fillColor: Colors.white,
+//                 border: OutlineInputBorder(
+//                   borderRadius: BorderRadius.circular(12),
+//                   borderSide: BorderSide(color: Colors.black),
+//                 ),
+//                 enabledBorder: OutlineInputBorder(
+//                   borderRadius: BorderRadius.circular(12),
+//                   borderSide: BorderSide(color: Colors.black),
+//                 ),
+//                 focusedBorder: OutlineInputBorder(
+//                   borderRadius: BorderRadius.circular(12),
+//                   borderSide: BorderSide(color: Colors.black, width: 2),
+//                 ),
+//                 suffixIcon:
+//                     isPassword && fieldId != null
+//                         ? IconButton(
+//                           icon: Icon(
+//                             obscureText
+//                                 ? Icons.visibility_off
+//                                 : Icons.visibility,
+//                             color: Colors.black,
+//                           ),
+//                           onPressed: () {
+//                             // Toggle the obscure state
+//                             ref.read(obscureProvider(fieldId).notifier).state =
+//                                 !obscureText;
+//                           },
+//                         )
+//                         : null,
+//               ),
+//               validator: (value) {
+//                 if (value == null || value.isEmpty) {
+//                   return 'Please enter $formFieldTopText';
+//                 }
+//                 return null;
+//               },
+//             );
+//           },
+//         ),
+//       ],
+//     );
+//   }
+// }
+
+
+
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:innovator/KMS/constants/app_style.dart';
-import 'package:innovator/KMS/constants/mediaquery.dart'; 
+import 'package:innovator/KMS/core/constants/app_style.dart';
+import 'package:innovator/KMS/core/constants/mediaquery.dart';
+import 'package:innovator/KMS/provider/auth_provider.dart'; 
 import 'package:innovator/KMS/screens/auth/forgot_password_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';  
-import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart'; 
+import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
-
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
   final _formKey = GlobalKey<FormState>();
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => isLoading = true);
+    try {
+      await ref.read(authProvider).login(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        );
+      }
+    } catch (e) { 
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/kms/auth_backgroundimage.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: context.screenHeight * 0.02,
-                bottom: context.screenHeight * .05,
-                right: context.screenWidth * 0.05,
-                left: context.screenWidth * 0.05,
+    return IgnorePointer(
+      ignoring: isLoading,
+      child: SafeArea(
+        child: Scaffold(
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/kms/auth_backgroundimage.png'),
+                fit: BoxFit.cover,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ColorFilter.mode(
-                    Color(0xffC3C9CD),
-
-                    BlendMode.dstOver,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white60,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white, width: 1.5),
+            ),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top: context.screenHeight * 0.02,
+                  bottom: context.screenHeight * 0.05,
+                  right: context.screenWidth * 0.05,
+                  left: context.screenWidth * 0.05,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ColorFilter.mode(
+                      const Color(0xffC3C9CD),
+                      BlendMode.dstOver,
                     ),
-                    child: SingleChildScrollView(
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Put the logo here after logo is designed
-                            Container(
-                              height: 50,
-                              width: 50,
-                              color: AppStyle.primaryColor,
-                              child: Image.asset(
-                                'assets/kms/settings.png',
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Title
-                            Text(
-                              'Welcome Back',
-                              style: AppStyle.heading1.copyWith(
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            const SizedBox(height: 16),
-
-                            // Email / Username
-                            textFormField(
-                              formFieldTopText: 'EMAIL',
-                              controller: emailController,
-
-                              icon: Icons.mail_outline,
-                            ),
-                            SizedBox(height: context.screenHeight * 0.02),
-
-                            // Password
-                            textFormField(
-                              formFieldTopText: 'PASSWORD',
-                              controller: passwordController,
-                              icon: Icons.lock_outline,
-                              isPassword: true,
-                              fieldId: 'password',
-                            ),
-                            SizedBox(height: context.screenHeight * 0.04),
-
-                            //Login Button
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed:
-                                    isLoading
-                                        ? null
-                                        : () {
-                                          if (_formKey.currentState!
-                                              .validate()) {
-                                            // Manage the navigation according to the role of the user
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (context) =>
-                                                        AdminDashboardScreen(),
-                                              ),
-                                            );
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             PartnerDashboardScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             SchoolDashboardScreen(),
-                                            //   ),
-                                            // );
-
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             StudentDashboardScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             StudentComplainBoxScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             SchoolComplaintBoxStudentScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             SchoolAttendanceScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             AdminComplaintScreen(),
-                                            //   ),
-                                            // );
-                                            //         Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             PartenerAttendanceScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             StudentAttendanceScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             StudentTaskScreen(),
-                                            //   ),
-                                            // );
-                                            //         Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             PartnerAssignmentManagementScreen(),
-                                            //   ),
-                                            // );
-                                            //           Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             StudentExaminationScreen(),
-                                            //   ),
-                                            // );
-                                            // Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder:
-                                            //         (context) =>
-                                            //             PartnerAssignedSchoolScreen(),
-                                            //   ),
-                                            // );
-                                          }
-                                        },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppStyle.buttonColor,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white60,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                height: 50,
+                                width: 50,
+                                color: AppStyle.primaryColor,
+                                child: Image.asset(
+                                  'assets/kms/settings.png',
+                                  color: Colors.white,
                                 ),
-                                child:
-                                    isLoading
-                                        ? const CircularProgressIndicator(
-                                          color: Colors.white,
-                                        )
-                                        : Text(
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Welcome Back',
+                                style: AppStyle.heading1.copyWith(
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                formFieldTopText: 'EMAIL',
+                                controller: emailController,
+                                icon: Icons.mail_outline,
+                                keyboardType: TextInputType.emailAddress,
+                              ),
+                              SizedBox(height: context.screenHeight * 0.02),
+                              _buildTextField(
+                                formFieldTopText: 'PASSWORD',
+                                controller: passwordController,
+                                icon: Icons.lock_outline,
+                                isPassword: true,
+                                fieldId: 'login_password',
+                              ),
+                              SizedBox(height: context.screenHeight * 0.04),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: isLoading ? null : _handleLogin,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppStyle.buttonColor,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: isLoading
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white)
+                                      : const Text(
                                           'Log in',
                                           style: TextStyle(
                                             fontSize: 18.0,
@@ -253,67 +556,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             color: Colors.white,
                                           ),
                                         ),
+                                ),
                               ),
-                            ),
-                            SizedBox(height: context.screenHeight * 0.02),
-
-                            // Login Link
-                            Column(
-                              children: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pushReplacement(
+                              SizedBox(height: context.screenHeight * 0.02),
+                              Column(
+                                children: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
-                                        builder:
-                                            (context) => ForgotPasswordScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    'Forgot Password?',
-                                    style: TextStyle(
-                                      decoration: TextDecoration.underline,
-                                      color: Colors.black,
-                                      fontSize: AppStyle.mediumText,
+                                          builder: (_) =>
+                                              ForgotPasswordScreen()),
                                     ),
-                                  ),
-                                ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'Donot have an account? ',
+                                    child: Text(
+                                      'Forgot Password?',
                                       style: TextStyle(
+                                        decoration: TextDecoration.underline,
                                         color: Colors.black,
                                         fontSize: AppStyle.mediumText,
                                       ),
                                     ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.pushReplacement(
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        'Don\'t have an account? ',
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: AppStyle.mediumText),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () => Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(
-                                            builder:
-                                                (context) => SignupScreen(),
+                                              builder: (_) =>
+                                                  const SignupScreen()),
+                                        ),
+                                        child: const Text(
+                                          'Signup',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: AppStyle.mediumText,
+                                            decoration:
+                                                TextDecoration.underline,
                                           ),
-                                        );
-                                      },
-                                      child: const Text(
-                                        'Signup',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: AppStyle.mediumText,
-
-                                          decoration: TextDecoration.underline,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -327,12 +622,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget textFormField({
+  Widget _buildTextField({
     required TextEditingController controller,
     required IconData icon,
     bool isPassword = false,
     required String formFieldTopText,
     String? fieldId,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,17 +641,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: Colors.black,
           ),
         ),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
         Consumer(
           builder: (context, ref, child) {
-            final obscureText =
-                isPassword && fieldId != null
-                    ? ref.watch(obscureProvider(fieldId))
-                    : false;
+            final obscureText = isPassword && fieldId != null
+                ? ref.watch(obscureProvider(fieldId))
+                : false;
 
             return TextFormField(
               controller: controller,
               obscureText: obscureText,
+              keyboardType: keyboardType,
               style: const TextStyle(color: Colors.black),
               decoration: InputDecoration(
                 labelStyle: const TextStyle(color: Colors.black),
@@ -363,32 +659,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.black),
+                  borderSide: const BorderSide(color: Colors.black),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.black),
+                  borderSide: const BorderSide(color: Colors.black),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.black, width: 2),
+                  borderSide: const BorderSide(color: Colors.black, width: 2),
                 ),
-                suffixIcon:
-                    isPassword && fieldId != null
-                        ? IconButton(
-                          icon: Icon(
-                            obscureText
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: Colors.black,
-                          ),
-                          onPressed: () {
-                            // Toggle the obscure state
-                            ref.read(obscureProvider(fieldId).notifier).state =
-                                !obscureText;
-                          },
-                        )
-                        : null,
+                suffixIcon: isPassword && fieldId != null
+                    ? IconButton(
+                        icon: Icon(
+                          obscureText
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.black,
+                        ),
+                        onPressed: () {
+                          ref.read(obscureProvider(fieldId).notifier).state =
+                              !obscureText;
+                        },
+                      )
+                    : null,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {

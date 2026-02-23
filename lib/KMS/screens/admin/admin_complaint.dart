@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:innovator/KMS/constants/app_style.dart';
+import 'package:innovator/KMS/core/constants/app_style.dart';
 import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 
 class AdminComplaintScreen extends StatefulWidget {

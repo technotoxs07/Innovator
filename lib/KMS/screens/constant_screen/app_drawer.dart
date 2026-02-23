@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:innovator/KMS/constants/app_style.dart';
-import 'package:innovator/KMS/constants/mediaquery.dart';
+import 'package:innovator/KMS/core/constants/app_style.dart';
+import 'package:innovator/KMS/core/constants/mediaquery.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/constant_screen/under_maintenance_page.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';

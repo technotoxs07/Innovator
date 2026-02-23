@@ -1,8 +1,8 @@
 import 'package:dotted_border/dotted_border.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; 
-import 'package:innovator/KMS/constants/app_style.dart';
-import 'package:innovator/KMS/constants/mediaquery.dart'; 
+import 'package:innovator/KMS/core/constants/app_style.dart';
+import 'package:innovator/KMS/core/constants/mediaquery.dart'; 
 
 class StudentTaskDetailsScreen extends ConsumerWidget {
   const StudentTaskDetailsScreen({super.key});
