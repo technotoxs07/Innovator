@@ -1,50 +1,3 @@
-// import 'dart:async';
-// import 'dart:developer';
-// import 'package:innovator/KMS/core/constants/api_constants.dart';
-// import 'package:innovator/KMS/core/constants/network/base_api_service.dart';
-// import 'package:innovator/KMS/core/constants/network/dio_client.dart';
-// import 'package:innovator/KMS/core/constants/service/token_service.dart';
-
-// class AuthService extends BaseApiService {
-//   AuthService() : super(dio: DioClient.authInstance);
-
-//   final TokenService _tokenService = TokenService();
-//   Future<void> logout() async {
-//     await _tokenService.clearTokens();
-//     log("Logging Out:${_tokenService.clearTokens()}");
-//   }
-
-//   Future<Map<String, dynamic>> login({
-//     required String email,
-//     required String password,
-//   }) async {
-//     return await post(
-//       ApiConstants.login,
-//       data: {'email': email, 'password': password},
-//     );
-//   }
-
-//   Future<Map<String, dynamic>> register({
-//     required String userName,
-//     required String email,
-//     required String password,
-//     required String role,
-//   }) async {
-//     return await post(
-//       ApiConstants.register,
-
-//       data: {
-//         'username': userName,
-//         'email': email,
-//         'password': password,
-//         'role': role,
-//       },
-//     );
-//   }
-// }
-
-
-
 import 'dart:developer';
 
 import 'package:innovator/KMS/core/constants/api_constants.dart';
@@ -57,24 +10,60 @@ class AuthService extends BaseApiService {
 
   final TokenService _tokenService = TokenService();
 
-  // ─── Login ────────────────────────────────────────────────────────────────
+  // Future<Map<String, dynamic>> login({
+  //   required String email,
+  //   required String password,
+  // }) async {
+  //   return await post<Map<String, dynamic>>(
+  //     ApiConstants.login,
+  //     data: {'email': email, 'password': password},
+  //   );
+  // }
 
-  /// Returns the full response map.
-  /// Tokens are saved automatically by [AppInterceptor._autoSaveToken].
-  Future<Map<String, dynamic>> login({
+  // Future<Map<String, dynamic>> register({
+  //   required String userName,
+  //   required String email,
+  //   required String password,
+  //   required String role,
+  // }) async {
+  //   return await post<Map<String, dynamic>>(
+  //     ApiConstants.register,
+  //     data: {
+  //       'username': userName,
+  //       'email': email,
+  //       'password': password,
+  //       'role': role,
+  //     },
+  //   );
+  // }
+
+  // Future<void> logout() async {
+  //   await _tokenService.clearTokens();
+  //   DioClient.reset();
+  //   log('✅ Logged out — tokens cleared and Dio reset');
+  // }
+
+  // Future<bool> isLoggedIn() async {
+  //   return await _tokenService.hasToken();
+  // }
+
+    Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
-    return await post<Map<String, dynamic>>(
+    final response = await post<Map<String, dynamic>>(
       ApiConstants.login,
-      data: {
-        'email': email,
-        'password': password,
-      },
+      data: {'email': email, 'password': password},
     );
-  }
 
-  // ─── Register ─────────────────────────────────────────────────────────────
+    final role = response['role'] as String?;
+    if (role != null && role.isNotEmpty) {
+      await _tokenService.saveRole(role);
+      log('💾 Role saved: $role');
+    }
+
+    return response;
+  }
 
   Future<Map<String, dynamic>> register({
     required String userName,
@@ -82,7 +71,7 @@ class AuthService extends BaseApiService {
     required String password,
     required String role,
   }) async {
-    return await post<Map<String, dynamic>>(
+    final response = await post<Map<String, dynamic>>(
       ApiConstants.register,
       data: {
         'username': userName,
@@ -91,21 +80,25 @@ class AuthService extends BaseApiService {
         'role': role,
       },
     );
-  }
 
-  // ─── Logout ───────────────────────────────────────────────────────────────
+    await _tokenService.saveRole(role);
+    log('💾 Role saved on register: $role');
+
+    return response;
+  }
 
   Future<void> logout() async {
-    await _tokenService.clearTokens();
-    DioClient.reset(); // Reset Dio so stale tokens are not reused
-    log('✅ Logged out — tokens cleared and Dio reset');
+    await _tokenService.clearTokens(); 
+    DioClient.reset();
+    log('✅ Logged out — tokens and role cleared, Dio reset');
   }
 
-  // ─── Auth State ───────────────────────────────────────────────────────────
-
-  /// Returns true if a valid access token exists in storage.
   Future<bool> isLoggedIn() async {
     return await _tokenService.hasToken();
+  }
+
+  Future<String?> getSavedRole() async {
+    return await _tokenService.getRole();
   }
 
   //   Future<Map<String, dynamic>> forgotPassword({required String email}) async {

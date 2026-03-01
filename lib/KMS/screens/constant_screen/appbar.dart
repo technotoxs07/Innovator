@@ -12,6 +12,7 @@ class AppbarScreen extends ConsumerWidget {
     return AppBar(
       iconTheme: IconThemeData(color: AppStyle.primaryColor),
       elevation: 0,
+      scrolledUnderElevation: 0,
       backgroundColor: AppStyle.backgroundColor,
       title: SearchBar(
         padding: WidgetStatePropertyAll(EdgeInsets.only(left: 15)),

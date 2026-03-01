@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:innovator/Innovator/Authorization/Login.dart';
 import 'package:innovator/KMS/core/constants/app_style.dart';
 import 'package:innovator/KMS/core/constants/mediaquery.dart';
 import 'package:innovator/KMS/provider/auth_provider.dart';
@@ -48,7 +49,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+          MaterialPageRoute(builder: (_) => LoginPage()),
         );
       }
     } catch (e) {

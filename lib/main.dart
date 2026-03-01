@@ -14,6 +14,7 @@ import 'package:get/get.dart';
 import 'package:innovator/Innovator/App_data/App_data.dart';
 import 'package:innovator/Innovator/services/in_app_notifcation.dart';
 import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
+import 'package:innovator/KMS/core/constants/service/auth_wrapper.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
@@ -563,7 +564,9 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
       theme: _buildAppTheme(),
       debugShowCheckedModeBanner: false,
       // home: const SplashScreen(),
-      home: LoginScreen(),
+      // home: LoginScreen(),
+      home:   AuthWrapper(),
+      // home: PartnerDashboardScreen(),
       onInit: () {
         developer.log('🎮 GetX onInit called');
         // Lazy initialization of controllers
