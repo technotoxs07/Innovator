@@ -565,8 +565,9 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
       debugShowCheckedModeBanner: false,
       // home: const SplashScreen(),
       // home: LoginScreen(),
-      home:   AuthWrapper(),
-      // home: PartnerDashboardScreen(),
+      // use this authwrapper when in the production when the token things is solved
+      // home:   AuthWrapper(),
+      home: PartnerDashboardScreen(),
       onInit: () {
         developer.log('🎮 GetX onInit called');
         // Lazy initialization of controllers
@@ -580,7 +581,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
         } catch (e) {
           developer.log('❌ Controller initialization error: $e');
         }
-      }, 
+      },
       getPages: [
         GetPage(
           name: '/home',

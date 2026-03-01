@@ -6,6 +6,7 @@ import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/constant_screen/under_maintenance_page.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/partner/kyc_upload_screen.dart';
 import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart';
 import 'package:innovator/KMS/screens/student/student_examination.dart';
 
@@ -44,7 +45,7 @@ class AppDrawer extends ConsumerWidget {
     DrawerItemData(
       title: 'Teacher KYC',
       image: 'assets/kms/drawer/teacher.png',
-      screen: UnderMaintenanceScreen(),
+      screen: KycUploadScreen(),
     ),
     DrawerItemData(
       title: 'Salary + Commission Partner',
