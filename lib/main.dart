@@ -445,9 +445,7 @@ void main() async {
         // Start the app
         developer.log('🎨 Starting UI...');
         runApp(
-          DevicePreview(
-            builder: (context) => ProviderScope(child: InnovatorHomePage()),
-          ),
+          ProviderScope(child: InnovatorHomePage()),
         );
 
         // Initialize non-critical services in background

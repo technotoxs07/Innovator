@@ -28,9 +28,9 @@ class AuthWrapper extends StatelessWidget {
       switch (role?.toLowerCase()) {
         case 'admin':
           return const AdminDashboardScreen();
-        case 'partner':
+        case 'teacher':
           return const PartnerDashboardScreen();
-        case 'school':
+        case 'coordiantor':
           return const SchoolDashboardScreen();
         case 'student':
           return const StudentDashboardScreen();

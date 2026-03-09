@@ -32,11 +32,12 @@ class TeacherService extends BaseApiService {
 
  
 
-  Future<Map<String, dynamic>> checkOut({required String schoolId}) async {
+  Future<Map<String, dynamic>> checkOut({required String schoolId,required id}) async {
     return await post<Map<String, dynamic>>(
-      ApiConstants.teacherCheckOut,
+      ApiConstants.teacherCheckOut(id),
       data: {
         'school': schoolId,
+      
         'check_out': DateTime.now().toIso8601String(),
       },
     );

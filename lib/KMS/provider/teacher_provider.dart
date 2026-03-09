@@ -1,6 +1,4 @@
-
 import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/KMS/api_calling_services.dart/teacher_service.dart';
 import 'package:innovator/KMS/model/teacher_model/teacher-profile.dart';
@@ -19,7 +17,7 @@ final checkInProvider = FutureProvider.family<Map<String, dynamic>, String>(
 );
 
 final checkOutProvider = FutureProvider.family<Map<String, dynamic>, String>(
-  (ref, schoolId) => ref.read(teacherServiceProvider).checkOut(schoolId: schoolId),
+  (ref, schoolId) => ref.read(teacherServiceProvider).checkOut(schoolId: schoolId, id: 'id'),
 );
 
 final kycUploadProvider = FutureProvider.family<Map<String, dynamic>, File>(
