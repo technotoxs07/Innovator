@@ -2302,17 +2302,17 @@ import 'package:innovator/KMS/core/constants/app_style.dart';
 import 'package:innovator/KMS/core/constants/mediaquery.dart';
 import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 import 'package:innovator/KMS/provider/teacher_provider.dart';
-import 'package:innovator/KMS/screens/partner/kyc_upload_screen.dart';
+import 'package:innovator/KMS/screens/teacher/kyc_upload_screen.dart';
 
-class PartnerDashboardScreen extends ConsumerStatefulWidget {
-  const PartnerDashboardScreen({super.key});
+class TeacherDashboardScreen extends ConsumerStatefulWidget {
+  const TeacherDashboardScreen({super.key});
 
   @override
-  ConsumerState<PartnerDashboardScreen> createState() =>
-      _PartnerDashboardScreenState();
+  ConsumerState<TeacherDashboardScreen> createState() =>
+      _TeacherDashboardScreenState();
 }
 
-class _PartnerDashboardScreenState extends ConsumerState<PartnerDashboardScreen>
+class _TeacherDashboardScreenState extends ConsumerState<TeacherDashboardScreen>
     with SingleTickerProviderStateMixin {
   bool _isPaymentFlipped = false;
   late AnimationController _flipController;
@@ -2450,134 +2450,7 @@ class _PartnerDashboardScreenState extends ConsumerState<PartnerDashboardScreen>
 
             _buildKycBanner(context),
 
-            // const SizedBox(height: 30),
-            // Container(
-            //   width: double.infinity,
-            //   height: 250,
-            //   decoration: BoxDecoration(
-            //     borderRadius: BorderRadius.circular(14),
-            //     border: Border.all(color: Colors.black),
-            //   ),
-            //   child: Padding(
-            //     padding: const EdgeInsets.only(
-            //       right: 8,
-            //       left: 8,
-            //       top: 10,
-            //       bottom: 8,
-            //     ),
-            //     child: Column(
-            //       children: [
-            //         Center(
-            //           child: Text(
-            //             'This Week Classes',
-            //             style: TextStyle(
-            //               fontSize: 20,
-            //               fontFamily: AppStyle.fontFamilySecondary,
-            //             ),
-            //           ),
-            //         ),
-            //         const SizedBox(height: 15),
-            //         Expanded(
-            //           child: SingleChildScrollView(
-            //             scrollDirection: Axis.horizontal,
-            //             child: _thisWeekClassesTable(),
-            //           ),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
-            // ),
-
-            // const SizedBox(height: 30),
-            // Container(
-            //   width: double.infinity,
-            //   height: 250,
-            //   decoration: BoxDecoration(
-            //     borderRadius: BorderRadius.circular(14),
-            //     border: Border.all(color: Colors.black),
-            //   ),
-            //   child: SingleChildScrollView(
-            //     child: Padding(
-            //       padding: const EdgeInsets.only(right: 8, left: 8, top: 10),
-            //       child: Column(
-            //         crossAxisAlignment: CrossAxisAlignment.start,
-            //         children: [
-            //           const Center(
-            //             child: Text(
-            //               'Leaderboard',
-            //               style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-            //             ),
-            //           ),
-            //           const SizedBox(height: 8),
-            //           const Text('You are ranked #4 this week'),
-            //           const SizedBox(height: 16),
-            //           leaderboardWidget(),
-            //         ],
-            //       ),
-            //     ),
-            //   ),
-            // ),
-
-            // const SizedBox(height: 30),
-            // Container(
-            //   width: double.infinity,
-            //   height: 250,
-            //   decoration: BoxDecoration(
-            //     borderRadius: BorderRadius.circular(14),
-            //     border: Border.all(color: Colors.black),
-            //   ),
-            //   child: Padding(
-            //     padding: const EdgeInsets.only(
-            //       right: 8,
-            //       left: 8,
-            //       top: 10,
-            //       bottom: 5,
-            //     ),
-            //     child: Column(
-            //       crossAxisAlignment: CrossAxisAlignment.start,
-            //       children: [
-            //         const Text(
-            //           'Student Monitoring',
-            //           style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-            //         ),
-            //         const SizedBox(height: 16),
-            //         Row(
-            //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //           children: [
-            //             Container(
-            //               decoration: BoxDecoration(
-            //                 borderRadius: BorderRadius.circular(5),
-            //                 border: Border.all(color: Colors.black),
-            //               ),
-            //               child: const Padding(
-            //                 padding: EdgeInsets.symmetric(
-            //                   horizontal: 8,
-            //                   vertical: 0,
-            //                 ),
-            //                 child: Text('Class 1- Attendance'),
-            //               ),
-            //             ),
-            //             IconButton(
-            //               onPressed: () {},
-            //               icon: Icon(
-            //                 Icons.filter_alt,
-            //                 color: AppStyle.primaryColor,
-            //                 size: 30,
-            //               ),
-            //             ),
-            //           ],
-            //         ),
-            //         Expanded(
-            //           child: SingleChildScrollView(
-            //             scrollDirection: Axis.horizontal,
-            //             child: _studentMonitoringTable(),
-            //           ),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
-            // ),
-            // const SizedBox(height: 30),
+       
           ],
         ),
       ),

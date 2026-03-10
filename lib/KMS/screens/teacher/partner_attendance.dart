@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:innovator/KMS/core/constants/app_style.dart';
 import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
-import 'package:innovator/KMS/screens/partner/partner_attendance_specific_school.dart';
+import 'package:innovator/KMS/screens/teacher/partner_attendance_specific_school.dart';
 
 class PartenerAttendanceScreen extends ConsumerWidget {
   const PartenerAttendanceScreen({super.key});

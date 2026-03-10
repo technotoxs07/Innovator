@@ -19,7 +19,7 @@ class AuthWrapper extends StatelessWidget {
 
       if (!isLoggedIn) {
         log('🔐 No token found — showing LoginScreen');
-        return const LoginScreen();
+        return const KmsLoginScreen();
       }
 
       final role = await authService.getSavedRole();
@@ -29,18 +29,18 @@ class AuthWrapper extends StatelessWidget {
         case 'admin':
           return const AdminDashboardScreen();
         case 'teacher':
-          return const PartnerDashboardScreen();
+          return const TeacherDashboardScreen();
         case 'coordiantor':
           return const SchoolDashboardScreen();
         case 'student':
           return const StudentDashboardScreen();
         default: 
           log('⚠️ Unknown role "$role" — falling back to LoginScreen');
-          return const LoginScreen();
+          return const KmsLoginScreen();
       }
     } catch (e) {
       log('❌ AuthWrapper error: $e — falling back to LoginScreen');
-      return const LoginScreen();
+      return const KmsLoginScreen();
     }
   }
 
@@ -58,10 +58,10 @@ class AuthWrapper extends StatelessWidget {
         }
  
         if (snapshot.hasError) {
-          return const LoginScreen();
+          return const KmsLoginScreen();
         }
  
-        return snapshot.data ?? const LoginScreen();
+        return snapshot.data ?? const KmsLoginScreen();
       },
     );
   }

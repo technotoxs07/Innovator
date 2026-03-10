@@ -8,7 +8,7 @@ class ApiConstants {
   static String get register => '$authBaseUrl/auth/register/';
   static String get login => '$authBaseUrl/auth/sso/login/';
   //profile data
-  static String get myProfile => '$baseUrl/auth/user/me';
+  static String get myProfile => '$baseUrl/user/me';
 
   //teacher endpoints
   static String get teacherProfile => '$baseUrl/teacher/profile/';

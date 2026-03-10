@@ -149,7 +149,7 @@ class _ForgotPasswordScreen extends ConsumerState<ForgotPasswordScreen> {
                                     Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => LoginScreen(),
+                                        builder: (context) => KmsLoginScreen(),
                                       ),
                                     );
                                   },

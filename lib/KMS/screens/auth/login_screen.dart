@@ -7,18 +7,18 @@ import 'package:innovator/KMS/provider/user_provider.dart';
 import 'package:innovator/KMS/screens/auth/forgot_password_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/coordinator_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart'; 
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class KmsLoginScreen extends ConsumerStatefulWidget {
+  const KmsLoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<KmsLoginScreen> createState() => _KmsLoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _KmsLoginScreenState extends ConsumerState<KmsLoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
@@ -31,125 +31,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  // Future<void> _handleLogin() async {
-  //   if (!_formKey.currentState!.validate()) return;
-
-  //   setState(() => isLoading = true);
-  //   try {
-  //     await ref
-  //         .read(authProvider)
-  //         .login(
-  //           email: emailController.text.trim(),
-  //           password: passwordController.text.trim(),
-  //         );
-
-  //     final userDetails = await ref.refresh(userDetailsProvider.future);
-
-  //     if (mounted) {
-  //       final role = userDetails.role;
-  //       if (role == 'admin') {
-  //         Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(builder: (_) =>  AdminDashboardScreen()),
-  //         );
-  //       } else if (role == 'coordinator') {
-  //         Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(builder: (_) => SchoolDashboardScreen()),
-  //         );
-  //       } else if (role == 'teacher') {
-  //         Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(builder: (_) => PartnerDashboardScreen()),
-  //         );
-  //       } else if (role == 'student') {
-  //         Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(builder: (_) => StudentDashboardScreen()),
-  //         );
-  //       } else {
-  //         Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(builder: (_) => PartnerDashboardScreen()),
-  //         );
-  //       }
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Error: $e');
-  //   } finally {
-  //     if (mounted) setState(() => isLoading = false);
-  //   }
-  // }
-
   Future<void> _handleLogin() async {
-  if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
 
-  setState(() => isLoading = true);
-  try {
-    final response = await ref.read(authProvider).login(
-      email: emailController.text.trim(),
-      password: passwordController.text.trim(),
-    );
+    setState(() => isLoading = true);
+    try {
+      final response = await ref
+          .read(authProvider)
+          .login(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
 
-   
-    final role = response['user']['role'] as String? ?? '';
+      final role = response['user']['role'] as String? ?? '';
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    switch (role) {
-      case 'admin':
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminDashboardScreen()));
-        break;
-      case 'coordinator':
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SchoolDashboardScreen()));
-        break;
-      case 'teacher':
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PartnerDashboardScreen()));
-        break;
-      case 'student':
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => StudentDashboardScreen()));
-        break;
-      default:
+      switch (role) {
+        case 'admin':
+        ref.refresh(userDetailsProvider);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminDashboardScreen()),
+          );
+          break;
+        case 'coordinator':
+        ref.refresh(userDetailsProvider);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => CoordinatorDashboardScreen()),
+          );
+          break;
+        case 'teacher':
+        ref.refresh(userDetailsProvider);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => TeacherDashboardScreen()),
+          );
+          break;
+        case 'student':
+        ref.refresh(userDetailsProvider);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => StudentDashboardScreen()),
+          );
+          break;
+        default:
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Unknown role: $role')));
+      }
+    } catch (e) {
+      debugPrint('Login error: $e');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unknown role: $role')),
+          const SnackBar(content: Text('Login failed. Please try again.')),
         );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-  } catch (e) {
-    debugPrint('Login error: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login failed. Please try again.')),
-      );
-    }
-  } finally {
-    if (mounted) setState(() => isLoading = false);
   }
-}
-  // Future<void> _handleLogin() async {
-  //   if (!_formKey.currentState!.validate()) return;
 
-  //   setState(() => isLoading = true);
-  //   try {
-  //     await ref.read(authProvider).login(
-  //           email: emailController.text.trim(),
-  //           password: passwordController.text.trim(),
-  //         );
-
-  //     if (mounted) {
-       
-  //       Navigator.pushReplacement(
-  //         context,
-  //         MaterialPageRoute(builder: (_) =>
-  //         //  const AdminDashboardScreen()
-  //         PartnerDashboardScreen()
-  //          ),
-  //       );
-  //     }
-  //   } catch (e) { 
-  //   } finally {
-  //     if (mounted) setState(() => isLoading = false);
-  //   }
-  // }
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(

@@ -10,7 +10,6 @@
 //     this.address,
 //     this.createdAt,
 //   });
-
 //   factory SchoolListModel.fromJson(Map<String, dynamic> json) {
 //     return SchoolListModel(
 //       id: json['id'] as String?,
@@ -30,7 +29,4 @@
 //       'created_at': createdAt?.toIso8601String(),
 //     };
 //   }
-
- 
- 
 // }

@@ -49,7 +49,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => LoginPage()),
+          MaterialPageRoute(builder: (_) => KmsLoginScreen()),
         );
       }
     } catch (e) {
@@ -302,7 +302,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                         () => Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (_) => const LoginScreen(),
+                                            builder: (_) => const KmsLoginScreen(),
                                           ),
                                         ),
                                     child: const Text(

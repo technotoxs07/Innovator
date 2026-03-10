@@ -426,7 +426,7 @@ class _TrueInstantDrawerState extends State<TrueInstantDrawer> {
                         setState(() => _KMSEnabled = value);
                         if(value)
                         {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => KmsLoginScreen()));
                         }
                       },
                      // activeColor: Colors.white,

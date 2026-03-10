@@ -1,791 +1,361 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:innovator/KMS/screens/constant_screen/app_drawer.dart';
 import 'package:innovator/KMS/core/constants/app_style.dart';
-import 'package:innovator/KMS/core/constants/mediaquery.dart';
-import 'package:innovator/KMS/screens/constant_screen/appbar.dart';
+import 'package:innovator/KMS/screens/constant_screen/app_drawer.dart'; 
 import 'package:innovator/KMS/screens/constant_screen/custom_scroll.dart';
 
+// ─── Models ─────────────────────────────────────────────────────────────────
+
+class StudentAttendanceRecord {
+  final String date;
+  final String subject;
+  final String teacherName;
+  final bool isPresent;
+  final String className;
+  const StudentAttendanceRecord({
+    required this.date,
+    required this.subject,
+    required this.teacherName,
+    required this.isPresent,
+    required this.className,
+  });
+}
+
+class StudentAttendanceStats {
+  final int totalDays;
+  final int presentDays;
+  final int absentDays;
+  final double attendancePercentage;
+  final String studentName;
+  final String className;
+  final String rollNo;
+  const StudentAttendanceStats({
+    required this.totalDays,
+    required this.presentDays,
+    required this.absentDays,
+    required this.attendancePercentage,
+    required this.studentName,
+    required this.className,
+    required this.rollNo,
+  });
+}
+
+// ─── Providers ───────────────────────────────────────────────────────────────
+
+final studentAttendanceStatsProvider = FutureProvider<StudentAttendanceStats>((ref) async {
+  await Future.delayed(const Duration(milliseconds: 700));
+  return const StudentAttendanceStats(
+    totalDays: 55,
+    presentDays: 48,
+    absentDays: 7,
+    attendancePercentage: 87.3,
+    studentName: 'Aarav Sharma',
+    className: 'Class 8',
+    rollNo: '05',
+  );
+});
+
+final studentAttendanceRecordsProvider = FutureProvider<List<StudentAttendanceRecord>>((ref) async {
+  await Future.delayed(const Duration(milliseconds: 600));
+  return const [
+    StudentAttendanceRecord(date: '10 Mar 2026', subject: 'Mathematics', teacherName: 'Ramesh Thapa', isPresent: true, className: 'Class 8'),
+    StudentAttendanceRecord(date: '9 Mar 2026', subject: 'Science', teacherName: 'Sunita Karki', isPresent: true, className: 'Class 8'),
+    StudentAttendanceRecord(date: '8 Mar 2026', subject: 'Mathematics', teacherName: 'Ramesh Thapa', isPresent: false, className: 'Class 8'),
+    StudentAttendanceRecord(date: '7 Mar 2026', subject: 'English', teacherName: 'Bijay Rai', isPresent: true, className: 'Class 8'),
+    StudentAttendanceRecord(date: '6 Mar 2026', subject: 'Mathematics', teacherName: 'Ramesh Thapa', isPresent: true, className: 'Class 8'),
+    StudentAttendanceRecord(date: '5 Mar 2026', subject: 'Science', teacherName: 'Sunita Karki', isPresent: false, className: 'Class 8'),
+    StudentAttendanceRecord(date: '4 Mar 2026', subject: 'English', teacherName: 'Bijay Rai', isPresent: true, className: 'Class 8'),
+    StudentAttendanceRecord(date: '3 Mar 2026', subject: 'Mathematics', teacherName: 'Ramesh Thapa', isPresent: true, className: 'Class 8'),
+  ];
+});
+
+ 
 class StudentDashboardScreen extends ConsumerWidget {
   const StudentDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return  CustomScrolling(
+    final statsAsync = ref.watch(studentAttendanceStatsProvider);
+    final recordsAsync = ref.watch(studentAttendanceRecordsProvider);
+
+    return Scaffold( 
+      backgroundColor: AppStyle.primaryColor,
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFFF5F7FA),
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+        ),
+        child: CustomScrolling(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+
+              // ── Student Info + Attendance Card ──
+              statsAsync.when(
+                loading: () => _StatsSkeleton(),
+                error: (_, __) => const SizedBox(),
+                data: (stats) => _AttendanceHeroCard(stats: stats),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Filter bar ──
+              Row(
+                children: [
+                  const Text('Attendance Log', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter', color: Colors.black87)),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.filter_list_rounded, size: 15, color: AppStyle.primaryColor),
+                        const SizedBox(width: 5),
+                        Text('This Month', style: TextStyle(fontSize: 12, color: AppStyle.primaryColor, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // ── Records List ──
+              recordsAsync.when(
+                loading: () => const Center(child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(),
+                )),
+                error: (_, __) => const SizedBox(),
+                data: (records) => Column(
+                  children: records.map((r) => _AttendanceLogTile(record: r)).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Hero Attendance Card ─────────────────────────────────────────────────────
+
+class _AttendanceHeroCard extends StatelessWidget {
+  final StudentAttendanceStats stats;
+  const _AttendanceHeroCard({required this.stats});
+
+  Color get _statusColor {
+    if (stats.attendancePercentage >= 85) return Colors.green;
+    if (stats.attendancePercentage >= 70) return Colors.orange;
+    return Colors.red;
+  }
+
+  String get _statusLabel {
+    if (stats.attendancePercentage >= 85) return 'Excellent';
+    if (stats.attendancePercentage >= 70) return 'Average';
+    return 'Poor';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppStyle.primaryColor, AppStyle.primaryColor.withValues(alpha: 0.80)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: AppStyle.primaryColor.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Grid Content
-            GridView(
-              shrinkWrap: true,
- padding: EdgeInsets.all(0),
-              physics: const NeverScrollableScrollPhysics(),
-
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.4,
-                crossAxisSpacing: 10,
-
-                mainAxisSpacing: 10,
-              ),
-
+            // ── Student info ──
+            Row(
               children: [
-                //Attendance Rate
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
                   ),
-                  color: Colors.white,
-                  elevation: 5,
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          child: Text(
-                            'Attendance Rate',
-                            style: AppStyle.heading2.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppStyle.fontFamilySecondary,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                
-                        Flexible(
-                          child: CustomPaint(
-                            painter: AttendanceRate(
-                              percentage:
-                                  75, //pass the backend value later when it comes from the backends
-                            ),
-                            size: Size(
-                              context.screenWidth * 0.2,
-                              context.screenHeight * 0.1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: Center(
+                    child: Text(stats.studentName[0], style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                   ),
                 ),
-                //Tutor Performance
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  color: Colors.white,
-                  elevation: 5,
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      right: 17,
-                      left: 17,
-                      top: 10,
-                      bottom: 10,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          child: Text(
-                            'Tutor Performance',
-                            style: AppStyle.heading2.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppStyle.fontFamilySecondary,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: context.screenHeight * 0.009),
-                        Row(
-                          children: [
-                            Image.asset(
-                              width: 35,
-                              height: 35,
-                              'assets/kms/add_task.png',
-                            ),
-                            SizedBox(width: 10),
-                            Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '3',
-                                    style: TextStyle(fontFamily: 'Inter'),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    'Total Tasks-5',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontFamily: 'Inter',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(stats.studentName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
+                      Text('${stats.className}  ·  Roll No: ${stats.rollNo}', style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 12, fontFamily: 'Inter')),
+                    ],
                   ),
                 ),
-                //Overall Progress
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _statusColor.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                   ),
-                  color: Colors.white,
-                  elevation: 5,
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 15, left: 15, top: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          child: Text(
-                            'Overall Progress',
-                            style: AppStyle.heading2.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppStyle.fontFamilySecondary,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                
-                        Flexible(
-                          child: Row(
-                            children: [
-                              CustomPaint(
-                                painter: OverallProgressPieChart(
-                                  progressValue: 75,
-                                ),
-                                size: Size(
-                                  context.screenWidth * 0.2,
-                                  context.screenHeight * 0.1,
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Padding(
-                                padding: EdgeInsets.only(bottom: 40),
-                                child: Text(
-                                  '75%', //pass the same value passed in the progress value later that comes from the backend
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: Text(_statusLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Inter')),
                 ),
-                // New materials
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  color: Colors.white,
-                  elevation: 5,
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 30, left: 30, top: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'New materials added this week',
-                          // textAlign: TextAlign.justify,
-                          style: AppStyle.heading2.copyWith(fontSize: 13),
-                        ),
+              ],
+            ),
 
-                        SizedBox(height: 10),
-                        Text(
-                          '3',
-                          style: TextStyle(fontFamily: 'Inter', fontSize: 15),
-                        ),
-                      ],
-                    ),
+            const SizedBox(height: 22),
+
+            // ── Percentage display ──
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('${stats.attendancePercentage.toStringAsFixed(1)}%', style: const TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                const SizedBox(width: 10),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text('Attendance Rate', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontFamily: 'Inter')),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── Progress Bar ──
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: stats.attendancePercentage / 100,
+                minHeight: 8,
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(_statusColor),
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // ── Stats row ──
+            Row(
+              children: [
+                Expanded(child: _miniStat('Total Days', '${stats.totalDays}', Colors.white)),
+                _divider(),
+                Expanded(child: _miniStat('Present', '${stats.presentDays}', Colors.greenAccent)),
+                _divider(),
+                Expanded(child: _miniStat('Absent', '${stats.absentDays}', Colors.redAccent)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11, fontFamily: 'Inter')),
+      ],
+    );
+  }
+
+  Widget _divider() => Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.2));
+}
+
+// ─── Attendance Log Tile ──────────────────────────────────────────────────────
+
+class _AttendanceLogTile extends StatelessWidget {
+  final StudentAttendanceRecord record;
+  const _AttendanceLogTile({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: record.isPresent ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.15),
+          width: 1.2,
+        ),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: record.isPresent ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                record.isPresent ? Icons.check_rounded : Icons.close_rounded,
+                color: record.isPresent ? Colors.green.shade600 : Colors.red.shade400,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(record.subject, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, fontFamily: 'Inter', color: Colors.black87)),
+                  const SizedBox(height: 3),
+                  Text(record.teacherName, style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontFamily: 'Inter')),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(record.date, style: TextStyle(fontSize: 12, color: Colors.grey.shade400, fontFamily: 'Inter')),
+                const SizedBox(height: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: record.isPresent ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    record.isPresent ? 'Present' : 'Absent',
+                    style: TextStyle(fontSize: 11, color: record.isPresent ? Colors.green.shade700 : Colors.red.shade500, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 30),
-
-            // Learning Material
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.black),
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: 8,
-                    left: 8,
-                    top: 4,
-                    bottom: 5,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Center(
-                        child: Text(
-                          'Learning Materials',
-                          style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-                        ),
-                      ),
-                      SizedBox(height: 15),
-                      GridView(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.6,
-                          crossAxisSpacing: 10,
-
-                          mainAxisSpacing: 10,
-                        ),
-                        children: [
-                          learningMaterialCard(
-                            image: 'assets/kms/video.png',
-                            label: 'Video',
-                            value: '2 Lessons',
-                            completed: 1,
-                            total: 2,
-                          ),
-                          learningMaterialCard(
-                            image: 'assets/kms/notes.png',
-                            label: 'NOtes',
-                            value: '1 Lessons',
-                            completed: 1,
-                            total: 3,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 30),
-            // Exam Section
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.black),
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: 8,
-                    left: 8,
-                    top: 4,
-                    bottom: 5,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Center(
-                        child: Text(
-                          'Exam Section',
-                          style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-                        ),
-                      ),
-                      SizedBox(height: 15),
-                      GridView(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.7,
-                          crossAxisSpacing: 10,
-
-                          mainAxisSpacing: 10,
-                        ),
-                        children: [
-                          examSectionCard(
-                            examStatus: 'Previous Exam',
-                            subject: 'Robotics',
-                            date: 'November 1',
-                          ),
-                          examSectionCard(
-                            examStatus: 'Upcoming Exam',
-                            subject: 'IoT',
-                            date: 'November 16',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(height: 30),
-            // Tutor Monitoring Container
-            Container(
-              width: double.infinity,
-              height: 270,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.black),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(right: 8, left: 8, top: 10, bottom: 5),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tutor Monitoring',
-                      style: TextStyle(fontSize: 20, fontFamily: 'Inter'),
-                    ),
-                    SizedBox(height: 15),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: _tutorMonitoringTable(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-    
-    );
-  }
-
-  // Learning Material Card
-
-  Widget learningMaterialCard({
-    required String image,
-    required String label,
-    required String value,
-    required int completed,
-    required int total,
-  }) {
-    final double completedRatio = total == 0 ? 0.0 : completed / total;
-
-    final int completedFlex = (completedRatio * 1000).round();
-    final int pendingFlex = (1000 - completedFlex).round();
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      color: Colors.white,
-      elevation: 5,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 15, left: 15, top: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FittedBox(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset(image, width: 46, height: 48),
-                  SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                        ),
-                      ),
-                      Text(value),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 15),
-            Padding(
-              padding: EdgeInsets.only(left: 20),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  width: 65,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.grey,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: completedFlex,
-                        child: Container(color: AppStyle.primaryColor),
-                      ),
-
-                      Expanded(
-                        flex: pendingFlex,
-                        child: const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
-
-  //ExamSection Card
-  Widget examSectionCard({
-    required String examStatus,
-    required String subject,
-    required String date,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      color: Colors.white,
-      elevation: 5,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 15, left: 15, top: 10),
-        child: FittedBox(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                examStatus,
-                style: TextStyle(fontFamily: 'Inter', fontSize: 15),
-              ),
-              Center(
-                child: Text(
-                  subject,
-                  style: TextStyle(fontFamily: 'Inter', fontSize: 15),
-                ),
-              ),
-              Text(date, style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Tutor Monitoring Table
-  Widget _tutorMonitoringTable() {
-    return SingleChildScrollView(
-      child: DataTable(
-        columnSpacing: 20,
-        headingRowHeight: 40,
-        dataRowMaxHeight: 50,
-
-        columns: const [
-          DataColumn(
-            label: Text(
-              'Task',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Inter',
-                fontSize: 12,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Tutor',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Inter',
-                fontSize: 12,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Assigned Date',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Inter',
-                fontSize: 12,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Due Date',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Inter',
-                fontSize: 12,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Week',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Inter',
-                fontSize: 12,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Status',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Inter',
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-        rows: [
-          _tutorMonitoringRow(
-            'Complete Quiz 1',
-            'Alice Kumar Rai',
-            'Nov 9',
-            'Nov 30',
-            6, // completed weeks
-            10, // total weeks
-            'Approved',
-            'Pending',
-          ),
-          _tutorMonitoringRow(
-            'Complete Quiz 5',
-            'Alice Johnson',
-            'Nov 2',
-            'Nov 8',
-            5, // completed weeks
-            10, // total weeks
-            'Approved',
-            'Pending',
-          ),
-          _tutorMonitoringRow(
-            'Complete Quiz 5',
-            'Alice Johnson',
-            'Nov 2',
-            'Nov 8',
-            3, // completed weeks
-            10, // total weeks
-            'Approved',
-            'Pending',
-          ),
-          _tutorMonitoringRow(
-            'Complete Quiz 5',
-            'Alice Johnson',
-            'Nov 2',
-            'Nov 8',
-            1, // total weeks
-            0, // completed weeks
-
-            'Approved',
-            'Pending',
-          ),
-        ],
-      ),
-    );
-  }
-
-  DataRow _tutorMonitoringRow(
-    String task,
-    String tutorName,
-    String assignedDate,
-    String dueDate,
-    int totalWeeks,
-    int completedWeeks,
-    String status1,
-    String status2,
-  ) {
-    final double completedRatio =
-        totalWeeks == 0 ? 0.0 : completedWeeks / totalWeeks;
-    final int completedFlex = (completedRatio * 1000).round();
-    final int pendingFlex = (1000 - completedFlex).round();
-
-    return DataRow(
-      cells: [
-        DataCell(Text(task, style: TextStyle(fontSize: 11))),
-        DataCell(Text(tutorName, style: TextStyle(fontSize: 11))),
-        DataCell(Text(assignedDate, style: TextStyle(fontSize: 11))),
-        DataCell(Text(dueDate, style: TextStyle(fontSize: 11))),
-        DataCell(
-          Padding(
-            padding: EdgeInsets.only(left: 20),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: 65,
-                height: 10,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: completedFlex,
-                      child: Container(color: AppStyle.primaryColor),
-                    ),
-                    Expanded(flex: pendingFlex, child: const SizedBox.shrink()),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppStyle.primaryColor,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text(
-                  status1,
-                  style: TextStyle(color: Colors.white, fontSize: 10),
-                ),
-              ),
-              SizedBox(width: 5),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey[400],
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text(
-                  status2,
-                  style: TextStyle(color: Colors.white, fontSize: 10),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }
 
-// PieChart for the profile status
-class AttendanceRate extends CustomPainter {
-  final double percentage;
-  final Color segmentColor;
+// ─── Skeleton ────────────────────────────────────────────────────────────────
 
-  const AttendanceRate({
-    required this.percentage,
-    this.segmentColor = AppStyle.primaryColor,
-  });
-
+class _StatsSkeleton extends StatelessWidget {
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 1.4, size.height / 2.5);
-    final radius = min(size.width, size.height) * 0.4;
-    final innerRadius = radius * 0.74;
-
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    final double clamped = percentage.clamp(0.0, 100.0);
-    final double filled = clamped;
-    final double empty = 100.0 - clamped;
-
-    final List<_PieSegment> segments = [
-      if (filled > 0) _PieSegment(filled, segmentColor),
-      if (empty > 0) _PieSegment(empty, Color(0xffDDFFE7)),
-    ];
-
-    final double total = segments.fold(0.0, (sum, s) => sum + s.value);
-    double startAngle = -pi / -4.8;
-
-    for (final segment in segments) {
-      final double sweep = (segment.value / total) * 2 * pi;
-
-      paint.color = segment.color;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweep,
-        true,
-        paint,
-      );
-
-      startAngle += sweep;
-    }
-
-    canvas.drawCircle(center, innerRadius, Paint()..color = Color(0xffDDFFE7));
-
-    final String text = '${clamped.toInt()}%';
-    final TextPainter textPainter = TextPainter(
-      textDirection: TextDirection.rtl,
-    );
-    textPainter.text = TextSpan(
-      text: text,
-      style: const TextStyle(
-        color: Colors.black,
-        fontSize: 15,
-        fontWeight: FontWeight.bold,
-        fontFamily: 'Inter',
-      ),
-    );
-    textPainter.layout();
-
-    final Offset textOffset = Offset(
-      center.dx - textPainter.width / 2.3,
-      center.dy - textPainter.height / 2,
-    );
-
-    textPainter.paint(canvas, textOffset);
-  }
-
-  @override
-  bool shouldRepaint(AttendanceRate old) {
-    return old.percentage != percentage || old.segmentColor != segmentColor;
-  }
-}
-
-class _PieSegment {
-  final double value;
-  final Color color;
-  const _PieSegment(this.value, this.color);
-}
-
-class OverallProgressPieChart extends CustomPainter {
-  final double progressValue;
-  final Color progressColor;
-
-  OverallProgressPieChart({
-    required this.progressValue,
-    this.progressColor = const Color(0xff0CC740),
-  }) : assert(progressValue >= 0 && progressValue <= 100);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) * 0.48;
-
-    final progressPaint =
-        Paint()
-          ..style = PaintingStyle.fill
-          ..color = progressColor;
-
-    final startAngle = pi / -100;
-    final sweepAngle = (progressValue / 100) * 2 * pi;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      sweepAngle,
-      true,
-      progressPaint,
+  Widget build(BuildContext context) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(24)),
     );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

@@ -180,7 +180,7 @@ class AppbarScreen extends ConsumerWidget {
                                           Navigator.pushAndRemoveUntil(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => LoginScreen(),
+                                              builder: (_) => KmsLoginScreen(),
                                             ),
                                             (route) => false,
                                           );

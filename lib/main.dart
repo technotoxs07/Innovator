@@ -20,9 +20,9 @@ import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/partner/partner_assigned_school.dart';
-import 'package:innovator/KMS/screens/partner/partner_assignment_management.dart';
-import 'package:innovator/KMS/screens/partner/partner_attendance_specific_grade.dart';
+import 'package:innovator/KMS/screens/teacher/partner_assigned_school.dart';
+import 'package:innovator/KMS/screens/teacher/partner_assignment_management.dart';
+import 'package:innovator/KMS/screens/teacher/partner_attendance_specific_grade.dart';
 import 'package:innovator/firebase_options.dart';
 import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
 import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
@@ -547,9 +547,9 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
       // ✅ FIX: Use the global navigator key for InAppNotificationService
       navigatorKey: navigatorKey,
       routes: {
-        '/kms/login': (_) => LoginScreen(),
+        '/kms/login': (_) => KmsLoginScreen(),
         '/kms/adminDasboard': (_) => AdminDashboardScreen(),
-        '/kms/partnerDashboard': (_) => PartnerDashboardScreen(),
+        '/kms/partnerDashboard': (_) => TeacherDashboardScreen(),
         '/kms/schoolDashboard': (_) => SchoolDashboardScreen(),
         '/kms/studentDashboard': (_) => StudentDashboardScreen(),
         '/kms/partnerAssignedSchool': (_) => PartnerAssignedSchoolScreen(),
