@@ -2,7 +2,7 @@ class ApiConstants {
   //Auth Base Url
 
   static String get authBaseUrl => 'http://182.93.94.220:8010/api';
-  static String get baseUrl => 'http://182.93.94.220:8002/api';
+  static String get baseUrl => 'http://182.93.94.220:8002/api/kms';
 
   //auth EndPoints
   static String get register => '$authBaseUrl/auth/register/';
@@ -13,16 +13,18 @@ class ApiConstants {
   //teacher endpoints
   static String get teacherProfile => '$baseUrl/teacher/profile/';
   static String get teacherKyc => '$baseUrl/teacher/kyc/upload/';
+  static String get teacherKycStatus => '$baseUrl/teacher/kyc/status/';
   static String get teacherCheckIn => '$baseUrl/teacher/attendance/check-in/';
-  static String teacherCheckOut(int id) =>
+  static String teacherCheckOut(String id) =>
       '$baseUrl/teacher/attendance/$id/check-out/';
   static String get teacherClassAssignment =>
       '$baseUrl/teacher/class-assignment';
   static String get deleteTeacherClassAssignment =>
       '$baseUrl/teacher/class-assignment';
   static String get teacherSalarySlips => '$baseUrl/teacher/salary-slips';
+  static String get students => '$baseUrl/students/list/';
+  static String get markAttendance => '$baseUrl/attendance/mark/';
   //admin endpoints
-
 
   // Coordinator endpoints
   static String get getTeacherAttendance =>

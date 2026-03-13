@@ -1,25 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:innovator/Innovator/constant/app_colors.dart';
 
 enum ToastType { success, error, info, warning }
 
 class ToastUtils {
   static void show(String message, {ToastType type = ToastType.info}) {
     Color backgroundColor;
-    
+
     switch (type) {
       case ToastType.success:
-        backgroundColor = AppColors.systemGreen;
+        backgroundColor = Colors.green.shade200;
         break;
       case ToastType.error:
-        backgroundColor = AppColors.systemRed;
+        backgroundColor = Colors.red;
         break;
       case ToastType.warning:
-        backgroundColor = AppColors.systemYellow;
+        backgroundColor = Colors.amber;
         break;
       case ToastType.info:
-        backgroundColor = AppColors.systemBlue;
+        backgroundColor = Colors.blueAccent;
         break;
     }
 

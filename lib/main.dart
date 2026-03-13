@@ -10,30 +10,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get/get.dart';
-import 'package:innovator/Innovator/App_data/App_data.dart';
-import 'package:innovator/Innovator/services/in_app_notifcation.dart';
-import 'package:innovator/Innovator/services/notifcation_polling_services.dart';
+import 'package:get/get.dart'; 
 import 'package:innovator/KMS/core/constants/service/auth_wrapper.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/teacher_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/teacher/partner_assigned_school.dart';
 import 'package:innovator/KMS/screens/teacher/partner_assignment_management.dart';
 import 'package:innovator/KMS/screens/teacher/partner_attendance_specific_grade.dart';
-import 'package:innovator/firebase_options.dart';
-import 'package:innovator/Innovator/screens/Shop/CardIconWidget/cart_state_manager.dart';
-import 'package:innovator/Innovator/screens/Shop/Shop_Page.dart';
-import 'package:innovator/Innovator/screens/Splash_Screen/splash_screen.dart';
-import 'package:innovator/Innovator/screens/chatApp/SearchchatUser.dart';
-import 'package:innovator/Innovator/screens/chatApp/chat_homepage.dart';
-import 'package:innovator/Innovator/screens/chatApp/chatlistpage.dart';
-import 'package:innovator/Innovator/screens/chatApp/chatscreen.dart';
-import 'package:innovator/Innovator/screens/chatApp/controller/chat_controller.dart';
-import 'package:innovator/Innovator/services/Daily_Notifcation.dart';
-import 'package:innovator/Innovator/services/Firebase_Messaging.dart';
+import 'package:innovator/firebase_options.dart'; 
 import 'dart:developer' as developer;
 
 // ============================================================================
@@ -147,21 +134,21 @@ Future<void> _initializeCriticalOnly() async {
 }
 
 // ✅ STEP 2: Initialize non-critical services in parallel
-Future<void> _initializeNonCriticalServices() async {
-  try {
-    developer.log('🔧 Starting non-critical services...');
+// Future<void> _initializeNonCriticalServices() async {
+//   try {
+//     developer.log('🔧 Starting non-critical services...');
 
-    await Future.wait([
-      _initializeFirebase(),
-      _initializeAppData(),
-      _initializeDailyNotifications(),
-    ], eagerError: false);
+//     await Future.wait([
+//       _initializeFirebase(),
+//       _initializeAppData(),
+//       _initializeDailyNotifications(),
+//     ], eagerError: false);
 
-    developer.log('✅ Non-critical services complete');
-  } catch (e) {
-    developer.log('❌ Non-critical services error: $e');
-  }
-}
+//     developer.log('✅ Non-critical services complete');
+//   } catch (e) {
+//     developer.log('❌ Non-critical services error: $e');
+//   }
+// }
 
 Future<void> _initializeFirebase() async {
   try {
@@ -194,126 +181,126 @@ Future<void> _initializeFirebase() async {
   }
 }
 
-Future<void> _initializeAppData() async {
-  try {
-    developer.log('📦 Initializing AppData...');
-    await AppData().initialize();
-    developer.log('✅ AppData initialized');
-  } catch (e) {
-    developer.log('⚠️ AppData init failed, trying offline: $e');
-    try {
-      await AppData().initializeOffline();
-      developer.log('✅ AppData initialized (offline mode)');
-    } catch (offlineError) {
-      developer.log('❌ Offline init failed: $offlineError');
-    }
-  }
-}
+// Future<void> _initializeAppData() async {
+//   try {
+//     developer.log('📦 Initializing AppData...');
+//     await AppData().initialize();
+//     developer.log('✅ AppData initialized');
+//   } catch (e) {
+//     developer.log('⚠️ AppData init failed, trying offline: $e');
+//     try {
+//       await AppData().initializeOffline();
+//       developer.log('✅ AppData initialized (offline mode)');
+//     } catch (offlineError) {
+//       developer.log('❌ Offline init failed: $offlineError');
+//     }
+//   }
+// }
 
-Future<void> _initializeDailyNotifications() async {
-  try {
-    developer.log('📅 Initializing daily notifications...');
-    await DailyNotificationService.initialize();
-    developer.log('✅ Daily notifications initialized');
-  } catch (e) {
-    developer.log('⚠️ Daily notification failed (non-critical): $e');
-  }
-}
+// Future<void> _initializeDailyNotifications() async {
+//   try {
+//     developer.log('📅 Initializing daily notifications...');
+//     await DailyNotificationService.initialize();
+//     developer.log('✅ Daily notifications initialized');
+//   } catch (e) {
+//     developer.log('⚠️ Daily notification failed (non-critical): $e');
+//   }
+// }
 
 // ✅ STEP 3: Initialize deferred services after UI is shown
-Future<void> _initializeDeferredServices() async {
-  try {
-    developer.log('⏰ Starting deferred services...');
+// Future<void> _initializeDeferredServices() async {
+//   try {
+//     developer.log('⏰ Starting deferred services...');
 
-    // ✅ FIX: Wait longer for UI to be fully ready
-    await Future.delayed(const Duration(seconds: 1));
+//     // ✅ FIX: Wait longer for UI to be fully ready
+//     await Future.delayed(const Duration(seconds: 1));
 
-    // ✅ Verify navigator is ready
-    if (navigatorKey.currentContext == null) {
-      developer.log('⚠️ Navigator not ready, waiting...');
-      await Future.delayed(const Duration(seconds: 1));
-    }
+//     // ✅ Verify navigator is ready
+//     if (navigatorKey.currentContext == null) {
+//       developer.log('⚠️ Navigator not ready, waiting...');
+//       await Future.delayed(const Duration(seconds: 1));
+//     }
 
-    // ✅ Make sure Firebase is initialized before these services
-    if (!_isFirebaseInitialized) {
-      developer.log('⚠️ Firebase not ready, initializing now...');
-      await _initializeFirebase();
-    }
+//     // ✅ Make sure Firebase is initialized before these services
+//     if (!_isFirebaseInitialized) {
+//       developer.log('⚠️ Firebase not ready, initializing now...');
+//       await _initializeFirebase();
+//     }
 
-    await Future.wait([
-      _initializeNotificationServices(),
-      _setupNotificationListeners(),
-    ], eagerError: false);
+//     await Future.wait([
+//       _initializeNotificationServices(),
+//       _setupNotificationListeners(),
+//     ], eagerError: false);
 
-    developer.log('✅ Deferred services complete');
-  } catch (e) {
-    developer.log('❌ Deferred services error: $e');
-  }
-}
+//     developer.log('✅ Deferred services complete');
+//   } catch (e) {
+//     developer.log('❌ Deferred services error: $e');
+//   }
+// }
 
-Future<void> _initializeNotificationServices() async {
-  try {
-    // ✅ Check Firebase is ready
-    if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
-      developer.log(
-        '⚠️ Cannot initialize notification service - Firebase not ready',
-      );
-      return;
-    }
+// Future<void> _initializeNotificationServices() async {
+//   try {
+//     // ✅ Check Firebase is ready
+//     if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
+//       developer.log(
+//         '⚠️ Cannot initialize notification service - Firebase not ready',
+//       );
+//       return;
+//     }
 
-    developer.log('🔔 Initializing notification service...');
-    final notificationService = FirebaseNotificationService();
-    Get.put(notificationService, permanent: true);
-    await notificationService.initialize();
-    developer.log('✅ Notification service initialized');
-  } catch (e) {
-    developer.log('❌ Notification service failed: $e');
-  }
-}
+//     developer.log('🔔 Initializing notification service...');
+//     final notificationService = FirebaseNotificationService();
+//     Get.put(notificationService, permanent: true);
+//     await notificationService.initialize();
+//     developer.log('✅ Notification service initialized');
+//   } catch (e) {
+//     developer.log('❌ Notification service failed: $e');
+//   }
+// }
 
-Future<void> _setupNotificationListeners() async {
-  try {
-    // ✅ Check dependencies
-    if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
-      developer.log('⚠️ Cannot setup listeners - Firebase not ready');
-      return;
-    }
+// Future<void> _setupNotificationListeners() async {
+//   try {
+//     // ✅ Check dependencies
+//     if (!_isFirebaseInitialized || Firebase.apps.isEmpty) {
+//       developer.log('⚠️ Cannot setup listeners - Firebase not ready');
+//       return;
+//     }
 
-    if (!Get.isRegistered<FirebaseNotificationService>()) {
-      developer.log('⚠️ Cannot setup listeners - Service not registered');
-      return;
-    }
+//     if (!Get.isRegistered<FirebaseNotificationService>()) {
+//       developer.log('⚠️ Cannot setup listeners - Service not registered');
+//       return;
+//     }
 
-    developer.log('👂 Setting up notification listeners...');
-    final notificationService = Get.find<FirebaseNotificationService>();
+//     developer.log('👂 Setting up notification listeners...');
+//     final notificationService = Get.find<FirebaseNotificationService>();
 
-    // Foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      developer.log('📨 Foreground message received');
-      notificationService.handleForegroundMessage(message);
-      _showImmediateFeedback(message);
-    });
+//     // Foreground messages
+//     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+//       developer.log('📨 Foreground message received');
+//       notificationService.handleForegroundMessage(message);
+//       _showImmediateFeedback(message);
+//     });
 
-    // App opened from notification
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      developer.log('📱 App opened from notification');
-      _handleNotificationTapFromMessage(message);
-    });
+//     // App opened from notification
+//     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+//       developer.log('📱 App opened from notification');
+//       _handleNotificationTapFromMessage(message);
+//     });
 
-    // Initial message (app launched from terminated state)
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      developer.log('🚀 App launched from notification');
-      Future.delayed(const Duration(seconds: 2), () {
-        _handleNotificationTapFromMessage(initialMessage);
-      });
-    }
+//     // Initial message (app launched from terminated state)
+//     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+//     if (initialMessage != null) {
+//       developer.log('🚀 App launched from notification');
+//       Future.delayed(const Duration(seconds: 2), () {
+//         _handleNotificationTapFromMessage(initialMessage);
+//       });
+//     }
 
-    developer.log('✅ Notification listeners setup complete');
-  } catch (e) {
-    developer.log('❌ Listener setup failed: $e');
-  }
-}
+//     developer.log('✅ Notification listeners setup complete');
+//   } catch (e) {
+//     developer.log('❌ Listener setup failed: $e');
+//   }
+// }
 
 // ============================================================================
 // NOTIFICATION HANDLERS
@@ -407,62 +394,65 @@ void _navigateToChatFromNotification(Map<String, dynamic> data) {
 // ============================================================================
 
 void main() async {
-  // Wrap in error handling zone
-  runZonedGuarded(
-    () async {
-      try {
-        developer.log('🚀 App starting...');
-
-        // Ensure Flutter is initialized
-        WidgetsFlutterBinding.ensureInitialized();
-
-        // Set system UI
-        SystemChrome.setSystemUIOverlayStyle(
-          const SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark,
-          ),
-        );
-
-        // ✅ CRITICAL: Initialize Firebase FIRST before anything else
-        developer.log('🔥 Pre-initializing Firebase in main()...');
-        if (Firebase.apps.isEmpty) {
-          await Firebase.initializeApp(
-            options: DefaultFirebaseOptions.currentPlatform,
-          );
-          _isFirebaseInitialized = true;
-          developer.log('✅ Firebase pre-initialized');
-        }
-
-        // Set background message handler (must be after Firebase init)
-        FirebaseMessaging.onBackgroundMessage(
-          _firebaseMessagingBackgroundHandler,
-        );
-
-        // Initialize critical UI components
-        await _initializeCriticalOnly();
-
-        // Start the app
-        developer.log('🎨 Starting UI...');
-        runApp(
+          runApp(
           ProviderScope(child: InnovatorHomePage()),
         );
+  // Wrap in error handling zone
+  // runZonedGuarded(
+  //   () async {
+  //     try {
+  //       developer.log('🚀 App starting...');
 
-        // Initialize non-critical services in background
-        developer.log('🔧 Starting background initialization...');
-        _initializeNonCriticalServices();
+  //       // Ensure Flutter is initialized
+  //       WidgetsFlutterBinding.ensureInitialized();
 
-        developer.log('✅ App started successfully');
-      } catch (e, stackTrace) {
-        developer.log('❌ Critical error in main: $e\n$stackTrace');
-        // Still try to run the app
-        runApp(const ProviderScope(child: InnovatorHomePage()));
-      }
-    },
-    (error, stackTrace) {
-      developer.log('❌ Uncaught error: $error\n$stackTrace');
-    },
-  );
+  //       // Set system UI
+  //       SystemChrome.setSystemUIOverlayStyle(
+  //         const SystemUiOverlayStyle(
+  //           statusBarColor: Colors.transparent,
+  //           statusBarIconBrightness: Brightness.dark,
+  //         ),
+  //       );
+
+  //       // ✅ CRITICAL: Initialize Firebase FIRST before anything else
+  //       developer.log('🔥 Pre-initializing Firebase in main()...');
+  //       if (Firebase.apps.isEmpty) {
+  //         await Firebase.initializeApp(
+  //           options: DefaultFirebaseOptions.currentPlatform,
+  //         );
+  //         _isFirebaseInitialized = true;
+  //         developer.log('✅ Firebase pre-initialized');
+  //       }
+
+  //       // Set background message handler (must be after Firebase init)
+  //       FirebaseMessaging.onBackgroundMessage(
+  //         _firebaseMessagingBackgroundHandler,
+  //       );
+
+  //       // Initialize critical UI components
+  //       await _initializeCriticalOnly();
+
+  //       // Start the app
+  //       developer.log('🎨 Starting UI...');
+  //       runApp(
+  //         ProviderScope(child: InnovatorHomePage()),
+  //       );
+
+  //       // Initialize non-critical services in background
+  //       developer.log('🔧 Starting background initialization...');
+  //       _initializeNonCriticalServices();
+
+  //       developer.log('✅ App started successfully');
+  //     } catch (e, stackTrace) {
+  //       developer.log('❌ Critical error in main: $e\n$stackTrace');
+  //       // Still try to run the app
+  //       runApp(const ProviderScope(child: InnovatorHomePage()));
+  //     }
+  //   },
+  //   (error, stackTrace) {
+  //     developer.log('❌ Uncaught error: $error\n$stackTrace');
+  //   },
+  // );
 }
 
 // ============================================================================
@@ -478,8 +468,8 @@ class InnovatorHomePage extends ConsumerStatefulWidget {
 
 class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
     with WidgetsBindingObserver {
-  final NotificationPollingService _pollingService =
-      NotificationPollingService();
+  // final NotificationPollingService _pollingService =
+  //     NotificationPollingService();
 
   @override
   void initState() {
@@ -488,56 +478,56 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
     developer.log('🏠 InnovatorHomePage initialized');
 
     // Initialize deferred services after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      developer.log('🎬 First frame rendered, starting deferred services...');
-      _initializeDeferredServices();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {  
+    //   developer.log('🎬 First frame rendered, starting deferred services...');
+    //   _initializeDeferredServices();
 
-      // ✅ FIX: Wait longer before starting polling to ensure overlay is ready
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted && InAppNotificationService().isReady) {
-          _pollingService.startPolling();
-          developer.log('✅ Notification polling started from main');
-        } else {
-          // Retry after another delay if not ready
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              // Force start even if not "ready" - the service will handle it
-              _pollingService.startPolling();
-              developer.log('✅ Notification polling started (forced retry)');
-            }
-          });
-        }
-      });
-    });
+    //   // ✅ FIX: Wait longer before starting polling to ensure overlay is ready
+    //   Future.delayed(const Duration(seconds: 3), () {
+    //     if (mounted && InAppNotificationService().isReady) {
+    //       _pollingService.startPolling();
+    //       developer.log('✅ Notification polling started from main');
+    //     } else {
+    //       // Retry after another delay if not ready
+    //       Future.delayed(const Duration(seconds: 2), () {
+    //         if (mounted) {
+    //           // Force start even if not "ready" - the service will handle it
+    //           _pollingService.startPolling();
+    //           developer.log('✅ Notification polling started (forced retry)');
+    //         }
+    //       });
+    //     }
+    //   });
+    // });
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _pollingService.stopPolling();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   WidgetsBinding.instance.removeObserver(this);
+  //   _pollingService.stopPolling();
+  //   super.dispose();
+  // }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   super.didChangeAppLifecycleState(state);
 
-    switch (state) {
-      case AppLifecycleState.resumed:
-        developer.log('📱 App resumed - restarting notification polling');
-        _pollingService.startPolling();
-        _pollingService.forceCheck(); // Immediate check
-        break;
-      case AppLifecycleState.paused:
-        developer.log('⏸️ App paused - pausing notification polling');
-        _pollingService.stopPolling();
-        break;
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.detached:
-      case AppLifecycleState.hidden:
-        break;
-    }
-  }
+  //   switch (state) {
+  //     case AppLifecycleState.resumed:
+  //       developer.log('📱 App resumed - restarting notification polling');
+  //       _pollingService.startPolling();
+  //       _pollingService.forceCheck(); // Immediate check
+  //       break;
+  //     case AppLifecycleState.paused:
+  //       developer.log('⏸️ App paused - pausing notification polling');
+  //       _pollingService.stopPolling();
+  //       break;
+  //     case AppLifecycleState.inactive:
+  //     case AppLifecycleState.detached:
+  //     case AppLifecycleState.hidden:
+  //       break;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -566,64 +556,64 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
       // use this authwrapper when in the production when the token things is solved
       home:   AuthWrapper(),
       // home: PartnerDashboardScreen(),
-      onInit: () {
-        developer.log('🎮 GetX onInit called');
-        // Lazy initialization of controllers
-        try {
-          Get.lazyPut<FireChatController>(
-            () => FireChatController(),
-            fenix: true,
-          );
-          Get.lazyPut<CartStateManager>(() => CartStateManager(), fenix: true);
-          developer.log('✅ Controllers registered');
-        } catch (e) {
-          developer.log('❌ Controller initialization error: $e');
-        }
-      },
-      getPages: [
-        GetPage(
-          name: '/home',
-          page: () => const OptimizedChatHomePage(),
-          binding: BindingsBuilder(() {
-            Get.lazyPut<FireChatController>(() => FireChatController());
-            Get.lazyPut<CartStateManager>(() => CartStateManager());
-          }),
-        ),
-        GetPage(
-          name: '/chat-list',
-          page: () => const OptimizedChatListPage(),
-          binding: BindingsBuilder(() {
-            Get.lazyPut<FireChatController>(() => FireChatController());
-          }),
-        ),
-        GetPage(
-          name: '/search',
-          page: () => const OptimizedSearchUsersPage(),
-          binding: BindingsBuilder(() {
-            Get.lazyPut<FireChatController>(() => FireChatController());
-          }),
-        ),
-        GetPage(
-          name: '/shop',
-          page: () => const ShopPage(),
-          binding: BindingsBuilder(() {
-            Get.lazyPut<CartStateManager>(() => CartStateManager());
-          }),
-        ),
-        GetPage(
-          name: '/chat',
-          page: () {
-            final args = Get.arguments as Map<String, dynamic>? ?? {};
-            return OptimizedChatScreen(
-              receiverUser: args['receiverUser'] ?? {},
-              currentUser: args['currentUser'],
-            );
-          },
-          binding: BindingsBuilder(() {
-            Get.lazyPut<FireChatController>(() => FireChatController());
-          }),
-        ),
-      ],
+      // onInit: () { 
+      //   developer.log('🎮 GetX onInit called');
+      //   // Lazy initialization of controllers
+      //   try {
+      //     Get.lazyPut<FireChatController>(
+      //       () => FireChatController(),
+      //       fenix: true,
+      //     );
+      //     Get.lazyPut<CartStateManager>(() => CartStateManager(), fenix: true);
+      //     developer.log('✅ Controllers registered');
+      //   } catch (e) {
+      //     developer.log('❌ Controller initialization error: $e');
+      //   }
+      // },
+      // getPages: [
+      //   GetPage(
+      //     name: '/home',
+      //     page: () => const OptimizedChatHomePage(),
+      //     binding: BindingsBuilder(() {
+      //       Get.lazyPut<FireChatController>(() => FireChatController());
+      //       Get.lazyPut<CartStateManager>(() => CartStateManager());
+      //     }),
+      //   ),
+      //   GetPage(
+      //     name: '/chat-list',
+      //     page: () => const OptimizedChatListPage(),
+      //     binding: BindingsBuilder(() {
+      //       Get.lazyPut<FireChatController>(() => FireChatController());
+      //     }),
+      //   ),
+      //   GetPage(
+      //     name: '/search',
+      //     page: () => const OptimizedSearchUsersPage(),
+      //     binding: BindingsBuilder(() {
+      //       Get.lazyPut<FireChatController>(() => FireChatController());
+      //     }),
+      //   ),
+      //   GetPage(
+      //     name: '/shop',
+      //     page: () => const ShopPage(),
+      //     binding: BindingsBuilder(() {
+      //       Get.lazyPut<CartStateManager>(() => CartStateManager());
+      //     }),
+      //   ),
+      //   GetPage(
+      //     name: '/chat',
+      //     page: () {
+      //       final args = Get.arguments as Map<String, dynamic>? ?? {};
+      //       return OptimizedChatScreen(
+      //         receiverUser: args['receiverUser'] ?? {},
+      //         currentUser: args['currentUser'],
+      //       );
+      //     },
+      //     binding: BindingsBuilder(() {
+      //       Get.lazyPut<FireChatController>(() => FireChatController());
+      //     }),
+      //   ),
+      // ],
     );
   }
 

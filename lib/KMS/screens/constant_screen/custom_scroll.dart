@@ -18,6 +18,7 @@ class CustomScrolling extends StatelessWidget {
       ),
       drawer: AppDrawer(),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
           padding: EdgeInsets.only(
             top: context.screenHeight * 0.018,

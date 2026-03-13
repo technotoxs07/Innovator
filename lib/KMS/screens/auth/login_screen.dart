@@ -8,7 +8,7 @@ import 'package:innovator/KMS/screens/auth/forgot_password_screen.dart';
 import 'package:innovator/KMS/screens/auth/signup_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/coordinator_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/partner_dashboard_screen.dart'; 
+import 'package:innovator/KMS/screens/dashboard/teacher_dashboard_screen.dart'; 
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
 
 class KmsLoginScreen extends ConsumerStatefulWidget {
