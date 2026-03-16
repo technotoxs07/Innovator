@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:innovator/KMS/api_calling_services.dart/auth_service.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/teacher_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/coordinator_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/teacher_dashboard_screen.dart'; 
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
 
 class AuthWrapper extends StatefulWidget {
@@ -42,7 +42,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         case 'teacher':
           return const TeacherDashboardScreen();
         case 'coordiantor':
-          return const SchoolDashboardScreen();
+          return const CoordinatorDashboardScreen();
         case 'student':
           return const StudentDashboardScreen();
         default:

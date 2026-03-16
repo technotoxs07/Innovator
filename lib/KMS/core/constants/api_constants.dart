@@ -24,17 +24,21 @@ class ApiConstants {
   static String get teacherSalarySlips => '$baseUrl/teacher/salary-slips';
   static String get students => '$baseUrl/students/list/';
   static String get markAttendance => '$baseUrl/attendance/mark/';
+  static String get addStudents => '$baseUrl/student/create/';
   //admin endpoints
 
   // Coordinator endpoints
   static String get getTeacherAttendance =>
       '$baseUrl/coordinator/teacher-attendance/';
-  static String get putTeacherAttendance =>
-      '$baseUrl/coordinator/teacher-attendance/';
-  static String getTeacherAttendanceById(String attendanceId) =>
+  static String teacherAttendanceVerify(String attendanceId) =>
       '$baseUrl/coordinator/teacher-attendance/$attendanceId/';
-  static String putTeacherAttendanceById(String attendanceId) =>
-      '$baseUrl/coordinator/teacher-attendance/$attendanceId/';
+  static String get coordinatorInvoices => '$baseUrl/coordinator/invoices/';
+  static String get teacherNoteVerification =>
+      '$baseUrl/coordinator/student-attendance/approve/';
+      static String get getTeacherNotesVerification => '$baseUrl/coordinator/teaching-notes/';
+      static String get teacherNotes=> '$baseUrl/coordinator/teaching-notes/';
+
+ 
   //student endpoints
   static String get createStudents => '$baseUrl/api/create/';
   //attendace endpoints

@@ -1,11 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:device_preview/device_preview.dart';
+import 'dart:convert'; 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -14,8 +10,7 @@ import 'package:get/get.dart';
 import 'package:innovator/KMS/core/constants/service/auth_wrapper.dart';
 import 'package:innovator/KMS/screens/auth/login_screen.dart';
 import 'package:innovator/KMS/screens/dashboard/admin_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/teacher_dashboard_screen.dart';
-import 'package:innovator/KMS/screens/dashboard/school_dashboard_screen.dart';
+import 'package:innovator/KMS/screens/dashboard/teacher_dashboard_screen.dart'; 
 import 'package:innovator/KMS/screens/dashboard/student_dashboard_screen.dart';
 import 'package:innovator/KMS/screens/teacher/partner_assigned_school.dart';
 import 'package:innovator/KMS/screens/teacher/partner_assignment_management.dart';
@@ -539,8 +534,7 @@ class _InnovatorHomePageState extends ConsumerState<InnovatorHomePage>
       routes: {
         '/kms/login': (_) => KmsLoginScreen(),
         '/kms/adminDasboard': (_) => AdminDashboardScreen(),
-        '/kms/partnerDashboard': (_) => TeacherDashboardScreen(),
-        '/kms/schoolDashboard': (_) => SchoolDashboardScreen(),
+        '/kms/partnerDashboard': (_) => TeacherDashboardScreen(), 
         '/kms/studentDashboard': (_) => StudentDashboardScreen(),
         '/kms/partnerAssignedSchool': (_) => PartnerAssignedSchoolScreen(),
         '/kms/partnerAssignmentMgmt':

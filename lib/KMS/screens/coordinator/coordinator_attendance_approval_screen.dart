@@ -1,80 +1,208 @@
+// import 'package:flutter/material.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:innovator/KMS/core/constants/app_style.dart'; 
+// import 'package:innovator/KMS/provider/coordinator_provider.dart';
+// import 'package:innovator/KMS/screens/coordinator/coordinator_shared_widget.dart'; 
+
+// final _approvalFilterProvider = StateProvider<String>((ref) => 'ALL');
+
+// class CoordinatorAttendanceApprovalScreen extends ConsumerWidget {
+//   const CoordinatorAttendanceApprovalScreen({super.key});
+
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     final attendanceAsync = ref.watch(coordinatorAttendanceProvider);
+//     final filter = ref.watch(_approvalFilterProvider);
+
+//     return Scaffold(
+//       backgroundColor: AppStyle.primaryColor,
+//       appBar: AppBar(
+//         backgroundColor: AppStyle.primaryColor,
+//         elevation: 0,
+//         leading: IconButton(
+//           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+//           onPressed: () => Navigator.pop(context),
+//         ),
+//         title: const Text(
+//           'Attendance Approval',
+//           style: TextStyle(
+//             color: Colors.white,
+//             fontWeight: FontWeight.bold,
+//             fontFamily: 'Inter',
+//             fontSize: 18,
+//           ),
+//         ),
+//         actions: [
+//           Padding(
+//             padding: const EdgeInsets.only(right: 12),
+//             child: GestureDetector(
+//               onTap: () => ref.refresh(coordinatorAttendanceProvider),
+//               child: Container(
+//                 padding: const EdgeInsets.all(8),
+//                 decoration: BoxDecoration(
+//                   color: Colors.white.withValues(alpha: 0.2),
+//                   borderRadius: BorderRadius.circular(10),
+//                 ),
+//                 child: const Icon(Icons.refresh_rounded,
+//                     size: 18, color: Colors.white),
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//       body: Column(
+//         children: [
+//           // stats summary
+//           attendanceAsync.when(
+//             loading: () => const SizedBox.shrink(),
+//             error: (_, __) => const SizedBox.shrink(),
+//             data: (data) => Padding(
+//               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+//               child: Row(
+//                 children: [
+//                   _MiniStat(
+//                       label: 'Total',
+//                       value: '${data.total}',
+//                       color: Colors.white),
+//                   const SizedBox(width: 10),
+//                   _MiniStat(
+//                       label: 'Pending',
+//                       value: '${data.pending}',
+//                       color: const Color(0xFFFFB347)),
+//                   const SizedBox(width: 10),
+//                   _MiniStat(
+//                     label: 'Approved',
+//                     value:
+//                         '${data.attendances.where((a) => a.isApproved).length}',
+//                     color: Colors.greenAccent.shade200,
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//           const SizedBox(height: 12),
+
+//           Expanded(
+//             child: Container(
+//               decoration: const BoxDecoration(
+//                 color: Color(0xFFF5F7FA),
+//                 borderRadius: BorderRadius.only(
+//                   topLeft: Radius.circular(28),
+//                   topRight: Radius.circular(28),
+//                 ),
+//               ),
+//               child: Column(
+//                 children: [
+//                   Padding(
+//                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+//                     // ✅ uses shared widget
+//                     child: CoordinatorFilterChips(
+//                         provider: _approvalFilterProvider),
+//                   ),
+//                   const SizedBox(height: 14),
+//                   Expanded(
+//                     child: attendanceAsync.when(
+//                       loading: () => const Center(
+//                           child: CircularProgressIndicator()),
+//                       error: (e, _) => Center(
+//                         child: Text('Error: $e',
+//                             style: const TextStyle(fontFamily: 'Inter')),
+//                       ),
+//                       data: (data) {
+//                         final list = filter == 'ALL'
+//                             ? data.attendances
+//                             : data.attendances
+//                                 .where((a) => a.status == filter)
+//                                 .toList();
+
+//                         if (list.isEmpty) {
+//                           return CoordinatorEmptyState(
+//                             icon: filter == 'ALL'
+//                                 ? Icons.check_circle_rounded
+//                                 : Icons.filter_list_rounded,
+//                             message: filter == 'ALL'
+//                                 ? 'No attendance records'
+//                                 : 'No ${filter.toLowerCase()} records',
+//                           );
+//                         }
+
+//                         return ListView.builder(
+//                           padding:
+//                               const EdgeInsets.fromLTRB(20, 0, 20, 20),
+//                           itemCount: list.length,
+//                           itemBuilder: (context, i) =>
+//                               // ✅ uses shared widget
+//                               CoordinatorAttendanceTile(item: list[i]),
+//                         );
+//                       },
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// class _MiniStat extends StatelessWidget {
+//   final String label;
+//   final String value;
+//   final Color color;
+
+//   const _MiniStat(
+//       {required this.label, required this.value, required this.color});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Expanded(
+//       child: Container(
+//         padding: const EdgeInsets.symmetric(vertical: 10),
+//         decoration: BoxDecoration(
+//           color: Colors.white.withValues(alpha: 0.15),
+//           borderRadius: BorderRadius.circular(14),
+//           border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+//         ),
+//         child: Column(
+//           children: [
+//             Text(value,
+//                 style: TextStyle(
+//                     color: color,
+//                     fontWeight: FontWeight.bold,
+//                     fontSize: 18,
+//                     fontFamily: 'Inter')),
+//             Text(label,
+//                 style: const TextStyle(
+//                     color: Colors.white70,
+//                     fontSize: 11,
+//                     fontFamily: 'Inter')),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:innovator/KMS/core/constants/app_style.dart';
+import 'package:innovator/KMS/model/coordinator_model/coordinator_teacher_response_model.dart';
+import 'package:innovator/KMS/provider/coordinator_provider.dart';
+import 'package:innovator/KMS/screens/coordinator/coordinator_shared_widget.dart'; 
 
-// ─── Models ─────────────────────────────────────────────────────────────────
+final _approvalFilterProvider = StateProvider<String>((ref) => 'ALL');
 
-enum ApprovalStatus { pending, accepted, rejected }
-
-class AttendanceRecord {
-  final String id;
-  final String teacherName;
-  final String schoolName;
-  final String checkInTime;
-  final String checkOutTime;
-  final String date;
-  final String totalHours;
-  ApprovalStatus status;
-
-  AttendanceRecord({
-    required this.id,
-    required this.teacherName,
-    required this.schoolName,
-    required this.checkInTime,
-    required this.checkOutTime,
-    required this.date,
-    required this.totalHours,
-    this.status = ApprovalStatus.pending,
-  });
-}
-
-// ─── Provider ────────────────────────────────────────────────────────────────
-
-final attendanceRecordsProvider = StateNotifierProvider<AttendanceRecordsNotifier, List<AttendanceRecord>>((ref) {
-  return AttendanceRecordsNotifier();
-});
-
-class AttendanceRecordsNotifier extends StateNotifier<List<AttendanceRecord>> {
-  AttendanceRecordsNotifier() : super([]) {
-    _load();
-  }
-
-  Future<void> _load() async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    state = [
-      AttendanceRecord(id: 'r1', teacherName: 'Ramesh Thapa', schoolName: 'Sunrise Academy', checkInTime: '8:45 AM', checkOutTime: '1:30 PM', date: '10 Mar 2026', totalHours: '4h 45m'),
-      AttendanceRecord(id: 'r2', teacherName: 'Sunita Karki', schoolName: 'Green Valley School', checkInTime: '9:00 AM', checkOutTime: '2:00 PM', date: '10 Mar 2026', totalHours: '5h 00m'),
-      AttendanceRecord(id: 'r3', teacherName: 'Bijay Rai', schoolName: 'Sunrise Academy', checkInTime: '8:30 AM', checkOutTime: '1:00 PM', date: '9 Mar 2026', totalHours: '4h 30m'),
-      AttendanceRecord(id: 'r4', teacherName: 'Anita Gurung', schoolName: 'Green Valley School', checkInTime: '8:50 AM', checkOutTime: '1:45 PM', date: '9 Mar 2026', totalHours: '4h 55m'),
-      AttendanceRecord(id: 'r5', teacherName: 'Dipak Magar', schoolName: 'Sunrise Academy', checkInTime: '9:10 AM', checkOutTime: '2:15 PM', date: '8 Mar 2026', totalHours: '5h 05m'),
-    ];
-  }
-
-  void updateStatus(String id, ApprovalStatus status) {
-    state = state.map((r) => r.id == id ? (r..status = status) : r).toList();
-  }
-}
-
-// ─── Screen ──────────────────────────────────────────────────────────────────
-
-class CoordinatorAttendanceApprovalScreen extends ConsumerStatefulWidget {
+class CoordinatorAttendanceApprovalScreen extends ConsumerWidget {
   const CoordinatorAttendanceApprovalScreen({super.key});
 
   @override
-  ConsumerState<CoordinatorAttendanceApprovalScreen> createState() => _CoordinatorAttendanceApprovalScreenState();
-}
-
-class _CoordinatorAttendanceApprovalScreenState extends ConsumerState<CoordinatorAttendanceApprovalScreen> {
-  ApprovalStatus _filter = ApprovalStatus.pending;
-
-  @override
-  Widget build(BuildContext context) {
-    final records = ref.watch(attendanceRecordsProvider);
-    final filtered = records.where((r) => r.status == _filter).toList();
-
-    final pendingCount = records.where((r) => r.status == ApprovalStatus.pending).length;
-    final acceptedCount = records.where((r) => r.status == ApprovalStatus.accepted).length;
-    final rejectedCount = records.where((r) => r.status == ApprovalStatus.rejected).length;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final attendanceAsync = ref.watch(coordinatorAttendanceProvider);
+    final filter = ref.watch(_approvalFilterProvider);
 
     return Scaffold(
       backgroundColor: AppStyle.primaryColor,
@@ -85,52 +213,132 @@ class _CoordinatorAttendanceApprovalScreenState extends ConsumerState<Coordinato
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Attendance Approval', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Inter', fontSize: 18)),
+        title: const Text(
+          'Attendance Approval',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Inter',
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () => ref.refresh(coordinatorAttendanceProvider),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.refresh_rounded,
+                    size: 18, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // ── Summary Row ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-            child: Row(
-              children: [
-                Expanded(child: _SummaryChip(label: 'Pending', count: pendingCount, color: Colors.orange, isSelected: _filter == ApprovalStatus.pending, onTap: () => setState(() => _filter = ApprovalStatus.pending))),
-                const SizedBox(width: 10),
-                Expanded(child: _SummaryChip(label: 'Accepted', count: acceptedCount, color: Colors.green, isSelected: _filter == ApprovalStatus.accepted, onTap: () => setState(() => _filter = ApprovalStatus.accepted))),
-                const SizedBox(width: 10),
-                Expanded(child: _SummaryChip(label: 'Rejected', count: rejectedCount, color: Colors.red, isSelected: _filter == ApprovalStatus.rejected, onTap: () => setState(() => _filter = ApprovalStatus.rejected))),
-              ],
+          // stats
+          attendanceAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (data) => Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Row(
+                children: [
+                  CoordinatorMiniStat(
+                      label: 'Total',
+                      value: '${data.total}',
+                      color: Colors.white),
+                  const SizedBox(width: 10),
+                  CoordinatorMiniStat(
+                      label: 'Pending',
+                      value: '${data.pending}',
+                      color: const Color(0xFFFFB347)),
+                  const SizedBox(width: 10),
+                  CoordinatorMiniStat(
+                    label: 'Approved',
+                    value:
+                        '${data.attendances.where((a) => a.isApproved).length}',
+                    color: Colors.greenAccent.shade200,
+                  ),
+                ],
+              ),
             ),
           ),
+          const SizedBox(height: 12),
 
-          // ── List ──
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
                 color: Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
               ),
-              child: filtered.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.inbox_rounded, size: 56, color: Colors.grey.shade300),
-                          const SizedBox(height: 12),
-                          Text('No ${_filter.name} records', style: TextStyle(color: Colors.grey.shade400, fontSize: 15, fontFamily: 'Inter')),
-                        ],
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                    child: CoordinatorFilterChips(
+                        provider: _approvalFilterProvider),
+                  ),
+                  const SizedBox(height: 14),
+                  Expanded(
+                    child: attendanceAsync.when(
+                      loading: () => const Center(
+                          child: CircularProgressIndicator()),
+                      error: (e, _) => Center(
+                        child: Text('Error: $e',
+                            style: const TextStyle(fontFamily: 'Inter')),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, i) => _AttendanceApprovalCard(
-                        record: filtered[i],
-                        onAccept: () => ref.read(attendanceRecordsProvider.notifier).updateStatus(filtered[i].id, ApprovalStatus.accepted),
-                        onReject: () => ref.read(attendanceRecordsProvider.notifier).updateStatus(filtered[i].id, ApprovalStatus.rejected),
-                        onUndo: () => ref.read(attendanceRecordsProvider.notifier).updateStatus(filtered[i].id, ApprovalStatus.pending),
-                      ),
+                      data: (data) {
+                        final list = filter == 'ALL'
+                            ? data.attendances
+                            : data.attendances
+                                .where((a) => a.status == filter)
+                                .toList();
+
+                        if (list.isEmpty) {
+                          return CoordinatorEmptyState(
+                            icon: filter == 'ALL'
+                                ? Icons.check_circle_rounded
+                                : Icons.filter_list_rounded,
+                            message: filter == 'ALL'
+                                ? 'No attendance records'
+                                : 'No ${filter.toLowerCase()} records',
+                          );
+                        }
+
+                        return ListView.builder(
+                          padding:
+                              const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          itemCount: list.length,
+                          itemBuilder: (context, i) {
+                            final item = list[i];
+                            return GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      CoordinatorAttendanceDetailScreen(
+                                          item: item),
+                                ),
+                              ),
+                              child: CoordinatorAttendanceTile(item: item),
+                            );
+                          },
+                        );
+                      },
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -139,208 +347,412 @@ class _CoordinatorAttendanceApprovalScreenState extends ConsumerState<Coordinato
   }
 }
 
-class _SummaryChip extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-  const _SummaryChip({required this.label, required this.count, required this.color, required this.isSelected, required this.onTap});
+// ─── Attendance Detail Screen ─────────────────────────────────────────────────
+
+class CoordinatorAttendanceDetailScreen extends ConsumerStatefulWidget {
+  final CoordinatorAttendanceModel item;
+  const CoordinatorAttendanceDetailScreen({super.key, required this.item});
+
+  @override
+  ConsumerState<CoordinatorAttendanceDetailScreen> createState() =>
+      _CoordinatorAttendanceDetailScreenState();
+}
+
+class _CoordinatorAttendanceDetailScreenState
+    extends ConsumerState<CoordinatorAttendanceDetailScreen> {
+  bool _isLoading = false;
+  String? _localStatus;
+
+  String get _status => _localStatus ?? widget.item.status;
+
+  Future<void> _act(String action, {String? reason}) async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(
+        updateAttendanceProvider({
+          'attendanceId': widget.item.id,
+          'action': action,
+        }).future,
+      );
+      setState(() =>
+          _localStatus = action == 'approve' ? 'APPROVED' : 'REJECTED');
+      if (mounted) {
+        ref.refresh(coordinatorAttendanceProvider);
+        _snack(
+          action == 'approve'
+              ? 'Attendance approved!'
+              : 'Attendance rejected.',
+          action == 'approve' ? Colors.green : Colors.red.shade400,
+          action == 'approve'
+              ? Icons.check_circle_rounded
+              : Icons.cancel_rounded,
+        );
+      }
+    } catch (e) {
+      if (mounted)
+        _snack('Failed: $e', Colors.red.shade400, Icons.error);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _snack(String msg, Color color, IconData icon) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Row(children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Text(msg, style: const TextStyle(fontFamily: 'Inter')),
+        ]),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
+      ));
+  }
+
+  void _showRejectDialog() {
+    final ctrl = TextEditingController();
+    showAdaptiveDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        title: const Text('Reason for Rejection',
+            style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.bold,
+                fontSize: 16)),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 3,
+          autofocus: true,
+          style: const TextStyle(fontFamily: 'Inter', fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Enter reason (optional)...',
+            hintStyle: TextStyle(
+                color: Colors.grey.shade400,
+                fontFamily: 'Inter',
+                fontSize: 13),
+            filled: true,
+            fillColor: const Color(0xFFF5F7FA),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: TextStyle(
+                    color: Colors.grey.shade500, fontFamily: 'Inter')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _act('reject', reason: ctrl.text.trim());
+            },
+            child: const Text('Reject',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(14),
+    final isPending = _status == 'PENDING';
+    final isApproved = _status == 'APPROVED';
+    final statusColor = isPending
+        ? const Color(0xFFE85D04)
+        : isApproved
+            ? const Color(0xFF059669)
+            : Colors.red;
+
+    return Scaffold( 
+        backgroundColor: AppStyle.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppStyle.primaryColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded,
+              color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: Column(
-          children: [
-            Text('$count', style: TextStyle(color: isSelected ? color : Colors.white, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Inter')),
-            Text(label, style: TextStyle(color: isSelected ? Colors.black54 : Colors.white70, fontSize: 11, fontFamily: 'Inter')),
-          ],
+        title: const Text(
+          'Attendance Detail',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Inter',
+            fontSize: 18,
+          ),
+        ),
+      ),
+      body: Container(
+     
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // teacher card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 32,
+                      backgroundColor:
+                          AppStyle.primaryColor.withValues(alpha: 0.12),
+                      child: Text(
+                        widget.item.teacherName[0],
+                        style: TextStyle(
+                            color: AppStyle.primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            fontFamily: 'Inter'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(widget.item.teacherName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            fontFamily: 'Inter',
+                            color: Colors.black87)),
+                    const SizedBox(height: 4),
+                    Text(widget.item.schoolName,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade500,
+                            fontFamily: 'Inter')),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: statusColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        _status,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                            color: statusColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // info rows
+              _DetailCard(children: [
+                _DetailRow(
+                    icon: Icons.calendar_today_rounded,
+                    label: 'Date',
+                    value:
+                        '${widget.item.date.day}/${widget.item.date.month}/${widget.item.date.year}'),
+                _DetailRow(
+                    icon: Icons.school_rounded,
+                    label: 'School',
+                    value: widget.item.schoolName),
+              ]),
+
+              const SizedBox(height: 24),
+
+              // action area
+              if (_isLoading)
+                const Center(
+                    child: CircularProgressIndicator())
+              else if (!isPending)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: isApproved
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isApproved
+                          ? Colors.green.shade300
+                          : Colors.red.shade300,
+                    ),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isApproved
+                              ? Icons.check_circle_rounded
+                              : Icons.cancel_rounded,
+                          color: isApproved ? Colors.green : Colors.red,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isApproved ? 'Approved' : 'Rejected',
+                          style: TextStyle(
+                            color: isApproved
+                                ? Colors.green.shade700
+                                : Colors.red.shade600,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter',
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _showRejectDialog,
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(14),
+                            border:
+                                Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Center(
+                            child: Text('Reject',
+                                style: TextStyle(
+                                    color: Colors.red.shade600,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'Inter',
+                                    fontSize: 15)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _act('approve'),
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: Colors.green.shade300),
+                          ),
+                          child: Center(
+                            child: Text('Approve',
+                                style: TextStyle(
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'Inter',
+                                    fontSize: 15)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _AttendanceApprovalCard extends StatelessWidget {
-  final AttendanceRecord record;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
-  final VoidCallback onUndo;
-  const _AttendanceApprovalCard({required this.record, required this.onAccept, required this.onReject, required this.onUndo});
+// ─── Shared detail widgets ────────────────────────────────────────────────────
+
+class _DetailCard extends StatelessWidget {
+  final List<Widget> children;
+  const _DetailCard({required this.children});
 
   @override
   Widget build(BuildContext context) {
-    final isPending = record.status == ApprovalStatus.pending;
-    final isAccepted = record.status == ApprovalStatus.accepted;
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: !isPending ? Border.all(
-          color: isAccepted ? Colors.green.shade300 : Colors.red.shade300,
-          width: 1.5,
-        ) : null,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3)),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ──
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: AppStyle.primaryColor.withValues(alpha: 0.12),
-                  child: Text(record.teacherName[0], style: TextStyle(color: AppStyle.primaryColor, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter')),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(record.teacherName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, fontFamily: 'Inter', color: Colors.black87)),
-                      Text(record.schoolName, style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontFamily: 'Inter')),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(record.date, style: const TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            // ── Time Info ──
-            Row(
-              children: [
-                _timeBox(Icons.login_rounded, 'Check In', record.checkInTime, Colors.green),
-                const SizedBox(width: 10),
-                _timeBox(Icons.logout_rounded, 'Check Out', record.checkOutTime, Colors.red),
-                const SizedBox(width: 10),
-                _timeBox(Icons.timer_rounded, 'Duration', record.totalHours, Colors.blue),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            // ── Action Buttons ──
-            if (isPending)
-              Row(
-                children: [
-                  Expanded(
-                    child: _actionBtn('Reject', Colors.red, Icons.close_rounded, onReject, filled: false),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _actionBtn('Accept', Colors.green, Icons.check_rounded, onAccept, filled: true),
-                  ),
-                ],
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: isAccepted ? Colors.green.withValues(alpha: 0.08) : Colors.red.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(isAccepted ? Icons.check_circle_rounded : Icons.cancel_rounded, color: isAccepted ? Colors.green : Colors.red, size: 18),
-                            const SizedBox(width: 6),
-                            Text(isAccepted ? 'Accepted' : 'Rejected', style: TextStyle(color: isAccepted ? Colors.green.shade700 : Colors.red.shade600, fontWeight: FontWeight.w700, fontFamily: 'Inter', fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: onUndo,
-                    child: Container(
-                      height: 42,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.undo_rounded, color: Colors.grey.shade600, size: 18),
-                          const SizedBox(width: 4),
-                          Text('Undo', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600, fontFamily: 'Inter', fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
+      child: Column(children: children),
     );
   }
+}
 
-  Widget _timeBox(IconData icon, String label, String value, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontFamily: 'Inter')),
-          ],
-        ),
-      ),
-    );
-  }
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
 
-  Widget _actionBtn(String label, Color color, IconData icon, VoidCallback onTap, {required bool filled}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 42,
-        decoration: BoxDecoration(
-          color: filled ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color, width: 1.5),
-        ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: filled ? Colors.white : color, size: 16),
-              const SizedBox(width: 6),
-              Text(label, style: TextStyle(color: filled ? Colors.white : color, fontWeight: FontWeight.w700, fontFamily: 'Inter', fontSize: 13)),
-            ],
-          ),
-        ),
+  const _DetailRow(
+      {required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey.shade400),
+          const SizedBox(width: 12),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade500,
+                  fontFamily: 'Inter')),
+          const Spacer(),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.black87,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }

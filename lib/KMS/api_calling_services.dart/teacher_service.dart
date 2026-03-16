@@ -6,6 +6,7 @@ import 'package:innovator/KMS/core/constants/network/dio_client.dart';
 import 'package:innovator/KMS/model/teacher_model/student_model.dart';
 import 'package:innovator/KMS/model/teacher_model/teacher-profile.dart';
 import 'package:innovator/KMS/model/teacher_model/teacher_kyc_model.dart';
+import 'package:innovator/KMS/model/teacher_model/teacher_salary_slips.dart';
  
 
 class TeacherService extends BaseApiService {
@@ -95,4 +96,22 @@ class TeacherService extends BaseApiService {
       },
     );
   }
+  Future<Map<String, dynamic>> createStudent({
+  required String name,
+  required String schoolId,
+  required String classroomId,
+}) async {
+  return await post<Map<String, dynamic>>(
+    ApiConstants.addStudents,
+    data: {
+      'name': name,
+      'school': schoolId,
+      'classroom': classroomId,
+    },
+  );
+}
+Future<SalarySlipResponse> getSalarySlips() async {
+  final data = await get<Map<String, dynamic>>(ApiConstants.teacherSalarySlips);
+  return SalarySlipResponse.fromJson(data);
+}
 }

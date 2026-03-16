@@ -4,6 +4,7 @@ import 'package:innovator/KMS/api_calling_services.dart/teacher_service.dart';
 import 'package:innovator/KMS/model/teacher_model/student_model.dart';
 import 'package:innovator/KMS/model/teacher_model/teacher-profile.dart';
 import 'package:innovator/KMS/model/teacher_model/teacher_kyc_model.dart';
+import 'package:innovator/KMS/model/teacher_model/teacher_salary_slips.dart';
 
 final teacherServiceProvider = Provider<TeacherService>(
   (_) => TeacherService(),
@@ -47,10 +48,22 @@ final studentsProvider = FutureProvider<List<StudentModel>>((ref) {
 final markAttendanceProvider =
     FutureProvider.family<Map<String, dynamic>, Map<String, dynamic>>(
   (ref, params) => ref.read(teacherServiceProvider).markAttendance(
-        studentId: params['studentId'] as String,
-        classroomId: params['classroomId'] as String,
+        studentId: params['student_id'] as String,
+        classroomId: params['classroom_id'] as String,
         date: params['date'] as String,
         status: params['status'] as String,
         notes: params['notes'] as String,
       ),
 );
+final createStudentProvider =
+    FutureProvider.family<Map<String, dynamic>, Map<String, dynamic>>(
+  (ref, params) => ref.read(teacherServiceProvider).createStudent(
+        name: params['name'] as String,
+        schoolId: params['school'] as String,
+        classroomId: params['classroom'] as String,
+      ),
+);
+
+final salarySlipsProvider = FutureProvider<SalarySlipResponse>((ref) {
+  return ref.watch(teacherServiceProvider).getSalarySlips();
+});
